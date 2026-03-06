@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="viewport-wrapper">
+    <div class="container main-content-box">
+        <h1 class="main-title">Historial de Tareas</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Descripción</th>
+                    <th>Fecha de Entrega</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí se van a iterar las tareas desde Flask -->
+                {% for tarea in tareas %}
+                <tr>
+                    <td>{{ tarea.titulo }}</td>
+                    <td>{{ tarea.descripcion }}</td>
+                    <td>{{ tarea.fecha_entrega }}</td>
+                    <td>{{ tarea.estado }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<div class="viewport-wrapper">
+    <div class="container main-content-box">
+        
+        <header class="header-minimal">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='imagenes/educacion2.png') }}" alt="Logo">
+            </div>
+            <h1 class="main-title">Edu-Portal</h1>
+            <div class="badge-group">
+                <span class="chip-glass"><i class="bi bi-calendar3 me-2"></i>{{ fecha_actual }}</span>
+                <span class="chip-admin">ADMIN MODE</span>
+            </div>
+        </header>
+
+        <section class="welcome-card-glass">
+            <div class="welcome-text">
+                <h2 id="saludo-admin">Cargando saludo...</h2>
+                <p>Bienvenido al panel de gestión de registros institucionales.</p>
+            </div>
+            <div class="stats-group">
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_alumnos|default(0) }}</span>
+                    <span class="stat-label">Alumnos</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_maestros|default(0) }}</span>
+                    <span class="stat-label">Maestros</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="cards-grid">
+            <div class="m-card">
+                <div class="m-card-top">
+                    <div class="m-icon c-purple"><i class="bi bi-people-fill"></i></div>
+                    <span class="m-badge">Alumnado</span>
+                </div>
+                <div class="m-card-body">
+                    <h3>Gestión de Alumnos</h3>
+                    <p>Administra expedientes, matrículas y registros de estudiantes.</p>
+                </div>
+                <div class="m-card-footer">
+                    <a href="/alumnos" class="m-btn m-btn-primary">Ver Listado</a>
+                    <a href="/alumnos/nuevo" class="m-btn m-btn-light"><i class="bi bi-plus-lg me-1"></i>Nuevo</a>
+                </div>
+            </div>
+
+            <div class="m-card">
+                <div class="m-card-top">
+                    <div class="m-icon c-yellow"><i class="bi bi-person-vcard-fill"></i></div>
+                    <span class="m-badge">Docentes</span>
+                </div>
+                <div class="m-card-body">
+                    <h3>Gestión de Maestros</h3>
+                    <p>Control de perfiles docentes y asignaciones del personal.</p>
+                </div>
+                <div class="m-card-footer">
+                    <a href="/maestros" class="m-btn m-btn-primary">Ver Personal</a>
+                    <a href="/maestros/nuevo" class="m-btn m-btn-light"><i class="bi bi-plus-lg me-1"></i>Nuevo</a>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer-simple">
+            <p>© 2026 Edu-Portal • Conectado de forma segura</p>
+        </footer>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #4318ff;
+        --dark: #2b3674;
+        --muted: #a3aed0;
+        --bg: #f4f7fe;
+    }
+
+    body, html { height: 100%; margin: 0; }
+
+    /* Centrado Total en Pantalla */
+    .viewport-wrapper {
+        min-height: 100vh;
+        background-color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        padding: 20px;
+    }
+
+    .main-content-box {
+        max-width: 950px;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Header */
+    .header-minimal { margin-bottom: 2.5rem; }
+    .logo-container {
+        width: 70px; height: 70px; background: white; border-radius: 20px;
+        margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    .logo-container img { width: 40px; }
+    .main-title { font-weight: 800; font-size: 2.2rem; color: var(--dark); letter-spacing: -1px; }
+    .badge-group { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+    .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .chip-admin { background: #e2e8f0; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; color: #475569; }
+
+    /* Welcome Card */
+    .welcome-card-glass {
+        background: white; border-radius: 24px; padding: 2.5rem;
+        display: flex; align-items: center; justify-content: space-between;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.04); margin-bottom: 2rem;
+        text-align: left;
+    }
+    .welcome-text h2 { font-weight: 800; color: var(--dark); margin-bottom: 5px; }
+    .welcome-text p { color: var(--muted); margin: 0; font-weight: 500; }
+
+    .stats-group { display: flex; align-items: center; gap: 30px; }
+    .stat-item { text-align: center; }
+    .stat-number { display: block; font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+    .stat-label { font-size: 0.75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+    .stat-divider { width: 1px; height: 40px; background: #f1f5f9; }
+
+    /* Cards */
+    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .m-card {
+        background: white; padding: 2rem; border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid transparent;
+        transition: all 0.3s ease; text-align: left;
+    }
+    .m-card:hover { transform: translateY(-8px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(67, 24, 255, 0.08); }
+
+    .m-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+    .m-icon { width: 55px; height: 55px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+    .c-purple { background: #f4f7fe; color: var(--primary); }
+    .c-yellow { background: #fff9e6; color: #ffb800; }
+    .m-badge { font-size: 0.7rem; font-weight: 800; color: var(--primary); background: #f4f7fe; padding: 4px 10px; border-radius: 8px; }
+
+    .m-card-body h3 { font-weight: 800; font-size: 1.25rem; color: var(--dark); margin-bottom: 10px; }
+    .m-card-body p { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; line-height: 1.5; }
+
+    .m-card-footer { display: flex; gap: 10px; }
+    .m-btn { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; text-decoration: none; text-align: center; font-size: 0.85rem; transition: 0.2s; }
+    .m-btn-primary { background: var(--dark); color: white; }
+    .m-btn-primary:hover { background: var(--primary); }
+    .m-btn-light { background: #f4f7fe; color: var(--dark); }
+    .m-btn-light:hover { background: #e2e8f0; }
+
+    .footer-simple { margin-top: 3rem; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+
+    @media (max-width: 768px) {
+        .welcome-card-glass { flex-direction: column; text-align: center; gap: 2rem; }
+        .cards-grid { grid-template-columns: 1fr; }
+        .stat-divider { display: none; }
+    }
+</style>
+
+<script>
+    function setSaludo() {
+        const h = new Date().getHours();
+        const el = document.getElementById('saludo-admin');
+        if (h >= 6 && h < 12) el.innerText = "¡Buenos días, Administrador! ☀️";
+        else if (h >= 12 && h < 19) el.innerText = "¡Buenas tardes, Administrador! 🌤️";
+        else el.innerText = "¡Buenas noches, Administrador! 🌙";
+    }
+    document.addEventListener('DOMContentLoaded', setSaludo);
+</script>
+
+{% endblock %}

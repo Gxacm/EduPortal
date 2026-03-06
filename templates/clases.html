@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Clases</h2>
+
+<form method="POST">
+    <input type="text" name="nombre" placeholder="Nombre de la Clase">
+    <button type="submit">Agregar</button>
+</form>
+
+<ul>
+{% for c in clases %}
+    <li>{{ c.NombreClase }}</li>
+{% endfor %}
+</ul>
+{% endblock %}

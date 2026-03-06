@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --success-main: #10b981;
+        --success-soft: #ecfdf5;
+        --danger-main: #ef4444;
+        --danger-soft: #fef2f2;
+        --dark-text: #1e293b;
+        --muted-text: #64748b;
+        --bg-soft: #f8fafc;
+    }
+
+    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* BARRA DE NAVEGACIÓN SUPERIOR REFINADA */
+    .top-nav-custom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+        margin-bottom: 30px;
+    }
+
+    .user-profile-badge {
+        display: flex;
+        align-items: center;
+        background: white;
+        padding: 8px 18px;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        border: 1px solid #e2e8f0;
+    }
+
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+        background: var(--success-main);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        margin-right: 12px;
+    }
+
+    .logout-btn-custom {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--danger-soft);
+        color: var(--danger-main);
+        padding: 10px 20px;
+        border-radius: 14px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: 0.3s;
+        border: 1px solid transparent;
+    }
+
+    .logout-btn-custom:hover {
+        background: var(--danger-main);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(239, 68, 68, 0.2);
+    }
+
+    /* CONTENEDORES EXISTENTES OPTIMIZADOS */
+    .viewport-wrapper { padding: 20px; }
+    .main-content-box { max-width: 1100px; margin: 0 auto; }
+
+    .welcome-card-glass {
+        background: white;
+        border-radius: 28px;
+        padding: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.02);
+        border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .main-title { font-weight: 800; font-size: 2.4rem; color: var(--dark-text); margin: 0; }
+    
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 25px;
+        margin-top: 40px;
+    }
+
+    .m-card {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 30px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid #f1f5f9;
+        text-align: left;
+    }
+
+    .m-card:hover {
+        transform: translateY(-12px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+        border-color: var(--success-main);
+    }
+
+    .m-btn-success {
+        background: var(--success-main);
+        color: white;
+        padding: 14px;
+        border-radius: 16px;
+        font-weight: 700;
+        display: block;
+        text-align: center;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+
+    .stat-circle {
+        width: 80px; height: 80px;
+        border: 4px solid var(--success-soft);
+        border-radius: 50%;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+    }
+</style>
+
+<div class="viewport-wrapper">
+    <div class="main-content-box">
+        
+        <nav class="top-nav-custom">
+            <div class="user-profile-badge">
+                <div class="user-avatar">
+                    {{ maestro.Nombre[0] }}
+                </div>
+                <div>
+                    <span class="d-block fw-800 text-dark small" style="line-height: 1;">Prof. {{ maestro.Nombre }}</span>
+                    <span class="text-muted" style="font-size: 0.7rem;">Profesor Activo</span>
+                </div>
+            </div>
+
+            <a href="{{ url_for('logout') }}" class="logout-btn-custom">
+                <i class="bi bi-power"></i> Cerrar Sesion
+            </a>
+        </nav>
+
+        <section class="welcome-card-glass">
+            <div>
+                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill mb-3 fw-bold">
+                    <i class="bi bi-check-circle-fill me-1"></i> Sistema en Línea
+                </span>
+                <h2 class="main-title" id="saludo-maestro">¡Bienvenido!</h2>
+                <p class="text-muted fw-500 mt-2">Gestiona tus clases y alumnos del Ciclo Lectivo 2026</p>
+            </div>
+            <div class="stat-circle">
+                <span class="fw-800 fs-3 text-success" style="line-height: 1;">{{ total_clases }}</span>
+                <span class="text-muted fw-bold" style="font-size: 0.6rem; text-transform: uppercase;">Clases</span>
+            </div>
+        </section>
+
+        <div class="cards-grid">
+            {% for item in grados_data %}
+            <div class="m-card">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="p-3 bg-success bg-opacity-10 rounded-4 text-success">
+                        <i class="bi bi-mortarboard fs-4"></i>
+                    </div>
+                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fw-800" style="font-size: 0.7rem;">
+                        {{ item.grado.NombreGrado }}
+                    </span>
+                </div>
+
+                <h3 class="fw-800 text-dark mb-3">Detalle de Grado</h3>
+                <ul class="list-unstyled mb-4">
+                    {% for clase in item.clases %}
+                    <li class="d-flex align-items-center mb-2 text-muted fw-500">
+                        <i class="bi bi-dot text-success fs-3"></i>
+                        {{ clase.NombreClase }}
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <a href="{{ url_for('gestionar_grado', id_grado=item.grado.IdGrado) }}" class="m-btn-success">
+                    <i class="bi bi-arrow-right-circle me-2"></i> Abrir Gestión
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function updateGreeting() {
+        const hour = new Date().getHours();
+        const el = document.getElementById('saludo-maestro');
+        const name = "{{ maestro.Nombre }}";
+        if (hour < 12) el.innerHTML = `¡Buenos días, <span class="text-success">${name}</span>! ☕`;
+        else if (hour < 18) el.innerHTML = `¡Buenas tardes, <span class="text-success">${name}</span>! 📝`;
+        else el.innerHTML = `¡Buenas noches, <span class="text-success">${name}</span>! 🌙`;
+    }
+    updateGreeting();
+</script>
+
+{% endblock %}

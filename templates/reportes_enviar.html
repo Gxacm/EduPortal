@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="viewport-wrapper">
+    <div class="container main-content-box">
+        <h1 class="main-title">Subir Notas</h1>
+        <form method="POST" action="/maestro/notas">
+            <div class="mb-3">
+                <label class="form-label">Alumno</label>
+                <select class="form-select" name="id_alumno">
+                    {% for alumno in alumnos %}
+                        <option value="{{ alumno.IdUsuario }}">{{ alumno.Nombre }} {{ alumno.Apellido }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Clase</label>
+                <select class="form-select" name="id_clase">
+                    {% for clase in clases %}
+                        <option value="{{ clase.IdClase }}">{{ clase.NombreClase }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Nota</label>
+                <input type="number" step="0.01" min="0" max="100" class="form-control" name="nota" required>
+            </div>
+            <button type="submit" class="m-btn m-btn-success">Registrar Nota</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

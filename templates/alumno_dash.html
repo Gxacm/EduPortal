@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Panel Alumno</h1>
+
+<h3>Mis Notas</h3>
+<ul>
+{% for n in notas %}
+    <li>{{ n.Nota }}</li>
+{% endfor %}
+</ul>
+
+{% endblock %}

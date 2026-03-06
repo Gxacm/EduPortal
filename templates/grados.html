@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Grados</h2>
+
+<form method="POST">
+    <input type="text" name="nombre" placeholder="Nombre del Grado">
+    <button type="submit">Agregar</button>
+</form>
+
+<ul>
+{% for g in grados %}
+    <li>{{ g.NombreGrado }}</li>
+{% endfor %}
+</ul>
+{% endblock %}
