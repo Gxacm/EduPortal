@@ -7,6 +7,12 @@
 <div class="viewport-wrapper">
     <div class="container main-content-box">
         
+        <div class="top-action-bar">
+            <a href="{{ url_for('logout') }}" class="chip-logout">
+                <i class="bi bi-power me-2"></i>Cerrar Sesión
+            </a>
+        </div>
+
         <header class="header-minimal">
             <div class="logo-container">
                 <img src="{{ url_for('static', filename='imagenes/educacion2.png') }}" alt="Logo">
@@ -84,7 +90,6 @@
 
     body, html { height: 100%; margin: 0; }
 
-    /* Centrado Total en Pantalla */
     .viewport-wrapper {
         min-height: 100vh;
         background-color: var(--bg);
@@ -99,9 +104,38 @@
         max-width: 950px;
         width: 100%;
         text-align: center;
+        position: relative; /* Para alinear el botón */
     }
 
-    /* Header */
+    /* ESTILOS DE LA BARRA SUPERIOR Y BOTÓN DE LOGOUT (NUEVO) */
+    .top-action-bar {
+        display: flex;
+        justify-content: flex-end; /* Alinea a la derecha */
+        margin-bottom: -10px; /* Ajuste para pegarlo un poco al header */
+        width: 100%;
+    }
+
+    .chip-logout {
+        background: #f1f5f9; /* Gris muy suave, combina con chip-admin */
+        padding: 8px 18px;
+        border-radius: 12px; /* Mismo radio que tus botones */
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #475569; /* Gris oscuro, como el texto de chip-admin */
+        text-decoration: none;
+        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02); /* Sutil, como chip-glass */
+    }
+
+    .chip-logout:hover {
+        background: #fee2e2; /* Rojo pálido sutil al hover */
+        color: #ef4444; /* Rojo de Bootstrap para la acción de salir */
+        transform: translateY(-2px);
+    }
+
+    /* RESTO DE TUS ESTILOS ORIGINALES SIN CAMBIOS */
     .header-minimal { margin-bottom: 2.5rem; }
     .logo-container {
         width: 70px; height: 70px; background: white; border-radius: 20px;
@@ -114,7 +148,6 @@
     .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
     .chip-admin { background: #e2e8f0; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; color: #475569; }
 
-    /* Welcome Card */
     .welcome-card-glass {
         background: white; border-radius: 24px; padding: 2.5rem;
         display: flex; align-items: center; justify-content: space-between;
@@ -130,7 +163,6 @@
     .stat-label { font-size: 0.75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; }
     .stat-divider { width: 1px; height: 40px; background: #f1f5f9; }
 
-    /* Cards */
     .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
     .m-card {
         background: white; padding: 2rem; border-radius: 24px;
@@ -161,6 +193,7 @@
         .welcome-card-glass { flex-direction: column; text-align: center; gap: 2rem; }
         .cards-grid { grid-template-columns: 1fr; }
         .stat-divider { display: none; }
+        .top-action-bar { justify-content: center; margin-bottom: 10px; } /* Centrado en móvil */
     }
 </style>
 
