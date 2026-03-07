@@ -1,203 +1,168 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
-from models import db, Usuarios, Grados, Clases, Notas, Secciones, Maestros, Tareas, Alumnos 
+from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
-# ---------------- LOGIN ----------------
+# ---------------- RUTA RAÍZ ----------------
 @app.route('/')
 def home():
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET','POST'])
+# ---------------- LOGIN Y SEGURIDAD ----------------
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         correo = request.form.get('correo')
         password = request.form.get('password')
+        user = Usuarios.query.filter_by(correo=correo).first()
         
-        # Mapeo automático a minúsculas gracias a models.py
-        user = Usuarios.query.filter_by(Correo=correo, Contrasena=password).first()
-        
-        if user:
-            session['user_id'] = user.IdUsuario
-            session['rol'] = user.IdRol
+        if user and check_password_hash(user.contrasena, password):
+            session['user_id'] = user.id_usuario
+            session['rol'] = user.id_rol
+            session['nombre'] = f"{user.nombre} {user.apellido}"
             
-            # Redirecciones usando url_for
-            if user.IdRol == 1: 
-                return redirect(url_for('admin_dashboard'))
-            elif user.IdRol == 2: 
-                return redirect(url_for('maestro_dashboard'))
-            else: 
-                return redirect(url_for('alumno_dashboard'))
-        
-        flash("Correo o contraseña incorrectos. Intente de nuevo.")
-        return redirect(url_for('login'))
-        
-    # login.html está en la raíz de templates, no cambia
+            if user.id_rol == 1: return redirect(url_for('admin_dashboard'))
+            if user.id_rol == 2: return redirect(url_for('maestro_dashboard'))
+            return redirect(url_for('alumno_dashboard'))
+        flash("Credenciales incorrectas.")
     return render_template('login.html')
+
+# ---------------- DASHBOARDS Y ANUNCIOS ----------------
+@app.route('/admin')
+def admin_dashboard():
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    anuncios = Anuncios.query.order_by(Anuncios.fecha_publicacion.desc()).all()
+    return render_template('Admin_Panel/admin_dashboard.html', anuncios=anuncios)
+
+# En app.py, busca esta función y actualízala así:
+@app.route('/maestro')
+def maestro_dashboard():
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    
+    # 1. Obtenemos el objeto del usuario completo
+    maestro_usuario = Usuarios.query.get(user_id) 
+    
+    # 2. Obtenemos el perfil de maestro para filtrar sus clases
+    perfil = Maestros.query.filter_by(id_usuario=user_id).first()
+    
+    # 3. Consultas para los datos del dashboard
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all()
+    anuncios = Anuncios.query.filter(Anuncios.dirigido_a.in_(['Todos', 'Maestros'])).all()
+    
+    # 4. PASAMOS EL OBJETO 'maestro_usuario' al template como 'maestro'
+    return render_template('Panel_Maestro/maestro_dash.html', 
+                           maestro=maestro_usuario, 
+                           clases=clases, 
+                           anuncios=anuncios)
+
+@app.route('/alumno')
+def alumno_dashboard():
+    if session.get('rol') != 3: return redirect(url_for('login'))
+    alumno = Alumnos.query.filter_by(id_usuario=session.get('user_id')).first()
+    notas = Notas.query.filter_by(id_alumno=alumno.id_alumno).all()
+    asistencias = Asistencias.query.filter_by(id_alumno=alumno.id_alumno).all()
+    anuncios = Anuncios.query.filter(Anuncios.dirigido_a.in_(['Todos', 'Alumnos'])).all()
+    return render_template('Panel_Alumno/alumno_dash.html', notas=notas, asistencias=asistencias, anuncios=anuncios)
+
+# ---------------- GESTIÓN ACADÉMICA (LÓGICA MAESTRO) ----------------
+@app.route('/maestro/grado/<int:id_grado>')
+def gestionar_grado(id_grado):
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    secciones = Secciones.query.filter_by(id_grado=id_grado).all()
+    ids_secciones = [s.id_seccion for s in secciones]
+    alumnos = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
+    return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=Grados.query.get(id_grado), alumnos=alumnos)
+
+@app.route('/maestro/tareas/nueva', methods=['POST'])
+def crear_tarea():
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    nueva_tarea = Tareas(
+        id_clase=request.form.get('id_clase'),
+        titulo=request.form.get('titulo'),
+        fecha_entrega=datetime.strptime(request.form.get('fecha_entrega'), '%Y-%m-%dT%H:%M')
+    )
+    db.session.add(nueva_tarea)
+    db.session.commit()
+    return redirect(url_for('historial_tareas'))
+
+@app.route('/maestro/nota/registrar', methods=['POST'])
+def registrar_nota():
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    nota = Notas(
+        id_tarea=request.form.get('id_tarea'),
+        id_alumno=request.form.get('id_alumno'),
+        calificacion=request.form.get('calificacion'),
+        id_maestro_autor=session.get('user_id'), # Auditoría
+        fecha_modificacion=datetime.utcnow()     # Auditoría
+    )
+    db.session.add(nota)
+    db.session.commit()
+    return redirect(url_for('maestro_dashboard'))
+
+@app.route('/maestro/asistencia/registrar', methods=['POST'])
+def registrar_asistencia():
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    asistencia = Asistencias(
+        id_clase=request.form.get('id_clase'),
+        id_alumno=request.form.get('id_alumno'),
+        estado=request.form.get('estado'),
+        fecha=datetime.utcnow().date()
+    )
+    db.session.add(asistencia)
+    db.session.commit()
+    return redirect(url_for('maestro_dashboard'))
+
+# ---------------- GESTIÓN DE ANUNCIOS (ADMIN) ----------------
+@app.route('/admin/anuncio/nuevo', methods=['POST'])
+def crear_anuncio():
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    anuncio = Anuncios(
+        titulo=request.form.get('titulo'),
+        contenido=request.form.get('contenido'),
+        dirigido_a=request.form.get('dirigido_a'),
+        id_usuario_autor=session.get('user_id')
+    )
+    db.session.add(anuncio)
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# ---------------- ADMIN DASHBOARD ----------------
-@app.route('/admin')
-def admin_dashboard():
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    total_alumnos = Usuarios.query.filter_by(IdRol=3).count()
-    total_maestros = Usuarios.query.filter_by(IdRol=2).count()
+@app.route('/crear-usuarios-test')
+def crear_usuarios_test():
+    # 1. Limpiar todo
+    db.session.query(Notas).delete()
+    db.session.query(Asistencias).delete()
+    db.session.query(Alumnos).delete()
+    db.session.query(Maestros).delete()
+    db.session.query(Usuarios).delete()
     
-    # RUTA:
-    return render_template('Admin_Panel/admin_dashboard.html', 
-                           total_alumnos=total_alumnos, 
-                           total_maestros=total_maestros, 
-                           fecha_actual=datetime.now().strftime("%d/%m/%Y"))
-
-# ---------------- MAESTRO DASHBOARD ----------------
-@app.route('/maestro')
-def maestro_dashboard():
-    if session.get('rol') != 2: return redirect(url_for('login'))
-    user_id = session.get('user_id')
+    # 2. Crear Usuarios
+    admin = Usuarios(nombre="Admin", apellido="Root", correo="admin@eduportal.com", contrasena=generate_password_hash("12345"), id_rol=1)
+    maestro = Usuarios(nombre="Juan", apellido="Maestro", correo="maestro@eduportal.com", contrasena=generate_password_hash("12345"), id_rol=2)
+    alumno = Usuarios(nombre="Carlos", apellido="Alumno", correo="alumno@eduportal.com", contrasena=generate_password_hash("12345"), id_rol=3)
     
-    maestro_user = Usuarios.query.get(user_id)
-    perfil_docente = Maestros.query.filter_by(IdUsuario=user_id).first()
+    db.session.add_all([admin, maestro, alumno])
+    db.session.commit() # commit primero para que tengan ID
     
-    if not perfil_docente:
-        return "Error: No se encontró perfil de maestro en la base de datos PostgreSQL."
-
-    clases = Clases.query.filter_by(IdMaestro=perfil_docente.IdMaestro).all()
-    grados_dict = {}
+    # 3. Crear Perfiles vinculados (ESTO ES LO QUE FALTABA)
+    perfil_maestro = Maestros(id_usuario=maestro.id_usuario, especialidad="Ciencias")
+    perfil_alumno = Alumnos(id_usuario=alumno.id_usuario, carnet="2026-001")
     
-    for clase in clases:
-        seccion = Secciones.query.get(clase.IdSeccion)
-        if seccion:
-            grado = Grados.query.get(seccion.IdGrado)
-            if grado:
-                if grado.IdGrado not in grados_dict:
-                    grados_dict[grado.IdGrado] = {"grado": grado, "clases": []}
-                grados_dict[grado.IdGrado]["clases"].append(clase)
-
-    # RUTA:
-    return render_template('Panel_Maestro/maestro_dash.html', 
-                           maestro=maestro_user, 
-                           grados_data=list(grados_dict.values()), 
-                           total_clases=len(clases))
-
-# ---------------- GESTIÓN DE GRADO DETALLADO ----------------
-@app.route('/maestro/grado/<int:id_grado>')
-def gestionar_grado(id_grado):
-    if session.get('rol') != 2: return redirect(url_for('login'))
+    db.session.add_all([perfil_maestro, perfil_alumno])
+    db.session.commit()
     
-    grado = Grados.query.get_or_404(id_grado)
-    user_id = session.get('user_id')
-    perfil = Maestros.query.filter_by(IdUsuario=user_id).first()
-    
-    secciones = Secciones.query.filter_by(IdGrado=id_grado).all()
-    id_secciones = [s.IdSeccion for s in secciones]
-    
-    alumnos_grado = Usuarios.query.join(Alumnos, Usuarios.IdUsuario == Alumnos.IdUsuario)\
-                    .filter(Alumnos.IdSeccion.in_(id_secciones)).all()
-    
-    clases_maestro = Clases.query.filter(
-        Clases.IdMaestro == perfil.IdMaestro, 
-        Clases.IdSeccion.in_(id_secciones)
-    ).all()
-
-    # RUTA CORREGIDA: Panel_Maestro/
-    return render_template('Panel_Maestro/maestro_gestion_grado.html', 
-                           grado=grado, 
-                           alumnos=alumnos_grado, 
-                           clases=clases_maestro)
-
-# ---------------- MAESTRO: TAREAS ----------------
-@app.route('/maestro/tareas/nueva', methods=['GET','POST'])
-def crear_tarea():
-    if session.get('rol') != 2: return redirect(url_for('login'))
-    
-    user_id = session.get('user_id')
-    perfil = Maestros.query.filter_by(IdUsuario=user_id).first()
-    
-    if request.method == 'POST':
-        try:
-            id_clase = request.form.get('id_clase')
-            titulo = request.form.get('titulo')
-            descripcion = request.form.get('descripcion')
-            fecha_str = request.form.get('fecha_entrega')
-            
-            fecha_dt = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M')
-
-            nueva_tarea = Tareas(
-                IdClase=id_clase, 
-                Titulo=titulo, 
-                Descripcion=descripcion, 
-                FechaEntrega=fecha_dt
-            )
-            
-            db.session.add(nueva_tarea)
-            db.session.commit()
-            
-            return redirect(url_for('historial_tareas'))
-        except Exception as e:
-            db.session.rollback()
-            return f"Error al insertar en Postgres: {e}"
-
-    mis_clases = Clases.query.filter_by(IdMaestro=perfil.IdMaestro).all()
-    # RUTA CORREGIDA: Panel_Maestro/
-    return render_template('Panel_Maestro/tareas_nuevas.html', clases=mis_clases)
-
-@app.route('/maestro/tareas')
-def historial_tareas():
-    if session.get('rol') != 2: return redirect(url_for('login'))
-    
-    user_id = session.get('user_id')
-    perfil = Maestros.query.filter_by(IdUsuario=user_id).first()
-    
-    mis_clases = Clases.query.filter_by(IdMaestro=perfil.IdMaestro).all()
-    mis_clases_ids = [c.IdClase for c in mis_clases]
-    
-    tareas = Tareas.query.filter(Tareas.IdClase.in_(mis_clases_ids)).order_by(Tareas.FechaEntrega.desc()).all()
-    
-    # RUTA CORREGIDA: Panel_Maestro/
-    return render_template('Panel_Maestro/tareas_historial.html', tareas=tareas)
-
-# ---------------- MAESTRO: NOTAS ----------------
-@app.route('/maestro/notas', methods=['GET','POST'])
-def subir_notas():
-    if session.get('rol') != 2: return redirect(url_for('login'))
-    user_id = session.get('user_id')
-    perfil = Maestros.query.filter_by(IdUsuario=user_id).first()
-
-    if request.method == 'POST':
-        try:
-            nueva_nota = Notas(
-                IdClase=request.form.get('id_clase'), 
-                IdAlumno=request.form.get('id_alumno'), 
-                Nota=request.form.get('nota')
-            )
-            db.session.add(nueva_nota)
-            db.session.commit()
-            return redirect(url_for('maestro_dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            return f"Error al subir nota: {e}"
-
-    alumnos = Usuarios.query.filter_by(IdRol=3).all()
-    clases = Clases.query.filter_by(IdMaestro=perfil.IdMaestro).all()
-    # RUTA CORREGIDA: Panel_Maestro/
-    return render_template('Panel_Maestro/notas_subir.html', alumnos=alumnos, clases=clases)
-
-# ---------------- ALUMNO DASHBOARD ----------------
-@app.route('/alumno')
-def alumno_dashboard():
-    if session.get('rol') != 3: return redirect(url_for('login'))
-    
-    notas = Notas.query.filter_by(IdAlumno=session.get('user_id')).all()
-    # RUTA:
-    return render_template('Panel_Alumno/alumno_dash.html', notas=notas)
+    return "Usuarios Y PERFILES creados. Ya puedes loguearte."
 
 if __name__ == '__main__':
     app.run(debug=True)
