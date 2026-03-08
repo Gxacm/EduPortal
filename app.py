@@ -33,11 +33,29 @@ def login():
     return render_template('login.html')
 
 # ---------------- DASHBOARDS Y ANUNCIOS ----------------
+from datetime import datetime # Asegúrate de importar esto al inicio
+
 @app.route('/admin')
 def admin_dashboard():
-    if session.get('rol') != 1: return redirect(url_for('login'))
+    if session.get('rol') != 1: 
+        return redirect(url_for('login'))
+    
+    # 1. Obtenemos los totales (asegúrate de importar los modelos Alumno y Maestro)
+    total_alumnos = Alumnos.query.count()
+    total_maestros = Maestros.query.count()
+    
+    # 2. Obtenemos la fecha actual
+    fecha_actual = datetime.now().strftime("%d/%m/%Y")
+    
+    # 3. Obtenemos los anuncios
     anuncios = Anuncios.query.order_by(Anuncios.fecha_publicacion.desc()).all()
-    return render_template('Admin_Panel/admin_dashboard.html', anuncios=anuncios)
+    
+    # 4. PASAMOS TODO AL TEMPLATE
+    return render_template('Admin_Panel/admin_dashboard.html', 
+                           anuncios=anuncios,
+                           total_alumnos=total_alumnos,
+                           total_maestros=total_maestros,
+                           fecha_actual=fecha_actual)
 
 # En app.py, busca esta función y actualízala así:
 @app.route('/maestro')
@@ -138,31 +156,40 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-@app.route('/crear-usuarios-test')
-def crear_usuarios_test():
-    # 1. Limpiar todo
-    db.session.query(Notas).delete()
-    db.session.query(Asistencias).delete()
-    db.session.query(Alumnos).delete()
-    db.session.query(Maestros).delete()
-    db.session.query(Usuarios).delete()
+@app.route('/admin/nuevo/maestro')
+def vista_nuevo_maestro():
+    return render_template('Admin_Panel/usuario_nuevo.html', rol_nombre="Maestro", id_rol=2)
+
+@app.route('/admin/nuevo/alumno')
+def vista_nuevo_alumno():
+    return render_template('Admin_Panel/usuario_nuevo.html', rol_nombre="Alumno", id_rol=3)
+
+@app.route('/admin/usuario/guardar', methods=['POST'])
+def crear_usuario_logica():
+    if session.get('rol') != 1: return redirect(url_for('login'))
     
-    # 2. Crear Usuarios
-    admin = Usuarios(nombre="Admin", apellido="Root", correo="admin@eduportal.com", contrasena=generate_password_hash("12345"), id_rol=1)
-    maestro = Usuarios(nombre="Juan", apellido="Maestro", correo="maestro@eduportal.com", contrasena=generate_password_hash("12345"), id_rol=2)
-    alumno = Usuarios(nombre="Carlos", apellido="Alumno", correo="alumno@eduportal.com", contrasena=generate_password_hash("12345"), id_rol=3)
-    
-    db.session.add_all([admin, maestro, alumno])
-    db.session.commit() # commit primero para que tengan ID
-    
-    # 3. Crear Perfiles vinculados (ESTO ES LO QUE FALTABA)
-    perfil_maestro = Maestros(id_usuario=maestro.id_usuario, especialidad="Ciencias")
-    perfil_alumno = Alumnos(id_usuario=alumno.id_usuario, carnet="2026-001")
-    
-    db.session.add_all([perfil_maestro, perfil_alumno])
+    # 1. Guardar el usuario base
+    nuevo = Usuarios(
+        nombre=request.form.get('nombre'),
+        apellido=request.form.get('apellido'),
+        correo=request.form.get('correo'),
+        contrasena=generate_password_hash(request.form.get('password')),
+        id_rol=int(request.form.get('id_rol'))
+    )
+    db.session.add(nuevo)
     db.session.commit()
-    
-    return "Usuarios Y PERFILES creados. Ya puedes loguearte."
+
+    # 2. Guardar el perfil específico
+    if nuevo.id_rol == 2: # Maestro
+        perfil = Maestros(id_usuario=nuevo.id_usuario, especialidad=request.form.get('especialidad'))
+        db.session.add(perfil)
+    elif nuevo.id_rol == 3: # Alumno
+        perfil = Alumnos(id_usuario=nuevo.id_usuario, carnet=request.form.get('carnet'))
+        db.session.add(perfil)
+        
+    db.session.commit()
+    flash("Usuario registrado correctamente")
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
