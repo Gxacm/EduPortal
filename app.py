@@ -191,5 +191,51 @@ def crear_usuario_logica():
     flash("Usuario registrado correctamente")
     return redirect(url_for('admin_dashboard'))
 
+# ---------------- GESTIÓN CENTRALIZADA DE USUARIOS (LEER Y ELIMINAR) ----------------
+
+@app.route('/admin/usuarios/<vista>')
+def gestion_usuarios(vista):
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    
+    # .all() traerá los objetos con sus relaciones si están configuradas en models.py
+    todos_alumnos = Alumnos.query.all() 
+    todos_maestros = Maestros.query.all()
+    
+    return render_template('Admin_Panel/gestion_usuarios.html', 
+                           alumnos=todos_alumnos, 
+                           maestros=todos_maestros,
+                           vista_activa=vista)
+
+@app.route('/eliminar_usuario/<int:id_usuario>', methods=['POST'])
+def eliminar_usuario(id_usuario):
+    if session.get('rol') != 1: 
+        return redirect(url_for('login'))
+    
+    usuario = Usuarios.query.get_or_404(id_usuario)
+    # Guardamos el rol antes de borrarlo para saber a qué vista regresar
+    rol_antes_de_borrar = usuario.id_rol 
+    
+    try:
+        if rol_antes_de_borrar == 2 and usuario.maestro_perfil:
+            db.session.delete(usuario.maestro_perfil)
+            proxima_vista = 'maestros'
+        elif rol_antes_de_borrar == 3 and usuario.alumno_perfil:
+            db.session.delete(usuario.alumno_perfil)
+            proxima_vista = 'alumnos'
+        else:
+            proxima_vista = 'alumnos' # Default
+            
+        db.session.delete(usuario)
+        db.session.commit()
+        flash("Usuario eliminado correctamente", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        flash("No se puede eliminar el usuario porque tiene registros dependientes.", "error")
+        proxima_vista = 'alumnos' if rol_antes_de_borrar == 3 else 'maestros'
+        
+    # CORRECCIÓN: Ahora pasamos el parámetro 'vista'
+    return redirect(url_for('gestion_usuarios', vista=proxima_vista))
+
 if __name__ == '__main__':
     app.run(debug=True)
