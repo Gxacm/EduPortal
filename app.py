@@ -237,5 +237,24 @@ def eliminar_usuario(id_usuario):
     # CORRECCIÓN: Ahora pasamos el parámetro 'vista'
     return redirect(url_for('gestion_usuarios', vista=proxima_vista))
 
+@app.route('/admin/configuracion', methods=['GET', 'POST'])
+def configuracion_academica():
+    if request.method == 'POST':
+        if 'guardar_grado' in request.form:
+            nuevo_grado = Grados(nombre_grado=request.form.get('nombre_grado'))
+            db.session.add(nuevo_grado)
+            db.session.commit()
+        elif 'guardar_clase' in request.form:
+            nueva_clase = Clases(nombre_clase=request.form.get('nombre_clase'))
+            db.session.add(nueva_clase)
+            db.session.commit()
+        return redirect(url_for('configuracion_academica'))
+
+    grados = Grados.query.all()
+    clases = Clases.query.all()
+    
+    # CORRECCIÓN: Nombre del template actualizado para que coincida con tu archivo
+    return render_template('Admin_Panel/configuracion_academica.html', grados=grados, clases=clases)
+
 if __name__ == '__main__':
     app.run(debug=True)

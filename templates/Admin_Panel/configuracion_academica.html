@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<div class="viewport-wrapper">
+    <div class="container main-content-box">
+        
+        <div class="top-action-bar">
+            <a href="{{ url_for('admin_dashboard') }}" class="chip-logout">
+                <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Volver al Panel
+            </a>
+        </div>
+
+        <header class="header-minimal">
+            <div class="logo-container">
+                <i class="bi bi-gear-fill" style="font-size: 2rem; color: #059669;"></i>
+            </div>
+            <h1 class="main-title">Estructura Académica</h1>
+            <div class="badge-group">
+                <span class="chip-glass">
+                    <i class="bi bi-sliders" style="margin-right: 5px;"></i>Configuración del Sistema
+                </span>
+            </div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 950px; margin: 0 auto;">
+            
+            <div class="m-card">
+                <h3 class="m-section-title">Registro de Datos</h3>
+                <form method="POST">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="m-label">Nombre del Grado</label>
+                        <input type="text" name="nombre_grado" class="m-input" placeholder="Ej. Séptimo Grado">
+                        <button type="submit" name="guardar_grado" class="m-btn m-btn-config" style="margin-top: 10px;">Guardar Grado</button>
+                    </div>
+                </form>
+                <form method="POST">
+                    <div>
+                        <label class="m-label">Nombre de la Materia</label>
+                        <input type="text" name="nombre_clase" class="m-input" placeholder="Ej. Matemáticas">
+                        <button type="submit" name="guardar_clase" class="m-btn m-btn-config" style="margin-top: 10px;">Guardar Materia</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="m-card">
+                <h3 class="m-section-title">Resumen Actual</h3>
+                <div class="summary-box">
+                    <label class="m-label">Grados Activos</label>
+                    <ul class="data-list">
+                        {% for g in grados %}<li>{{ g.nombre_grado }}</li>{% endfor %}
+                    </ul>
+                    <label class="m-label" style="margin-top: 20px;">Materias Registradas</label>
+                    <ul class="data-list">
+                        {% for c in clases %}<li>{{ c.nombre_clase }}</li>{% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* -------------------------------------------------------------------------- */
+/* CONFIGURACIÓN ACADÉMICA - ESTILOS                                          */
+/* -------------------------------------------------------------------------- */
+
+:root {
+    --primary: #4318ff;
+    --dark: #2b3674;
+    --muted: #a3aed0;
+    --bg: #f4f7fe;
+    --accent-green: #059669;
+}
+
+/* --- Layout Principal --- */
+.viewport-wrapper {
+    min-height: 100vh;
+    background-color: var(--bg);
+    padding: 40px 20px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.main-content-box {
+    max-width: 950px;
+    width: 100%;
+    margin: 0 auto;
+}
+.main-title { 
+    font-weight: 800; 
+    font-size: 2.2rem; 
+    color: var(--dark); 
+    letter-spacing: -1px; 
+}
+
+.badge-group { 
+    display: flex; 
+    justify-content: center;
+    gap: 10px; 
+    margin-top: 10px; 
+}
+
+.chip-glass { 
+    background: white; 
+    padding: 6px 15px; 
+    border-radius: 10px; 
+    font-size: 0.8rem; 
+    font-weight: 700; 
+    color: var(--dark); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
+}
+
+/* --- Tarjetas y Contenedores --- */
+.m-card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+}
+
+.m-section-title {
+    font-weight: 800;
+    color: var(--dark);
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+}
+
+/* --- Formularios y Botones --- */
+.m-label {
+    display: block;
+    font-weight: 800;
+    color: var(--dark);
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.m-input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background-color: var(--bg);
+    border: 2px solid transparent;
+    color: var(--dark);
+    font-weight: 600;
+    box-sizing: border-box;
+    transition: 0.3s;
+}
+
+.m-btn-config {
+    background: var(--accent-green);
+    color: white;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 10px;
+}
+
+.m-btn-config:hover {
+    background: #047857;
+    transform: translateY(-2px);
+}
+
+/* --- Listas de Datos --- */
+.data-list {
+    list-style: none;
+    padding: 0;
+}
+
+.data-list li {
+    background: #f4f7fe;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 0.9rem;
+}
+
+/* --- Header y Acciones --- */
+.header-minimal { margin-bottom: 2.5rem; text-align: center; }
+
+.logo-container {
+    width: 70px;
+    height: 70px;
+    background: white;
+    border-radius: 20px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.main-title { font-weight: 800; font-size: 2.2rem; color: var(--dark); letter-spacing: -1px; }
+
+.top-action-bar { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+
+.chip-logout {
+    background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem;
+    font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s;
+    display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+.chip-logout:hover { 
+    background: #fee2e2; 
+    color: #ef4444; 
+    transform: translateY(-2px); 
+}
+</style>
+{% endblock %}
