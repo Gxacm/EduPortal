@@ -137,10 +137,10 @@
         <nav class="top-nav-custom">
             <div class="user-profile-badge">
                 <div class="user-avatar">
-                    {{ maestro.Nombre[0] }}
+                    {{ maestro.nombre[0] }}
                 </div>
                 <div>
-                    <span class="d-block fw-800 text-dark small" style="line-height: 1;">Prof. {{ maestro.Nombre }}</span>
+                    <span class="d-block fw-800 text-dark small" style="line-height: 1;">Prof. {{ maestro.nombre }}</span>
                     <span class="text-muted" style="font-size: 0.7rem;">Profesor Activo</span>
                 </div>
             </div>
@@ -172,7 +172,7 @@
                         <i class="bi bi-mortarboard fs-4"></i>
                     </div>
                     <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fw-800" style="font-size: 0.7rem;">
-                        {{ item.grado.NombreGrado }}
+                        {{ item.grado.nombre_grado }}
                     </span>
                 </div>
 
@@ -181,7 +181,7 @@
                     {% for clase in item.clases %}
                     <li class="d-flex align-items-center mb-2 text-muted fw-500">
                         <i class="bi bi-dot text-success fs-3"></i>
-                        {{ clase.NombreClase }}
+                        {{ clase.nombre_clase }}
                     </li>
                     {% endfor %}
                 </ul>
@@ -200,7 +200,7 @@
     function updateGreeting() {
         const hour = new Date().getHours();
         const el = document.getElementById('saludo-maestro');
-        const name = "{{ maestro.Nombre }}";
+        const name = "{{ maestro.nombre }}";
         if (hour < 12) el.innerHTML = `¡Buenos días, <span class="text-success">${name}</span>! ☕`;
         else if (hour < 18) el.innerHTML = `¡Buenas tardes, <span class="text-success">${name}</span>! 📝`;
         else el.innerHTML = `¡Buenas noches, <span class="text-success">${name}</span>! 🌙`;

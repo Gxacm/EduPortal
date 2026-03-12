@@ -1,26 +1,16 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-
 <div class="viewport-wrapper">
     <div class="container main-content-box">
         
-        <div class="top-action-bar">
-            <a href="{{ url_for('logout') }}" class="chip-logout">
-                <i class="bi bi-power me-2"></i>Cerrar Sesión
-            </a>
-        </div>
-
         <header class="header-minimal">
             <div class="logo-container">
                 <img src="{{ url_for('static', filename='imagenes/educacion2.png') }}" alt="Logo">
             </div>
             <h1 class="main-title">Edu-Portal</h1>
             <div class="badge-group">
-                <span class="chip-glass"><i class="bi bi-calendar3 me-2"></i>{{ fecha_actual }}</span>
-                <span class="chip-admin">ADMIN MODE</span>
+                <span class="chip-glass"><i class="bi bi-calendar3" style="margin-right: 7px;"></i>{{ fecha_actual }}</span>
             </div>
         </header>
 
@@ -53,8 +43,8 @@
                     <p>Administra expedientes, matrículas y registros de estudiantes.</p>
                 </div>
                 <div class="m-card-footer">
-                    <a href="/alumnos" class="m-btn m-btn-primary">Ver Listado</a>
-                    <a href="/alumnos/nuevo" class="m-btn m-btn-light"><i class="bi bi-plus-lg me-1"></i>Nuevo</a>
+                    <a href="{{ url_for('gestion_usuarios', vista='alumnos') }}" class="m-btn m-btn-primary">Ver Listado</a>
+                    <a href="{{ url_for('vista_nuevo_alumno') }}" class="m-btn m-btn-light"><i class="bi bi-plus-lg me-1"></i>Nuevo</a>
                 </div>
             </div>
 
@@ -68,10 +58,28 @@
                     <p>Control de perfiles docentes y asignaciones del personal.</p>
                 </div>
                 <div class="m-card-footer">
-                    <a href="/maestros" class="m-btn m-btn-primary">Ver Personal</a>
-                    <a href="/maestros/nuevo" class="m-btn m-btn-light"><i class="bi bi-plus-lg me-1"></i>Nuevo</a>
+                    <a href="{{ url_for('gestion_usuarios', vista='maestros') }}" class="m-btn m-btn-primary">Ver Personal</a>
+                    <a href="{{ url_for('vista_nuevo_maestro') }}" class="m-btn m-btn-light"><i class="bi bi-plus-lg me-1"></i>Nuevo</a>
                 </div>
             </div>
+            
+
+            <div class="m-card">
+                <div class="m-card-top">
+                    <div class="m-icon" style="background: #e6fcf5; color: #059669;">
+                        <i class="bi bi-gear-fill"></i>
+                    </div>
+                    <span class="m-badge">Estructura</span>
+                </div>
+                <div class="m-card-body">
+                    <h3>Gestión Académica</h3>
+                    <p>Administra los grados, secciones y materias del sistema.</p>
+                </div>
+                <div class="m-card-footer">
+                    <a href="{{ url_for('configuracion_academica') }}" class="m-btn m-btn-primary">Gestionar</a>
+                </div>
+            </div>
+            
         </div>
 
         <footer class="footer-simple">
