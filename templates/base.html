@@ -15,6 +15,7 @@
             --dark: #2b3674;
             --muted: #a3aed0;
             --bg: #f4f7fe;
+            --danger: #ef4444;
         }
 
         body {
@@ -24,7 +25,7 @@
             background-color: var(--bg);
         }
 
-        /* --- ESTILOS DE LA TOP BAR --- */
+        /* --- TOP NAVBAR --- */
         .top-navbar {
             height: 75px;
             background: rgba(255, 255, 255, 0.85);
@@ -45,7 +46,14 @@
             gap: 20px;
         }
 
-        /* Buscador Global */
+        .brand-text {
+            font-weight: 800; 
+            color: var(--dark); 
+            margin-right: 15px; 
+            letter-spacing: -0.5px;
+            text-decoration: none;
+        }
+
         .search-bar-container {
             background: var(--bg);
             padding: 10px 15px;
@@ -53,32 +61,47 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            width: 300px;
+            width: 250px;
             transition: 0.3s;
-        }
-        .search-bar-container:focus-within {
-            background: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            border: 1px solid var(--primary);
         }
         .search-bar-container input {
             border: none; background: transparent; outline: none;
             width: 100%; font-weight: 600; color: var(--dark);
         }
 
-        /* Status y Perfil */
+        /* Botón de Gestión (Corregido con vista) */
+        .nav-link-admin {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 10px 18px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        .nav-link-admin:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
         .status-badge {
-            background: white; padding: 6px 12px; border-radius: 10px;
+            background: white; padding: 8px 15px; border-radius: 12px;
             font-size: 0.8rem; font-weight: 700; color: var(--primary);
             box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         }
 
         .profile-trigger {
             display: flex; align-items: center; gap: 10px;
-            cursor: pointer; padding: 5px 10px; border-radius: 12px;
+            cursor: pointer; padding: 5px 10px; border-radius: 15px;
             transition: 0.2s;
         }
-        .profile-trigger:hover { background: var(--bg); }
+        .profile-trigger:hover { background: rgba(255,255,255,0.5); }
 
         .avatar-img {
             width: 40px; height: 40px; border-radius: 12px;
@@ -87,13 +110,13 @@
             font-weight: 800; font-size: 0.9rem;
         }
 
-        /* Menú Desplegable */
         .dropdown-menu {
             position: absolute; top: 80px; right: 30px;
             background: white; width: 220px; border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             display: none; flex-direction: column; padding: 10px;
             animation: slideDown 0.3s ease-out;
+            border: 1px solid #f1f5f9;
         }
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
@@ -103,13 +126,14 @@
             padding: 12px 15px; text-decoration: none; color: var(--dark);
             font-size: 0.85rem; font-weight: 600; border-radius: 12px;
             display: flex; align-items: center; gap: 10px;
+            transition: 0.2s;
         }
         .dropdown-item:hover { background: var(--bg); color: var(--primary); }
-        .dropdown-item.danger { color: #ef4444; }
+        .dropdown-item.danger { color: var(--danger); }
 
-        /* Contenedor del contenido (para que no lo tape la navbar) */
         .content-wrapper {
-            margin-top: 75px; /* Igual al alto de la navbar */
+            margin-top: 75px;
+            padding: 20px;
         }
     </style>
 </head>
@@ -117,36 +141,49 @@
 
     <nav class="top-navbar">
         <div class="navbar-left">
-            <span style="font-weight: 800; color: var(--dark); margin-right: 15px;">EDU CONTROL</span>
+            <a href="{{ url_for('admin_dashboard') if session.rol == 1 else url_for('login') }}" class="brand-text">EDU CONTROL</a>
             
             <div class="search-bar-container">
                 <i class="bi bi-search" style="color: var(--muted);"></i>
                 <input type="text" placeholder="Búsqueda global...">
             </div>
+
+            {% if session.rol == 1 %}
+            <a href="{{ url_for('gestion_usuarios', vista='alumnos') }}" class="nav-link-admin">
+                <i class="bi bi-people-fill"></i> Gestión de Usuarios
+            </a>
+            {% endif %}
         </div>
 
         <div class="navbar-right">
-                <div class="status-badge">
-                    <i class="bi bi-calendar-check" style="margin-right: 5px;"></i> 
-                    Ciclo <span id="year-automatico"></span>
-                 </div>
-
-            <script>
-                document.getElementById('year-automatico').innerText = new Date().getFullYear();
-            </script>
+            <div class="status-badge">
+                <i class="bi bi-calendar-check" style="margin-right: 5px;"></i> 
+                Ciclo <span id="year-automatico"></span>
+            </div>
 
             <div class="profile-trigger" id="profileBtn">
                 <div style="text-align: right; line-height: 1;">
-                    <div style="font-weight: 800; color: var(--dark); font-size: 0.85rem;">Admin</div>
-                    <small style="color: var(--muted); font-size: 0.7rem; font-weight: 600;">Administrador</small>
+                    <div style="font-weight: 800; color: var(--dark); font-size: 0.85rem;">
+                        {{ session.nombre }}
+                    </div>
+                    <small style="color: var(--muted); font-size: 0.7rem; font-weight: 600;">
+                        {{ session.rol_nombre }}
+                    </small>
                 </div>
-                <div class="avatar-img">AD</div>
+                <div class="avatar-img">{{ session.iniciales }}</div>
             </div>
 
             <div class="dropdown-menu" id="profileMenu">
-                <a href="#" class="dropdown-item"><i class="bi bi-person"></i> Mi Cuenta</a>
-                <a href="#" class="dropdown-item"><i class="bi bi-gear"></i> Ajustes</a>
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 8px 0;">
+                <div style="padding: 10px 15px; border-bottom: 1px solid #f1f5f9; margin-bottom: 5px;">
+                    <p style="margin:0; font-size: 0.65rem; font-weight: 800; color: var(--muted); text-transform: uppercase;">Mi Cuenta</p>
+                </div>
+                <a href="{{ url_for('mi_cuenta') }}" class="dropdown-item">
+                    <i class="bi bi-person-circle"></i> Mi Perfil
+                </a>
+                <a href="#" class="dropdown-item">
+                    <i class="bi bi-gear-fill"></i> Ajustes
+                </a>
+                <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 8px 0;">
                 <a href="{{ url_for('logout') }}" class="dropdown-item danger">
                     <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
                 </a>
@@ -159,7 +196,8 @@
     </div>
 
     <script>
-        // Lógica para abrir/cerrar el menú del perfil
+        document.getElementById('year-automatico').innerText = new Date().getFullYear();
+
         const profileBtn = document.getElementById('profileBtn');
         const profileMenu = document.getElementById('profileMenu');
 
@@ -170,6 +208,10 @@
 
         document.addEventListener('click', () => {
             profileMenu.style.display = 'none';
+        });
+
+        profileMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
         });
     </script>
 </body>
