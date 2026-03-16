@@ -14,6 +14,7 @@ def home():
     return redirect(url_for('login'))
 
 # ---------------- LOGIN Y SEGURIDAD ----------------
+# ---------------- LOGIN Y SEGURIDAD ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -26,11 +27,40 @@ def login():
             session['rol'] = user.id_rol
             session['nombre'] = f"{user.nombre} {user.apellido}"
             
-            if user.id_rol == 1: return redirect(url_for('admin_dashboard'))
-            if user.id_rol == 2: return redirect(url_for('maestro_dashboard'))
-            return redirect(url_for('alumno_dashboard'))
+            # NUEVO: Generar iniciales (primera letra del nombre y apellido)
+            session['iniciales'] = f"{user.nombre[0]}{user.apellido[0]}".upper()
+            
+            # Asignar nombre del rol y redirigir
+            if user.id_rol == 1: 
+                session['rol_nombre'] = "Administrador"
+                return redirect(url_for('admin_dashboard'))
+            elif user.id_rol == 2: 
+                session['rol_nombre'] = "Maestro"
+                return redirect(url_for('maestro_dashboard'))
+            elif user.id_rol == 3:
+                session['rol_nombre'] = "Alumno"
+                return redirect(url_for('alumno_dashboard'))
+                
         flash("Credenciales incorrectas.")
     return render_template('login.html')
+
+
+@app.route('/mi-cuenta')
+def mi_cuenta():
+    if not session.get('user_id'):
+        return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    usuario = Usuarios.query.get(user_id)
+    
+    # Buscamos el perfil específico dependiendo del rol
+    perfil = None
+    if usuario.id_rol == 2: # Maestro
+        perfil = Maestros.query.filter_by(id_usuario=user_id).first()
+    elif usuario.id_rol == 3: # Alumno
+        perfil = Alumnos.query.filter_by(id_usuario=user_id).first()
+    
+    return render_template('mi_cuenta.html', usuario=usuario, perfil=perfil)
 
 # ---------------- DASHBOARDS Y ANUNCIOS ----------------
 from datetime import datetime # Asegúrate de importar esto al inicio
@@ -40,21 +70,38 @@ def admin_dashboard():
     if session.get('rol') != 1: 
         return redirect(url_for('login'))
     
-    # 1. Obtenemos los totales (asegúrate de importar los modelos Alumno y Maestro)
+    # 1. Totales
     total_alumnos = Alumnos.query.count()
     total_maestros = Maestros.query.count()
     
-    # 2. Obtenemos la fecha actual
+    # 2. Asistencia
+    total_asistencias = Asistencias.query.count()
+    porcentaje_asistencia = 0
+    if total_asistencias > 0:
+        presentes = Asistencias.query.filter_by(estado='Presente').count()
+        porcentaje_asistencia = round((presentes / total_asistencias) * 100)
+
+    # NUEVO: 3. Alertas de Notas (Contamos notas menores a 70 o la calificación de pase)
+    alertas_notas = Notas.query.filter(Notas.calificacion < 70).count()
+
+    # 4. MAPA DE GRADOS (Clave para la gráfica)
+    grados = Grados.query.all()
+    mapa_grados = {}
+    for g in grados:
+        conteo = Alumnos.query.join(Secciones).filter(Secciones.id_grado == g.id_grado).count()
+        mapa_grados[g.nombre_grado] = conteo
+
+    # 5. Actividad y Otros
+    ultimos_usuarios = Usuarios.query.order_by(Usuarios.fecha_registro.desc()).limit(5).all()
     fecha_actual = datetime.now().strftime("%d/%m/%Y")
     
-    # 3. Obtenemos los anuncios
-    anuncios = Anuncios.query.order_by(Anuncios.fecha_publicacion.desc()).all()
-    
-    # 4. PASAMOS TODO AL TEMPLATE
     return render_template('Admin_Panel/admin_dashboard.html', 
-                           anuncios=anuncios,
                            total_alumnos=total_alumnos,
                            total_maestros=total_maestros,
+                           porcentaje_asistencia=porcentaje_asistencia,
+                           alertas_notas=alertas_notas, # Pasamos las alertas a la vista
+                           mapa_grados=mapa_grados, 
+                           ultimos_usuarios=ultimos_usuarios,
                            fecha_actual=fecha_actual)
 
 # En app.py, busca esta función y actualízala así:
