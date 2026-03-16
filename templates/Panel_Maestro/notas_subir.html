@@ -15,132 +15,112 @@
     }
 
     body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
+    .viewport-container { padding: 30px 20px; max-width: 1100px; margin: 0 auto; }
 
-    .viewport-container { padding: 30px 20px; max-width: 1200px; margin: 0 auto; }
-
+    /* NAVEGACIÓN SUPERIOR */
     .top-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
-
     .btn-back-circle {
         width: 45px; height: 45px; background: white; border-radius: 12px;
         display: flex; align-items: center; justify-content: center;
         color: var(--dark-text); text-decoration: none; border: 1px solid #e2e8f0;
         transition: 0.3s;
     }
-    .btn-back-circle:hover { background: var(--dark-text); color: white; }
+    .btn-back-circle:hover { background: var(--dark-text); color: white; transform: translateX(-3px); }
 
-    .header-info h1 { font-weight: 800; font-size: 1.8rem; margin: 0; color: var(--dark-text); }
-
-    /* FILTROS Y BUSQUEDA */
+    /* TARJETA PRINCIPAL */
     .grading-card {
-        background: white; border-radius: 24px; padding: 25px;
+        background: white; border-radius: 24px; padding: 30px;
         box-shadow: var(--card-shadow); border: 1px solid #fff;
     }
 
-    .search-box {
-        position: relative; margin-bottom: 25px; max-width: 400px;
-    }
-    .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--muted-text); }
-    .search-box input {
-        width: 100%; padding: 12px 12px 12px 45px; border-radius: 12px;
-        border: 2px solid #f1f5f9; background: #f8fafc; font-weight: 600; outline: none; transition: 0.3s;
-    }
-    .search-box input:focus { border-color: var(--primary-blue); background: white; }
-
-    /* TABLA DE CALIFICACIÓN */
-    .grade-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+    /* ESTILOS DE TABLA */
+    .grade-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
     .grade-table th { 
-        padding: 12px 20px; color: var(--muted-text); font-size: 0.75rem; 
+        padding: 0 20px 10px; color: var(--muted-text); font-size: 0.75rem; 
         text-transform: uppercase; letter-spacing: 1px; font-weight: 800;
     }
-    .grade-table tr td { 
-        background: white; padding: 15px 20px; border: 1px solid #f1f5f9;
-        transition: 0.3s;
+    .grade-table td { 
+        background: #fff; padding: 18px 20px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
     }
-    .grade-table tr td:first-child { border-radius: 15px 0 0 15px; border-right: none; }
-    .grade-table tr td:last-child { border-radius: 0 15px 15px 0; border-left: none; }
-    
-    .grade-table tr:hover td { border-color: var(--primary-blue); background: #f0f7ff; }
+    .grade-table td:first-child { border-left: 1px solid #f1f5f9; border-radius: 16px 0 0 16px; }
+    .grade-table td:last-child { border-right: 1px solid #f1f5f9; border-radius: 0 16px 16px 0; }
 
-    .student-info { display: flex; align-items: center; gap: 12px; }
     .student-avatar {
-        width: 40px; height: 40px; background: #e0e7ff; color: #4338ca;
-        border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        font-weight: 800; font-size: 0.9rem;
+        width: 42px; height: 42px; background: var(--primary-blue); color: white;
+        border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        font-weight: 800;
     }
 
     .input-grade {
-        width: 80px; padding: 8px; border-radius: 10px; border: 2px solid #e2e8f0;
-        text-align: center; font-weight: 800; color: var(--primary-blue); outline: none;
+        width: 90px; padding: 10px; border-radius: 12px; border: 2px solid #f1f5f9;
+        text-align: center; font-weight: 800; color: var(--primary-blue); transition: 0.3s;
     }
-    .input-grade:focus { border-color: var(--success-main); }
+    .input-grade:focus { border-color: var(--success-main); outline: none; background: #f0fdf4; }
 
-    .btn-save-grades {
+    .btn-save {
         background: var(--success-main); color: white; border: none;
-        padding: 12px 25px; border-radius: 14px; font-weight: 700;
-        display: flex; align-items: center; gap: 10px; transition: 0.3s;
-        margin-top: 20px; width: fit-content;
+        padding: 14px 30px; border-radius: 16px; font-weight: 700;
+        display: flex; align-items: center; gap: 10px; transition: 0.3s; margin-top: 25px;
     }
-    .btn-save-grades:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2); }
+    .btn-save:hover { transform: translateY(-3px); box-shadow: 0 12px 20px rgba(16, 185, 129, 0.2); }
 
+    /* ESTADO VACÍO */
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--muted-text); }
 </style>
 
 <div class="viewport-container">
-    
     <div class="top-bar">
-        <a href="{{ url_for('maestro_dashboard') }}" class="btn-back-circle">
-            <i class="bi bi-arrow-left"></i>
+        <a href="{{ url_for('maestro_dashboard') }}" class="btn-back-circle" title="Volver al Dashboard">
+            <i class="bi bi-chevron-left"></i>
         </a>
-        <div class="header-info">
-            <h1>Revisión de <span class="text-primary">Asignaciones</span></h1>
-            <p class="text-muted m-0">Ingresa las calificaciones de tus alumnos</p>
+        <div>
+            <h1 class="fw-800 m-0" style="font-size: 1.8rem;">Revisión de <span class="text-success">Asignaciones</span></h1>
+            <p class="text-muted m-0 fw-500">Gestión de calificaciones por estudiante</p>
         </div>
     </div>
 
     <div class="grading-card">
-        <div class="search-box">
-            <i class="bi bi-search"></i>
-            <input type="text" placeholder="Buscar estudiante o tarea...">
-        </div>
-
-        <form action="#" method="POST">
+        {% if alumnos %}
+        <form action="{{ url_for('registrar_notas') }}" method="POST">
             <table class="grade-table">
                 <thead>
                     <tr>
-                        <th>Estudiante</th>
-                        <th>Tarea / Actividad</th>
-                        <th>Estado</th>
-                        <th class="text-center">Calificación / 100</th>
+                        <th>Información del Estudiante</th>
+                        <th class="text-center">Calificación (0-100)</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% for alumno in alumnos %}
                     <tr>
                         <td>
-                            <div class="student-info">
-                                <div class="student-avatar">JD</div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="student-avatar">{{ alumno.nombre[0] }}{{ alumno.apellido[0] }}</div>
                                 <div>
-                                    <span class="d-block fw-800">Juan Delgado</span>
-                                    <small class="text-muted">ID: 2024-001</small>
+                                    <span class="d-block fw-800 text-dark">{{ alumno.nombre }} {{ alumno.apellido }}</span>
+                                    <small class="text-muted">Estudiante Activo</small>
                                 </div>
                             </div>
                         </td>
-                        <td>
-                            <span class="fw-700">Ensayo de Historia</span>
-                            <small class="d-block text-muted">9no Grado - Sección A</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3">Entregado</span>
-                        </td>
                         <td class="text-center">
-                            <input type="number" class="input-grade" value="0" min="0" max="100">
+                            <input type="number" name="nota_{{ alumno.id_usuario }}" 
+                                   class="input-grade" placeholder="--" min="0" max="100">
                         </td>
                     </tr>
-                    </tbody>
+                    {% endfor %}
+                </tbody>
             </table>
 
-            <button type="submit" class="btn-save-grades">
-                <i class="bi bi-cloud-check-fill"></i> Guardar Calificaciones
+            <button type="submit" class="btn-save">
+                <i class="bi bi-check2-circle fs-5"></i> Guardar Calificaciones
             </button>
         </form>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-person-exclamation" style="font-size: 4.5rem; color: #e2e8f0; display: block; margin-bottom: 20px;"></i>
+            <h3 class="fw-800 text-dark">Sin alumnos registrados</h3>
+            <p class="fw-500 mx-auto" style="max-width: 400px;"> <center>No hemos encontrado alumnos inscritos en los grados o secciones que tienes asignados actualmente.</center></p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
