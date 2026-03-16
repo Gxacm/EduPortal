@@ -1,29 +1,147 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="viewport-wrapper">
-    <div class="container main-content-box">
-        <h1 class="main-title">Historial de Tareas</h1>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Título</th>
-                    <th>Descripción</th>
-                    <th>Fecha de Entrega</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Aquí se van a iterar las tareas desde Flask -->
-                {% for tarea in tareas %}
-                <tr>
-                    <td>{{ tarea.titulo }}</td>
-                    <td>{{ tarea.descripcion }}</td>
-                    <td>{{ tarea.fecha_entrega }}</td>
-                    <td>{{ tarea.estado }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --primary-blue: #3b82f6;
+        --success-main: #10b981;
+        --bg-soft: #f8fafc;
+        --dark-text: #1e293b;
+        --muted-text: #64748b;
+        --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .viewport-container { padding: 30px 20px; max-width: 1200px; margin: 0 auto; }
+
+    .top-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+
+    .btn-back-circle {
+        width: 45px; height: 45px; background: white; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--dark-text); text-decoration: none; border: 1px solid #e2e8f0;
+        transition: 0.3s;
+    }
+    .btn-back-circle:hover { background: var(--dark-text); color: white; }
+
+    .header-info h1 { font-weight: 800; font-size: 1.8rem; margin: 0; color: var(--dark-text); }
+
+    /* FILTROS Y BUSQUEDA */
+    .grading-card {
+        background: white; border-radius: 24px; padding: 25px;
+        box-shadow: var(--card-shadow); border: 1px solid #fff;
+    }
+
+    .search-box {
+        position: relative; margin-bottom: 25px; max-width: 400px;
+    }
+    .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--muted-text); }
+    .search-box input {
+        width: 100%; padding: 12px 12px 12px 45px; border-radius: 12px;
+        border: 2px solid #f1f5f9; background: #f8fafc; font-weight: 600; outline: none; transition: 0.3s;
+    }
+    .search-box input:focus { border-color: var(--primary-blue); background: white; }
+
+    /* TABLA DE CALIFICACIÓN */
+    .grade-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+    .grade-table th { 
+        padding: 12px 20px; color: var(--muted-text); font-size: 0.75rem; 
+        text-transform: uppercase; letter-spacing: 1px; font-weight: 800;
+    }
+    .grade-table tr td { 
+        background: white; padding: 15px 20px; border: 1px solid #f1f5f9;
+        transition: 0.3s;
+    }
+    .grade-table tr td:first-child { border-radius: 15px 0 0 15px; border-right: none; }
+    .grade-table tr td:last-child { border-radius: 0 15px 15px 0; border-left: none; }
+    
+    .grade-table tr:hover td { border-color: var(--primary-blue); background: #f0f7ff; }
+
+    .student-info { display: flex; align-items: center; gap: 12px; }
+    .student-avatar {
+        width: 40px; height: 40px; background: #e0e7ff; color: #4338ca;
+        border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.9rem;
+    }
+
+    .input-grade {
+        width: 80px; padding: 8px; border-radius: 10px; border: 2px solid #e2e8f0;
+        text-align: center; font-weight: 800; color: var(--primary-blue); outline: none;
+    }
+    .input-grade:focus { border-color: var(--success-main); }
+
+    .btn-save-grades {
+        background: var(--success-main); color: white; border: none;
+        padding: 12px 25px; border-radius: 14px; font-weight: 700;
+        display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        margin-top: 20px; width: fit-content;
+    }
+    .btn-save-grades:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2); }
+
+</style>
+
+<div class="viewport-container">
+    
+    <div class="top-bar">
+        <a href="{{ url_for('maestro_dashboard') }}" class="btn-back-circle">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="header-info">
+            <h1>Revisión de <span class="text-primary">Asignaciones</span></h1>
+            <p class="text-muted m-0">Ingresa las calificaciones de tus alumnos</p>
+        </div>
+    </div>
+
+    <div class="grading-card">
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Buscar estudiante o tarea...">
+        </div>
+
+        <form action="#" method="POST">
+            <table class="grade-table">
+                <thead>
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Tarea / Actividad</th>
+                        <th>Estado</th>
+                        <th class="text-center">Calificación / 100</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="student-info">
+                                <div class="student-avatar">JD</div>
+                                <div>
+                                    <span class="d-block fw-800">Juan Delgado</span>
+                                    <small class="text-muted">ID: 2024-001</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="fw-700">Ensayo de Historia</span>
+                            <small class="d-block text-muted">9no Grado - Sección A</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3">Entregado</span>
+                        </td>
+                        <td class="text-center">
+                            <input type="number" class="input-grade" value="0" min="0" max="100">
+                        </td>
+                    </tr>
+                    </tbody>
+            </table>
+
+            <button type="submit" class="btn-save-grades">
+                <i class="bi bi-cloud-check-fill"></i> Guardar Calificaciones
+            </button>
+        </form>
     </div>
 </div>
+
 {% endblock %}

@@ -201,8 +201,7 @@
                     </div>
                 </div>
             </div>
-            
-            </nav>
+        </nav>
 
         <section class="welcome-card-glass">
             <div>
@@ -210,6 +209,7 @@
                     <i class="bi bi-check-circle-fill me-1"></i> Sistema en Línea
                 </span>
                 <h2 class="main-title" id="saludo-maestro">¡Bienvenido!</h2>
+                <p class="text-muted fw-500 mt-2">Gestiona tus clases y alumnos del Ciclo Lectivo</p>
             </div>
             <div class="stat-circle">
                 <span class="fw-800 fs-3 text-success" style="line-height: 1;">{{ total_clases }}</span>
@@ -229,9 +229,9 @@
 
             <a href="{{ url_for('registrar_notas') }}" class="tool-card">
                 <div class="tool-icon" style="background: var(--success-soft); color: var(--success-main);">
-                    <i class="bi bi-award"></i>
+                    <i class="bi bi-clipboard-check"></i>
                 </div>
-                <span class="tool-text">Registrar Notas</span>
+                <span class="tool-text">Revisión de Asignaciones</span>
             </a>
 
             <a href="{{ url_for('ver_grados') }}" class="tool-card">
