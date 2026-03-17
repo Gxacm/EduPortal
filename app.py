@@ -229,7 +229,6 @@ def crear_usuario_logica():
     flash("Usuario registrado correctamente")
     return redirect(url_for('admin_dashboard'))
 
-<<<<<<< HEAD
 # ---------------- GESTIÓN CENTRALIZADA DE USUARIOS (LEER Y ELIMINAR) ----------------
 
 @app.route('/admin/gestion_usuarios')
@@ -278,30 +277,6 @@ def eliminar_usuario(id_usuario):
         flash('Error al eliminar el registro', 'error')
         
     return redirect(url_for('gestion_usuarios', vista=rol_vista))
-=======
-@app.route('/admin/usuarios/<vista>')
-def gestion_usuarios(vista):
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    return render_template('Admin_Panel/gestion_usuarios.html', alumnos=Alumnos.query.all(), maestros=Maestros.query.all(), vista_activa=vista)
-
-@app.route('/eliminar_usuario/<int:id_usuario>', methods=['POST'])
-def eliminar_usuario(id_usuario):
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    usuario = Usuarios.query.get_or_404(id_usuario)
-    rol_antes_de_borrar = usuario.id_rol 
-    try:
-        if rol_antes_de_borrar == 2 and usuario.maestro_perfil: db.session.delete(usuario.maestro_perfil)
-        elif rol_antes_de_borrar == 3 and usuario.alumno_perfil: db.session.delete(usuario.alumno_perfil)
-        proxima_vista = 'maestros' if rol_antes_de_borrar == 2 else 'alumnos'
-        db.session.delete(usuario)
-        db.session.commit()
-        flash("Usuario eliminado", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash("Error al eliminar", "error")
-        proxima_vista = 'alumnos' if rol_antes_de_borrar == 3 else 'maestros'
-    return redirect(url_for('gestion_usuarios', vista=proxima_vista))
->>>>>>> 1e059f83107931aa3909ba5f945e5609134e46e5
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
 def configuracion_academica():
