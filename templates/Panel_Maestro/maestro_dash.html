@@ -10,6 +10,12 @@
         --success-soft: #ecfdf5;
         --danger-main: #ef4444;
         --danger-soft: #fef2f2;
+        --primary-main: #3b82f6;
+        --primary-soft: #eff6ff;
+        --warning-main: #f59e0b;
+        --warning-soft: #fffbeb;
+        --info-main: #0ea5e9;
+        --info-soft: #f0f9ff;
         --dark-text: #1e293b;
         --muted-text: #64748b;
         --bg-soft: #f8fafc;
@@ -49,26 +55,21 @@
         margin-right: 12px;
     }
 
-    .logout-btn-custom {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--danger-soft);
-        color: var(--danger-main);
-        padding: 10px 20px;
-        border-radius: 14px;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 0.85rem;
-        transition: 0.3s;
-        border: 1px solid transparent;
+    /* ANIMACIÓN DEL PUNTO "EN LÍNEA" */
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--success-main);
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-green 2s infinite;
     }
 
-    .logout-btn-custom:hover {
-        background: var(--danger-main);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 15px rgba(239, 68, 68, 0.2);
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
     /* CONTENEDORES EXISTENTES OPTIMIZADOS */
@@ -84,15 +85,74 @@
         justify-content: space-between;
         box-shadow: 0 20px 40px rgba(0,0,0,0.02);
         border: 1px solid rgba(255,255,255,0.8);
+        margin-bottom: 40px;
     }
 
     .main-title { font-weight: 800; font-size: 2.4rem; color: var(--dark-text); margin: 0; }
     
+    .stat-circle {
+        width: 80px; height: 80px;
+        border: 4px solid var(--success-soft);
+        border-radius: 50%;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+    }
+
+    /* SECCIÓN: HERRAMIENTAS RÁPIDAS */
+    .section-title {
+        font-weight: 800;
+        color: var(--dark-text);
+        font-size: 1.25rem;
+        margin-bottom: 20px;
+    }
+
+    .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 15px;
+        margin-bottom: 40px;
+    }
+
+    .tool-card {
+        background: white;
+        padding: 20px 15px;
+        border-radius: 20px;
+        text-align: center;
+        text-decoration: none;
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .tool-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1);
+    }
+
+    .tool-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .tool-text {
+        font-weight: 700;
+        color: var(--dark-text);
+        font-size: 0.85rem;
+    }
+
+    /* SECCIÓN MIS CLASES */
     .cards-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         gap: 25px;
-        margin-top: 40px;
     }
 
     .m-card {
@@ -122,13 +182,7 @@
         transition: 0.3s;
     }
 
-    .stat-circle {
-        width: 80px; height: 80px;
-        border: 4px solid var(--success-soft);
-        border-radius: 50%;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-    }
+    .m-btn-success:hover { background: #0e9f6e; color: white; }
 </style>
 
 <div class="viewport-wrapper">
@@ -141,13 +195,12 @@
                 </div>
                 <div>
                     <span class="d-block fw-800 text-dark small" style="line-height: 1;">Prof. {{ maestro.nombre }}</span>
-                    <span class="text-muted" style="font-size: 0.7rem;">Profesor Activo</span>
+                    <div class="d-flex align-items-center mt-1" style="gap: 6px;">
+                        <span class="status-dot"></span>
+                        <span class="text-success fw-bold" style="font-size: 0.7rem; letter-spacing: 0.3px;">En línea</span>
+                    </div>
                 </div>
             </div>
-
-            <a href="{{ url_for('logout') }}" class="logout-btn-custom">
-                <i class="bi bi-power"></i> Cerrar Sesion
-            </a>
         </nav>
 
         <section class="welcome-card-glass">
@@ -156,7 +209,7 @@
                     <i class="bi bi-check-circle-fill me-1"></i> Sistema en Línea
                 </span>
                 <h2 class="main-title" id="saludo-maestro">¡Bienvenido!</h2>
-                <p class="text-muted fw-500 mt-2">Gestiona tus clases y alumnos del Ciclo Lectivo 2026</p>
+                <p class="text-muted fw-500 mt-2">Gestiona tus clases y alumnos del Ciclo Lectivo</p>
             </div>
             <div class="stat-circle">
                 <span class="fw-800 fs-3 text-success" style="line-height: 1;">{{ total_clases }}</span>
@@ -164,6 +217,54 @@
             </div>
         </section>
 
+        <h3 class="section-title">Panel de Herramientas</h3>
+        <div class="tools-grid">
+            
+            <a href="{{ url_for('vista_nueva_tarea') }}" class="tool-card">
+                <div class="tool-icon" style="background: var(--primary-soft); color: var(--primary-main);">
+                    <i class="bi bi-journal-text"></i>
+                </div>
+                <span class="tool-text">Asignar Tareas</span>
+            </a>
+
+            <a href="{{ url_for('registrar_notas') }}" class="tool-card">
+                <div class="tool-icon" style="background: var(--success-soft); color: var(--success-main);">
+                    <i class="bi bi-clipboard-check"></i>
+                </div>
+                <span class="tool-text">Revisión de Asignaciones</span>
+            </a>
+
+            <a href="{{ url_for('ver_grados') }}" class="tool-card">
+                <div class="tool-icon" style="background: var(--warning-soft); color: var(--warning-main);">
+                    <i class="bi bi-people"></i>
+                </div>
+                <span class="tool-text">Estudiantes</span>
+            </a>
+
+            <a href="{{ url_for('control_asistencia') }}" class="tool-card">
+                <div class="tool-icon" style="background: var(--info-soft); color: var(--info-main);">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <span class="tool-text">Asistencia</span>
+            </a>
+
+            <a href="{{ url_for('enviar_reportes') }}" class="tool-card">
+                <div class="tool-icon" style="background: var(--danger-soft); color: var(--danger-main);">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                </div>
+                <span class="tool-text">Enviar Reportes</span>
+            </a>
+
+            <a href="{{ url_for('exportar_datos') }}" class="tool-card">
+                <div class="tool-icon" style="background: #f3f4f6; color: #4b5563;">
+                    <i class="bi bi-cloud-download"></i>
+                </div>
+                <span class="tool-text">Exportar Datos</span>
+            </a>
+
+        </div>
+
+        <h3 class="section-title">Mis Clases Asignadas</h3>
         <div class="cards-grid">
             {% for item in grados_data %}
             <div class="m-card">
@@ -186,11 +287,19 @@
                     {% endfor %}
                 </ul>
 
-                <a href="{{ url_for('gestionar_grado', id_grado=item.grado.IdGrado) }}" class="m-btn-success">
+                <a href="{{ url_for('gestionar_grado', id_grado=item.grado.id_grado) }}" class="m-btn-success">
                     <i class="bi bi-arrow-right-circle me-2"></i> Abrir Gestión
                 </a>
             </div>
             {% endfor %}
+            
+            {% if not grados_data %}
+            <div class="col-12">
+                <div class="alert alert-light border text-center p-4 rounded-4 text-muted fw-bold">
+                    Aún no tienes clases ni grados asignados.
+                </div>
+            </div>
+            {% endif %}
         </div>
 
     </div>
