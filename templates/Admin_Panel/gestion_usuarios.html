@@ -8,287 +8,254 @@
     <div class="container main-content-box">
         
         <div class="top-action-bar">
-            <a href="{{ url_for('admin_dashboard') }}" class="chip-logout">
+            <a href="{{ url_for('admin_dashboard') }}" class="chip-back">
                 <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Volver al Panel
             </a>
         </div>
 
         <header class="header-minimal">
             <div class="logo-container">
-                {% if vista_activa == 'alumnos' %}
-                    <i class="bi bi-people-fill" style="font-size: 2rem; color: var(--primary);"></i>
-                {% else %}
-                    <i class="bi bi-person-vcard-fill" style="font-size: 2rem; color: #ffb800;"></i>
-                {% endif %}
+                <i class="bi bi-people-fill" style="font-size: 2.2rem; color: var(--primary);"></i>
             </div>
-            <h1 class="main-title">Listado de {% if vista_activa == 'alumnos' %}Alumnos{% else %}Maestros{% endif %}</h1>
+            <h1 class="main-title">Gestión de Usuarios</h1>
             <div class="badge-group">
                 <span class="chip-glass">
-                    <i class="bi bi-search" style="margin-right: 5px;"></i>Directorio Institucional
+                    <i class="bi bi-person-badge" style="margin-right: 5px;"></i>Directorio de Personal y Alumnado
                 </span>
             </div>
         </header>
 
-        <div style="display: flex; gap: 1rem; max-width: 850px; margin: 0 auto 1.5rem auto; justify-content: space-between; align-items: center;">
-            <input type="text" id="buscadorUniversal" 
-                   onkeyup="filtrarTabla()" 
-                   class="m-input" 
-                   style="max-width: 400px; background-color: white; border: 1px solid #e2e8f0;" 
-                   placeholder="Buscar por nombre, correo o identificador...">
-            
-            {% if vista_activa == 'alumnos' %}
-                <a href="{{ url_for('vista_nuevo_alumno') }}" class="m-btn m-btn-primary" style="max-width: 200px;">
-                    <i class="bi bi-plus-lg me-1"></i> Nuevo Alumno
-                </a>
-            {% else %}
-                <a href="{{ url_for('vista_nuevo_maestro') }}" class="m-btn m-btn-primary" style="max-width: 200px; background-color: #f59e0b;">
-                    <i class="bi bi-plus-lg me-1"></i> Nuevo Maestro
-                </a>
-            {% endif %}
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="openTab(event, 'tab-alumnos')">
+                <i class="bi bi-mortarboard-fill"></i> Alumnos
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-maestros')">
+                <i class="bi bi-person-vcard-fill"></i> Maestros
+            </button>
         </div>
 
-        <div class="m-card" style="max-width: 850px; margin: 0 auto; padding: 1.5rem;">
-            <div class="m-card-body">
-                <table id="tablaPrincipal" style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--bg);">
-                            <th class="m-label" style="padding: 12px;">ID / Especialidad</th>
-                            <th class="m-label" style="padding: 12px;">Nombre Completo</th>
-                            <th class="m-label" style="padding: 12px;">Correo</th>
-                            <th class="m-label" style="padding: 12px; text-align: center;">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if vista_activa == 'alumnos' %}
-                            {% for a in alumnos %}
-                           <tr class="fila-dato" style="border-bottom: 1px solid var(--bg); transition: 0.3s;">
-                                <td style="padding: 15px;">
-                                    <div style="font-weight: 800; color: var(--primary); line-height: 1.2;">{{ a.carnet }}</div>
-                                <div style="font-size: 0.75rem; color: var(--muted); font-weight: 700; text-transform: uppercase; margin-top: 2px;">
-                                    {% if a.seccion %}
-                                        <i class="bi bi-mortarboard-fill" style="font-size: 0.7rem;"></i> 
-                                        {{ a.seccion.grado.nombre }} - {{ a.seccion.nombre }}
-                                    {% else %}
-                                        <span style="color: #f59e0b;">Sin Grado Asignado</span>
-                                    {% endif %}
-                                </div>
-                                </td>
-
-                                <td style="padding: 15px; font-weight: 600; color: var(--dark);">
-                                    {{ a.usuario.nombre }} {{ a.usuario.apellido }}
-                                </td>
-
-                                <td style="padding: 15px; color: var(--muted); font-size: 0.9rem;">
-                                    {{ a.usuario.correo }}
-                                </td>
-
-                                <td style="padding: 15px; text-align: center;">
-                                    <form action="{{ url_for('eliminar_usuario', id_usuario=a.id_usuario) }}" method="POST" id="form-delete-{{ a.id_usuario }}">
-                                        <button type="button" class="btn-eliminar-icon" 
-                                                onclick="abrirModalConfirmacion('{{ a.id_usuario }}', '{{ a.usuario.nombre }} {{ a.usuario.apellido }}')">
-                                            <i class="bi bi-trash3-fill"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            {% for m in maestros %}
-                            <tr class="fila-dato" style="border-bottom: 1px solid var(--bg); transition: 0.3s;">
-                                <td style="padding: 15px; font-weight: 800; color: #f59e0b;">{{ m.especialidad }}</td>
-                                <td style="padding: 15px; font-weight: 600; color: var(--dark);">{{ m.usuario.nombre }} {{ m.usuario.apellido }}</td>
-                                <td style="padding: 15px; color: var(--muted); font-size: 0.9rem;">{{ m.usuario.correo }}</td>
-                                <td style="padding: 15px; text-align: center;">
-                                    <form action="{{ url_for('eliminar_usuario', id_usuario=m.id_usuario) }}" method="POST" id="form-delete-{{ m.id_usuario }}">
-                                        <button type="button" class="btn-eliminar-icon" 
-                                                onclick="abrirModalConfirmacion('{{ m.id_usuario }}', '{{ m.usuario.nombre }} {{ m.usuario.apellido }}')">
-                                            <i class="bi bi-trash3-fill"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        {% endif %}
-                    </tbody>
-                </table>
+        <div class="search-section">
+            <div class="search-box">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="buscadorUniversal" onkeyup="filtrarTablas()" class="m-input search-input" 
+                       placeholder="Buscar por nombre, correo, carnet o especialidad...">
             </div>
         </div>
 
-        <footer class="footer-simple">
-            <p>© 2026 Edu-Portal • Listado de Control Maestro</p>
-        </footer>
+        <div id="tab-alumnos" class="tab-content active">
+            <div class="m-card">
+                <div class="card-header-flex">
+                    <h3 class="m-section-title">Listado de Estudiantes</h3>
+                    <a href="{{ url_for('vista_nuevo_alumno') }}" class="m-btn-add student-color">
+                        <i class="bi bi-plus-lg"></i> Nuevo Alumno
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="m-table" id="tablaAlumnos">
+                        <thead>
+                            <tr>
+                                <th>Carnet</th>
+                                <th>Nombre Completo</th>
+                                <th>Correo Institucional</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in alumnos %}
+                            <tr class="row-hover">
+                                <td class="id-text">{{ a.carnet }}</td>
+                                <td class="name-text">{{ a.usuario.nombre }} {{ a.usuario.apellido }}</td>
+                                <td class="email-text">{{ a.usuario.correo }}</td>
+                                <td style="text-align: right;">
+                                    <div class="action-btns">
+                                        <a href="{{ url_for('editar_usuario', id_usuario=a.id_usuario) }}" class="btn-icon edit"><i class="bi bi-pencil-fill"></i></a>
+                                        <button class="btn-icon delete" onclick="abrirModal('{{ a.id_usuario }}', '{{ a.usuario.nombre }} {{ a.usuario.apellido }}')"><i class="bi bi-trash3-fill"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="empty-state">No hay alumnos registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-maestros" class="tab-content">
+            <div class="m-card">
+                <div class="card-header-flex">
+                    <h3 class="m-section-title">Cuerpo Docente</h3>
+                    <a href="{{ url_for('vista_nuevo_maestro') }}" class="m-btn-add teacher-color">
+                        <i class="bi bi-plus-lg"></i> Nuevo Maestro
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="m-table" id="tablaMaestros">
+                        <thead>
+                            <tr>
+                                <th>Especialidad</th>
+                                <th>Nombre Completo</th>
+                                <th>Correo Institucional</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in maestros %}
+                            <tr class="row-hover">
+                                <td class="id-text special">{{ m.especialidad }}</td>
+                                <td class="name-text">{{ m.usuario.nombre }} {{ m.usuario.apellido }}</td>
+                                <td class="email-text">{{ m.usuario.correo }}</td>
+                                <td style="text-align: right;">
+                                    <div class="action-btns">
+                                        <a href="{{ url_for('editar_usuario', id_usuario=m.id_usuario) }}" class="btn-icon edit"><i class="bi bi-pencil-fill"></i></a>
+                                        <button class="btn-icon delete" onclick="abrirModal('{{ m.id_usuario }}', '{{ m.usuario.nombre }} {{ m.usuario.apellido }}')"><i class="bi bi-trash3-fill"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="empty-state">No hay maestros registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<div id="modalConfirmacion" class="modal-overlay">
+<div id="modalDelete" class="modal-overlay">
     <div class="modal-card">
-        <div class="modal-icon">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-        </div>
-        <h3 class="modal-title">¿Estás seguro?</h3>
-        <p class="modal-text">Estás a punto de eliminar permanentemente a: <br><strong id="nombreUsuarioModal"></strong></p>
-        <div class="modal-actions">
-            <button type="button" onclick="cerrarModal()" class="m-btn btn-cancelar">Cancelar</button>
-            <button type="button" id="btnConfirmarSubmit" class="m-btn btn-confirmar">Eliminar Ahora</button>
-        </div>
+        <div class="modal-alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <h3 class="m-section-title">¿Eliminar registro?</h3>
+        <p class="modal-desc">Estás a punto de borrar permanentemente a:<br><strong id="delNombre"></strong></p>
+        <form id="formDelete" method="POST" class="modal-form">
+            <button type="button" onclick="cerrarModal()" class="btn-cancel">Cancelar</button>
+            <button type="submit" class="btn-confirm-delete">Eliminar Usuario</button>
+        </form>
     </div>
 </div>
 
 <style>
-    /* VARIABLES Y ESTILOS EXISTENTES */
     :root {
         --primary: #4318ff;
         --dark: #2b3674;
         --muted: #a3aed0;
         --bg: #f4f7fe;
         --danger: #ef4444;
+        --warning: #f59e0b;
     }
 
-    body, html { height: 100%; margin: 0; }
-
-    .viewport-wrapper {
-    min-height: 100vh; 
-    background-color: var(--bg); 
-    display: flex !important; 
-    align-items: flex-start !important; /* Esto lo empuja al tope superior */
-    justify-content: center; 
-    font-family: 'Plus Jakarta Sans', sans-serif; 
-    padding-top: 50px !important; /* Ajusta este número para subir o bajar todo el bloque */
-    padding-bottom: 50px;
-}
-
-    .main-content-box { max-width: 950px; width: 100%; text-align: center; position: relative; }
+    body { background-color: var(--bg); margin: 0; }
+    .viewport-wrapper { min-height: 100vh; padding: 40px 20px; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; }
+    .main-content-box { max-width: 1100px; width: 100%; margin: 0 auto; }
     
-    .top-action-bar { 
-        display: flex; 
-        justify-content: flex-end; 
-        margin-bottom: 30px; /* Espacio entre el botón y el título */
-        width: 100%; 
-    }    
-    .chip-logout {
-        background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem;
-        font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s;
-        display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-    }
-    .chip-logout:hover { background: #fee2e2; color: #ef4444; transform: translateY(-2px); }
+    /* Pestañas (Logica de ocultamiento) */
+    .tab-content { display: none !important; }
+    .tab-content.active { display: block !important; animation: fadeIn 0.4s ease; }
 
-    .header-minimal { margin-bottom: 2rem; }
-    .logo-container {
-        width: 70px; height: 70px; background: white; border-radius: 20px;
-        margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    }
-    .main-title { font-weight: 800; font-size: 2.2rem; color: var(--dark); letter-spacing: -1px; }
-    .badge-group { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
-    .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .tabs-container { display: flex; gap: 10px; margin-bottom: 2rem; background: #eef2f8; padding: 8px; border-radius: 20px; }
+    .tab-btn { flex: 1; padding: 14px; border: none; background: transparent; font-family: inherit; font-size: 1rem; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 15px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
 
-    .m-card {
-        background: white; border-radius: 24px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid transparent;
-        text-align: left;
-    }
+    /* Header */
+    .header-minimal { text-align: center; margin-bottom: 2.5rem; }
+    .logo-container { width: 75px; height: 75px; background: white; border-radius: 22px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(0,0,0,0.04); }
+    .main-title { font-weight: 800; font-size: 2.3rem; color: var(--dark); letter-spacing: -1px; }
 
-    .m-btn { border: none; cursor: pointer; padding: 12px; border-radius: 12px; font-weight: 700; text-decoration: none; text-align: center; transition: 0.2s; display: inline-block; width: 100%; font-family: 'Plus Jakarta Sans'; }
-    .m-btn-primary { background: var(--dark); color: white; font-size: 0.85rem; }
-    .m-btn-primary:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    /* Buscador */
+    .search-section { margin-bottom: 1.5rem; }
+    .search-box { position: relative; width: 100%; }
+    .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .search-input { width: 100%; padding: 16px 16px 16px 50px; background: white; border: 1px solid #e2e8f0; border-radius: 18px; font-size: 0.95rem; box-sizing: border-box; transition: 0.3s; }
+    .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(67, 24, 255, 0.1); }
 
-    .m-label { font-weight: 800; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+    /* Cards y Tablas */
+    .m-card { background: white; padding: 2.5rem; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.02); margin-bottom: 20px; }
+    .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .m-section-title { font-weight: 800; color: var(--dark); font-size: 1.3rem; margin: 0; }
     
-    .m-input {
-        width: 100%; padding: 12px 18px; border-radius: 14px; background-color: var(--bg);
-        border: 2px solid transparent; color: var(--dark); font-family: inherit; font-weight: 600;
-        transition: all 0.3s ease; box-sizing: border-box;
-    }
-    .m-input:focus { outline: none; border-color: var(--primary); background-color: white; }
+    .m-btn-add { padding: 12px 20px; border-radius: 14px; text-decoration: none; color: white; font-weight: 700; font-size: 0.85rem; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+    .student-color { background: var(--primary); box-shadow: 0 6px 15px rgba(67, 24, 255, 0.2); }
+    .teacher-color { background: var(--warning); box-shadow: 0 6px 15px rgba(245, 158, 11, 0.2); }
+    .m-btn-add:hover { transform: translateY(-2px); opacity: 0.9; }
 
-    .btn-eliminar-icon {
-        background: #fee2e2; color: #ef4444; border: none; padding: 10px; border-radius: 10px;
-        cursor: pointer; transition: 0.3s;
-    }
-    .btn-eliminar-icon:hover { background: #ef4444; color: white; transform: scale(1.1); }
+    .m-table { width: 100%; border-collapse: collapse; }
+    .m-table th { text-align: left; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; padding: 15px; border-bottom: 2px solid var(--bg); }
+    .m-table td { padding: 18px 15px; border-bottom: 1px solid #f8fafc; color: var(--dark); font-weight: 600; }
+    
+    .id-text { color: var(--primary); font-weight: 800; }
+    .id-text.special { color: var(--warning); }
+    .email-text { color: var(--muted); font-size: 0.9rem; font-weight: 500; }
 
-    .fila-dato:hover { background-color: #f8fafc; }
-    .footer-simple { margin-top: 3rem; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+    /* Acciones */
+    .action-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-icon { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: none; cursor: pointer; transition: 0.2s; text-decoration: none; }
+    .btn-icon.edit { background: #e0e7ff; color: var(--primary); }
+    .btn-icon.edit:hover { background: var(--primary); color: white; }
+    .btn-icon.delete { background: #fee2e2; color: var(--danger); }
+    .btn-icon.delete:hover { background: var(--danger); color: white; }
 
-    /* ESTILOS DEL MODAL */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(43, 54, 116, 0.4); backdrop-filter: blur(8px);
-        display: none; align-items: center; justify-content: center; z-index: 9999;
-    }
+    /* Botón Volver */
+    .top-action-bar { display: flex; justify-content: flex-end; margin-bottom: 15px; }
+    .chip-back { background: white; padding: 8px 16px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: var(--dark); text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+    .chip-back:hover { background: #fee2e2; color: var(--danger); }
 
-    .modal-card {
-        background: white; padding: 2.5rem; border-radius: 30px;
-        width: 90%; max-width: 400px; text-align: center;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-        animation: modalFadeUp 0.3s ease-out;
-    }
+    /* Modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 54, 116, 0.2); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-card { background: white; padding: 2.5rem; border-radius: 30px; width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+    .modal-alert-icon { font-size: 3rem; color: var(--danger); margin-bottom: 1rem; }
+    .modal-form { margin-top: 2rem; display: flex; gap: 12px; }
+    .btn-cancel { flex: 1; padding: 14px; border-radius: 12px; border: none; background: var(--bg); font-weight: 700; cursor: pointer; }
+    .btn-confirm-delete { flex: 1; padding: 14px; border-radius: 12px; border: none; background: var(--danger); color: white; font-weight: 700; cursor: pointer; }
 
-    @keyframes modalFadeUp {
-        from { transform: translateY(30px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-
-    .modal-icon {
-        width: 65px; height: 65px; background: #fee2e2; color: var(--danger);
-        border-radius: 20px; display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 1.5rem; font-size: 1.8rem;
-    }
-
-    .modal-title { color: var(--dark); font-weight: 800; font-size: 1.4rem; margin-bottom: 0.5rem; }
-    .modal-text { color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5; }
-
-    .modal-actions { display: flex; gap: 12px; }
-    .btn-cancelar { background: var(--bg); color: var(--dark); }
-    .btn-confirmar { background: var(--danger); color: white; }
-    .btn-confirmar:hover { background: #dc2626; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
 <script>
-    // VARIABLE GLOBAL PARA EL FORMULARIO
-    let idFormularioActivo = null;
-
-    function abrirModalConfirmacion(id, nombre) {
-        idFormularioActivo = 'form-delete-' + id;
-        document.getElementById('nombreUsuarioModal').innerText = nombre;
-        document.getElementById('modalConfirmacion').style.display = 'flex';
-    }
-
-    function cerrarModal() {
-        document.getElementById('modalConfirmacion').style.display = 'none';
-    }
-
-    // LISTENER PARA EL BOTÓN DE ELIMINAR DEL MODAL
-    document.getElementById('btnConfirmarSubmit').addEventListener('click', function() {
-        if (idFormularioActivo) {
-            document.getElementById(idFormularioActivo).submit();
+    function openTab(evt, tabName) {
+        // 1. Ocultar todos los contenidos
+        const contents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < contents.length; i++) {
+            contents[i].classList.remove("active");
         }
-    });
 
-    // CERRAR SI HACEN CLICK FUERA DEL MODAL
-    window.onclick = function(event) {
-        let modal = document.getElementById('modalConfirmacion');
-        if (event.target == modal) { cerrarModal(); }
+        // 2. Desactivar todos los botones
+        const buttons = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < buttons.length; i++) {
+            buttons[i].classList.remove("active");
+        }
+
+        // 3. Mostrar el seleccionado y activar su botón
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+        
+        // Limpiar buscador al cambiar
+        document.getElementById("buscadorUniversal").value = "";
+        filtrarTablas();
     }
 
-    // FUNCIÓN DE BÚSQUEDA EXISTENTE
-    function filtrarTabla() {
-        let input = document.getElementById("buscadorUniversal");
-        let filter = input.value.toUpperCase();
-        let table = document.getElementById("tablaPrincipal");
-        let tr = table.getElementsByTagName("tr");
+    function filtrarTablas() {
+        const input = document.getElementById("buscadorUniversal").value.toUpperCase();
+        const activeTab = document.querySelector(".tab-content.active");
+        const table = activeTab.querySelector(".m-table");
+        const tr = table.getElementsByTagName("tr");
 
         for (let i = 1; i < tr.length; i++) {
-            let mostrar = false;
-            let tds = tr[i].getElementsByTagName("td");
-            for (let j = 0; j < tds.length - 1; j++) {
-                if (tds[j] && tds[j].innerText.toUpperCase().indexOf(filter) > -1) {
-                    mostrar = true;
-                    break;
-                }
-            }
-            tr[i].style.display = mostrar ? "" : "none";
+            const text = tr[i].innerText.toUpperCase();
+            tr[i].style.display = text.includes(input) ? "" : "none";
         }
+    }
+
+    function abrirModal(id, nombre) {
+        document.getElementById('delNombre').innerText = nombre;
+        document.getElementById('formDelete').action = "/admin/eliminar_usuario/" + id;
+        document.getElementById('modalDelete').style.display = 'flex';
+    }
+    
+    function cerrarModal() {
+        document.getElementById('modalDelete').style.display = 'none';
     }
 </script>
 

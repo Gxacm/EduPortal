@@ -240,49 +240,52 @@ def crear_usuario_logica():
 
 # ---------------- GESTIÓN CENTRALIZADA DE USUARIOS (LEER Y ELIMINAR) ----------------
 
-@app.route('/admin/usuarios/<vista>')
-def gestion_usuarios(vista):
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    
-    # .all() traerá los objetos con sus relaciones si están configuradas en models.py
-    todos_alumnos = Alumnos.query.all() 
-    todos_maestros = Maestros.query.all()
+@app.route('/admin/gestion_usuarios')
+def gestion_usuarios():
+    # Obtenemos ambos listados para que las pestañas funcionen sin recargar
+    alumnos = Alumnos.query.join(Usuarios).all()
+    maestros = Maestros.query.join(Usuarios).all()
     
     return render_template('Admin_Panel/gestion_usuarios.html', 
-                           alumnos=todos_alumnos, 
-                           maestros=todos_maestros,
-                           vista_activa=vista)
+                           alumnos=alumnos, 
+                           maestros=maestros)
 
-@app.route('/eliminar_usuario/<int:id_usuario>', methods=['POST'])
-def eliminar_usuario(id_usuario):
-    if session.get('rol') != 1: 
-        return redirect(url_for('login'))
-    
+@app.route('/admin/editar_usuario/<int:id_usuario>', methods=['GET', 'POST'])
+def editar_usuario(id_usuario):
     usuario = Usuarios.query.get_or_404(id_usuario)
-    # Guardamos el rol antes de borrarlo para saber a qué vista regresar
-    rol_antes_de_borrar = usuario.id_rol 
+    
+    if request.method == 'POST':
+        usuario.nombre = request.form.get('nombre')
+        usuario.apellido = request.form.get('apellido')
+        usuario.correo = request.form.get('correo')
+        
+        if usuario.id_rol == 2 and usuario.maestro_perfil:
+            usuario.maestro_perfil.especialidad = request.form.get('especialidad')
+        elif usuario.id_rol == 3 and usuario.alumno_perfil:
+            usuario.alumno_perfil.carnet = request.form.get('carnet')
+            
+        db.session.commit()
+        flash('Usuario actualizado', 'success')
+        return redirect(url_for('gestion_usuarios'))
+
+    return render_template('Admin_Panel/editar_usuario.html', usuario=usuario)
+
+@app.route('/admin/eliminar_usuario/<int:id_usuario>', methods=['POST'])
+def eliminar_usuario(id_usuario):
+    usuario = Usuarios.query.get_or_404(id_usuario)
+    rol_vista = 'maestros' if usuario.id_rol == 2 else 'alumnos'
     
     try:
-        if rol_antes_de_borrar == 2 and usuario.maestro_perfil:
-            db.session.delete(usuario.maestro_perfil)
-            proxima_vista = 'maestros'
-        elif rol_antes_de_borrar == 3 and usuario.alumno_perfil:
-            db.session.delete(usuario.alumno_perfil)
-            proxima_vista = 'alumnos'
-        else:
-            proxima_vista = 'alumnos' # Default
-            
+        # Al borrar el usuario, se deberían borrar los perfiles si pusiste CASCADE, 
+        # si no, Flask-SQLAlchemy lo maneja por las relaciones.
         db.session.delete(usuario)
         db.session.commit()
-        flash("Usuario eliminado correctamente", "success")
-        
+        flash('Registro eliminado permanentemente', 'success')
     except Exception as e:
         db.session.rollback()
-        flash("No se puede eliminar el usuario porque tiene registros dependientes.", "error")
-        proxima_vista = 'alumnos' if rol_antes_de_borrar == 3 else 'maestros'
+        flash('Error al eliminar el registro', 'error')
         
-    # CORRECCIÓN: Ahora pasamos el parámetro 'vista'
-    return redirect(url_for('gestion_usuarios', vista=proxima_vista))
+    return redirect(url_for('gestion_usuarios', vista=rol_vista))
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
 def configuracion_academica():
