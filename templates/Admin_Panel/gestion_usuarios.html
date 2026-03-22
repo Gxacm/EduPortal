@@ -8,7 +8,7 @@
     <div class="container main-content-box">
         
         <div class="top-action-bar">
-            <a href="{{ url_for('admin_dashboard') }}" class="chip-back">
+            <a href="{{ url_for('admin_dashboard') }}" class="chip-logout">
                 <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Volver al Panel
             </a>
         </div>
@@ -51,33 +51,54 @@
                     </a>
                 </div>
                 <div class="table-responsive">
-                    <table class="m-table" id="tablaAlumnos">
-                        <thead>
-                            <tr>
-                                <th>Carnet</th>
-                                <th>Nombre Completo</th>
-                                <th>Correo Institucional</th>
-                                <th style="text-align: right;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for a in alumnos %}
-                            <tr class="row-hover">
-                                <td class="id-text">{{ a.carnet }}</td>
-                                <td class="name-text">{{ a.usuario.nombre }} {{ a.usuario.apellido }}</td>
-                                <td class="email-text">{{ a.usuario.correo }}</td>
-                                <td style="text-align: right;">
-                                    <div class="action-btns">
-                                        <a href="{{ url_for('editar_usuario', id_usuario=a.id_usuario) }}" class="btn-icon edit"><i class="bi bi-pencil-fill"></i></a>
-                                        <button class="btn-icon delete" onclick="abrirModal('{{ a.id_usuario }}', '{{ a.usuario.nombre }} {{ a.usuario.apellido }}')"><i class="bi bi-trash3-fill"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="4" class="empty-state">No hay alumnos registrados.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <table class="m-table">
+    <thead>
+        <tr>
+            <th>Carnet</th>
+            <th>Nombre Completo</th>
+            <th>Grado y Sección</th> <th>Correo</th>
+            <th style="text-align: right;">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in alumnos %}
+        <tr class="row-hover">
+            <td class="id-text">{{ a.carnet }}</td>
+            {# Agregamos validación básica para el nombre #}
+            <td class="name-text">
+                {% if a.usuario %}{{ a.usuario.nombre }} {{ a.usuario.apellido }}{% else %}<span class="text-danger">Sin Usuario</span>{% endif %}
+            </td>
+            <td>
+                {% if a.seccion %}
+                    <span class="badge-count" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;">
+                        {{ a.seccion.grado.nombre_grado }} - "{{ a.seccion.nombre_seccion }}"
+                    </span>
+                {% else %}
+                    <span class="text-muted" style="font-size: 0.7rem;">No asignado</span>
+                {% endif %}
+            </td>
+            <td class="email-text">{% if a.usuario %}{{ a.usuario.correo }}{% else %}-{% endif %}</td>
+            <td style="text-align: right;">
+                <div class="action-btns">
+                    {# --- PROTECCIÓN PASO 3 --- #}
+                    {% if a.usuario and a.id_usuario %}
+                        <a href="{{ url_for('editar_usuario', id_usuario=a.id_usuario) }}" class="btn-icon edit">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                        <button class="btn-icon delete" onclick="abrirModal('{{ a.id_usuario }}', '{{ a.usuario.nombre }}')">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    {% else %}
+                        <span class="badge" style="background: #fee2e2; color: #ef4444; font-size: 0.7rem; padding: 5px 10px; border-radius: 8px;">
+                            <i class="bi bi-exclamation-triangle"></i> Huérfano
+                        </span>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
                 </div>
             </div>
         </div>
@@ -91,33 +112,49 @@
                     </a>
                 </div>
                 <div class="table-responsive">
-                    <table class="m-table" id="tablaMaestros">
-                        <thead>
-                            <tr>
-                                <th>Especialidad</th>
-                                <th>Nombre Completo</th>
-                                <th>Correo Institucional</th>
-                                <th style="text-align: right;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for m in maestros %}
-                            <tr class="row-hover">
-                                <td class="id-text special">{{ m.especialidad }}</td>
-                                <td class="name-text">{{ m.usuario.nombre }} {{ m.usuario.apellido }}</td>
-                                <td class="email-text">{{ m.usuario.correo }}</td>
-                                <td style="text-align: right;">
-                                    <div class="action-btns">
-                                        <a href="{{ url_for('editar_usuario', id_usuario=m.id_usuario) }}" class="btn-icon edit"><i class="bi bi-pencil-fill"></i></a>
-                                        <button class="btn-icon delete" onclick="abrirModal('{{ m.id_usuario }}', '{{ m.usuario.nombre }} {{ m.usuario.apellido }}')"><i class="bi bi-trash3-fill"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="4" class="empty-state">No hay maestros registrados.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <table class="m-table">
+    <thead>
+        <tr>
+            <th>Especialidad</th>
+            <th>Nombre Completo</th>
+            <th>Carga Académica</th> <th>Correo</th>
+            <th style="text-align: right;">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in maestros %}
+        <tr class="row-hover">
+            <td class="id-text special">{{ m.especialidad }}</td>
+            <td class="name-text">
+                {% if m.usuario %}{{ m.usuario.nombre }} {{ m.usuario.apellido }}{% else %}<span class="text-danger">Sin Usuario</span>{% endif %}
+            </td>
+            <td>
+                <span class="badge-count" style="background: #e0e7ff; color: #4318ff;">
+                    {{ m.clases|length }} Materias
+                </span>
+            </td>
+            <td class="email-text">{% if m.usuario %}{{ m.usuario.correo }}{% else %}-{% endif %}</td>
+            <td style="text-align: right;">
+                <div class="action-btns">
+                    {# --- PROTECCIÓN PASO 3 --- #}
+                    {% if m.usuario and m.id_usuario %}
+                        <a href="{{ url_for('editar_usuario', id_usuario=m.id_usuario) }}" class="btn-icon edit">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                        <button class="btn-icon delete" onclick="abrirModal('{{ m.id_usuario }}', '{{ m.usuario.nombre }}')">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    {% else %}
+                        <span class="badge" style="background: #fee2e2; color: #ef4444; font-size: 0.7rem; padding: 5px 10px; border-radius: 8px;">
+                            <i class="bi bi-exclamation-triangle"></i> Huérfano
+                        </span>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
                 </div>
             </div>
         </div>
@@ -162,8 +199,10 @@
     /* Header */
     .header-minimal { text-align: center; margin-bottom: 2.5rem; }
     .logo-container { width: 75px; height: 75px; background: white; border-radius: 22px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(0,0,0,0.04); }
-    .main-title { font-weight: 800; font-size: 2.3rem; color: var(--dark); letter-spacing: -1px; }
 
+    .main-title { font-weight: 800; font-size: 2.2rem; color: var(--dark); letter-spacing: -1px; }
+    .badge-group { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+    .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
     /* Buscador */
     .search-section { margin-bottom: 1.5rem; }
     .search-box { position: relative; width: 100%; }
@@ -198,9 +237,14 @@
     .btn-icon.delete:hover { background: var(--danger); color: white; }
 
     /* Botón Volver */
-    .top-action-bar { display: flex; justify-content: flex-end; margin-bottom: 15px; }
-    .chip-back { background: white; padding: 8px 16px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: var(--dark); text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-    .chip-back:hover { background: #fee2e2; color: var(--danger); }
+    .top-action-bar { display: flex; justify-content: flex-end; margin-bottom: -10px; width: 100%; }
+    
+    .chip-logout {
+        background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem;
+        font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s;
+        display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    }
+    .chip-logout:hover { background: #fee2e2; color: #ef4444; transform: translateY(-2px); }
 
     /* Modal */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 54, 116, 0.2); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }

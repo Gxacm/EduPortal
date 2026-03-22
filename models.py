@@ -36,13 +36,16 @@ class Grados(db.Model):
     __tablename__ = 'grados'
     id_grado = db.Column(db.Integer, primary_key=True)
     nombre_grado = db.Column(db.String(100), nullable=False)
+
     secciones = db.relationship('Secciones', backref='grado', lazy=True)
+    clases = db.relationship('Clases', backref='grado', lazy=True)
 
 class Secciones(db.Model):
     __tablename__ = 'secciones'
     id_seccion = db.Column(db.Integer, primary_key=True)
     nombre_seccion = db.Column(db.String(1), nullable=False)
     id_grado = db.Column(db.Integer, db.ForeignKey('grados.id_grado'))
+    alumnos = db.relationship('Alumnos', backref='seccion', lazy=True)
 
 # 3. PERFILES
 class Maestros(db.Model):
@@ -67,6 +70,7 @@ class Clases(db.Model):
     id_maestro = db.Column(db.Integer, db.ForeignKey('maestros.id_maestro'))
     id_ciclo = db.Column(db.Integer, db.ForeignKey('ciclos_lectivos.id_ciclo'))
     tareas = db.relationship('Tareas', backref='clase', lazy=True)
+    id_grado = db.Column(db.Integer, db.ForeignKey('grados.id_grado'))
 
 class Tareas(db.Model):
     __tablename__ = 'tareas'

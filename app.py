@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, f
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
+from sqlalchemy.orm import joinedload
 from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos
 
 app = Flask(__name__)
@@ -59,7 +60,6 @@ def logout():
 # ------------------------------ PANEL DEL MAESTRO -----------------------------
 # ==============================================================================
 
-# 1. DASHBOARD PRINCIPAL
 @app.route('/maestro')
 def maestro_dashboard():
     if session.get('rol') != 2: return redirect(url_for('login'))
@@ -83,7 +83,6 @@ def maestro_dashboard():
                            maestro=maestro_usuario, clases=clases, 
                            total_clases=len(clases), grados_data=grados_data, anuncios=anuncios)
 
-# 2. ASIGNAR TAREAS (Crear y Ver Historial)
 @app.route('/maestro/tareas')
 def historial_tareas():
     """Muestra la vista de tareas_historial.html"""
@@ -119,17 +118,14 @@ def crear_tarea():
     db.session.commit()
     flash("Tarea creada exitosamente", "success")
     
-    # Después de crearla, lo mandamos al historial para que la vea
     return redirect(url_for('historial_tareas'))
 
-# 3. REGISTRAR NOTAS
 @app.route('/maestro/notas/general')
 def registrar_notas():
     """Abre el panel general de notas_subir.html"""
     if session.get('rol') != 2: return redirect(url_for('login'))
     return render_template('Panel_Maestro/notas_subir.html')
 
-# 4. VISUALIZAR ESTUDIANTES / MATERIAS
 @app.route('/maestro/grados/ver')
 def ver_grados():
     """Muestra los grados asignados al maestro (grados.html)"""
@@ -146,14 +142,12 @@ def gestionar_grado(id_grado):
     grado = Grados.query.get(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
 
-# 5. ENVIAR REPORTES
 @app.route('/maestro/reportes/enviar')
 def enviar_reportes():
     """Muestra la vista de reportes_enviar.html"""
     if session.get('rol') != 2: return redirect(url_for('login'))
     return render_template('Panel_Maestro/reportes_enviar.html')
 
-# 6. CONTROL DE ASISTENCIA Y 7. EXPORTACIÓN DE DATOS (Módulos pendientes de HTML)
 @app.route('/maestro/asistencia/control')
 def control_asistencia():
     if session.get('rol') != 2: return redirect(url_for('login'))
@@ -210,10 +204,20 @@ def crear_anuncio():
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/nuevo/maestro')
-def vista_nuevo_maestro(): return render_template('Admin_Panel/usuario_nuevo.html', rol_nombre="Maestro", id_rol=2)
+def vista_nuevo_maestro(): 
+    return render_template('Admin_Panel/usuario_nuevo.html', active_tab='maestro')
 
 @app.route('/admin/nuevo/alumno')
-def vista_nuevo_alumno(): return render_template('Admin_Panel/usuario_nuevo.html', rol_nombre="Alumno", id_rol=3)
+def vista_nuevo_alumno():
+    carnet_sugerido = generar_nuevo_carnet()
+    secciones = Secciones.query.options(joinedload(Secciones.grado)).all()
+    
+    return render_template('Admin_Panel/usuario_nuevo.html', 
+                           active_tab='alumno', 
+                           carnet=carnet_sugerido,
+                           secciones=secciones)
+
+
 
 @app.route('/admin/usuario/guardar', methods=['POST'])
 def crear_usuario_logica():
@@ -229,17 +233,40 @@ def crear_usuario_logica():
     flash("Usuario registrado correctamente")
     return redirect(url_for('admin_dashboard'))
 
+def generar_nuevo_carnet():
+    año_actual = datetime.now().year
+    prefijo = f"{año_actual}-"
+    
+    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%"))\
+                            .order_by(Alumnos.carnet.desc()).first()
+    
+    if ultimo_alumno:
+        ultimo_numero = int(ultimo_alumno.carnet.split('-')[1])
+        nuevo_numero = ultimo_numero + 1
+    else:
+        nuevo_numero = 1
+        
+    return f"{prefijo}{nuevo_numero:03d}"
+
 # ---------------- GESTIÓN CENTRALIZADA DE USUARIOS (LEER Y ELIMINAR) ----------------
 
 @app.route('/admin/gestion_usuarios')
 def gestion_usuarios():
-    # Obtenemos ambos listados para que las pestañas funcionen sin recargar
-    alumnos = Alumnos.query.join(Usuarios).all()
-    maestros = Maestros.query.join(Usuarios).all()
+
+    alumnos = Alumnos.query.options(
+        joinedload(Alumnos.usuario),
+        joinedload(Alumnos.seccion).joinedload(Secciones.grado)
+    ).all()
+
+    maestros = Maestros.query.options(
+        joinedload(Maestros.usuario),
+        joinedload(Maestros.clases)
+    ).all()
     
     return render_template('Admin_Panel/gestion_usuarios.html', 
                            alumnos=alumnos, 
-                           maestros=maestros)
+                           maestros=maestros,
+                           vista_activa='alumnos')
 
 @app.route('/admin/editar_usuario/<int:id_usuario>', methods=['GET', 'POST'])
 def editar_usuario(id_usuario):
@@ -263,29 +290,115 @@ def editar_usuario(id_usuario):
 
 @app.route('/admin/eliminar_usuario/<int:id_usuario>', methods=['POST'])
 def eliminar_usuario(id_usuario):
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    
     usuario = Usuarios.query.get_or_404(id_usuario)
-    rol_vista = 'maestros' if usuario.id_rol == 2 else 'alumnos'
     
     try:
-        # Al borrar el usuario, se deberían borrar los perfiles si pusiste CASCADE, 
-        # si no, Flask-SQLAlchemy lo maneja por las relaciones.
+       
+        if usuario.id_rol == 2 and usuario.maestro_perfil:
+            db.session.delete(usuario.maestro_perfil)
+        elif usuario.id_rol == 3 and usuario.alumno_perfil:
+            db.session.delete(usuario.alumno_perfil)
+        
         db.session.delete(usuario)
         db.session.commit()
+        
         flash('Registro eliminado permanentemente', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error al eliminar el registro', 'error')
+        print(f"Error al eliminar: {e}")
+        flash('No se pudo eliminar el registro porque tiene datos vinculados (notas, clases, etc.)', 'error')
         
-    return redirect(url_for('gestion_usuarios', vista=rol_vista))
+    return redirect(url_for('gestion_usuarios'))
+
+
+# ---------------- CONFIGURACION ACADEMICA ----------------
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
 def configuracion_academica():
+    if session.get('rol') != 1: return redirect(url_for('login'))
+
     if request.method == 'POST':
-        if 'guardar_grado' in request.form: db.session.add(Grados(nombre_grado=request.form.get('nombre_grado')))
-        elif 'guardar_clase' in request.form: db.session.add(Clases(nombre_clase=request.form.get('nombre_clase')))
+        # Guardar Grado
+        if 'guardar_grado' in request.form:
+            db.session.add(Grados(nombre_grado=request.form.get('nombre_grado')))
+        
+        # Guardar Clase/Materia
+        elif 'guardar_clase' in request.form:
+            nueva_clase = Clases(
+                nombre_clase=request.form.get('nombre_clase'),
+                id_maestro=request.form.get('id_maestro') or None, 
+                id_ciclo=1, 
+                id_grado=request.form.get('id_grado')
+            )
+            db.session.add(nueva_clase)
+        
+        elif 'guardar_seccion' in request.form:
+            nueva_seccion = Secciones(
+                nombre_seccion=request.form.get('nombre_seccion'),
+                id_grado=request.form.get('id_grado')
+            )
+            db.session.add(nueva_seccion)
+        
         db.session.commit()
+        flash("Registro guardado correctamente")
         return redirect(url_for('configuracion_academica'))
-    return render_template('Admin_Panel/configuracion_academica.html', grados=Grados.query.all(), clases=Clases.query.all())
+    
+    maestros_para_select = Maestros.query.all() 
+
+    return render_template('Admin_Panel/configuracion_academica.html', 
+                            grados=Grados.query.all(), 
+                            clases=Clases.query.all(),
+                            secciones=Secciones.query.all(),
+                            maestros=maestros_para_select)
+
+@app.route('/admin/configuracion/eliminar_grado/<int:id_grado>', methods=['POST'])
+def eliminar_grado(id_grado):
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    
+    grado = Grados.query.get_or_404(id_grado)
+    try:
+        db.session.delete(grado)
+        db.session.commit()
+        flash("Grado eliminado correctamente.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("No se puede eliminar: Este grado ya tiene secciones o alumnos asignados.", "error")
+        
+    return redirect(url_for('configuracion_academica'))
+
+
+@app.route('/admin/configuracion/eliminar_materia/<int:id_clase>', methods=['POST'])
+def eliminar_materia(id_clase):
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    
+    materia = Clases.query.get_or_404(id_clase)
+    try:
+        db.session.delete(materia)
+        db.session.commit()
+        flash("Materia eliminada correctamente.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("No se puede eliminar: Esta materia ya está en uso.", "error")
+        
+    return redirect(url_for('configuracion_academica'))
+
+@app.route('/admin/configuracion/eliminar_seccion/<int:id_seccion>', methods=['POST'])
+def eliminar_seccion(id_seccion):
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    
+    seccion = Secciones.query.get_or_404(id_seccion)
+    try:
+        db.session.delete(seccion)
+        db.session.commit()
+        flash("Sección eliminada correctamente.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("No se puede eliminar: Esta sección tiene alumnos inscritos.", "error")
+        
+    return redirect(url_for('configuracion_academica'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
