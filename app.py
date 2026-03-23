@@ -206,7 +206,7 @@ def crear_tarea(id_grado):
         nueva_tarea = Tareas(
             id_clase=request.form.get('id_clase'),
             titulo=request.form.get('titulo'),
-            descripcion=request.form.get('descripcion'),
+            descripcion=request.form.get('descripcion'), # <--- YA PODEMOS GUARDARLA
             fecha_entrega=datetime.strptime(request.form.get('fecha_entrega'), '%Y-%m-%dT%H:%M')
         )
         db.session.add(nueva_tarea)
@@ -214,9 +214,12 @@ def crear_tarea(id_grado):
         flash("Tarea creada exitosamente", "success")
     except Exception as e:
         db.session.rollback()
+        print(f"Error al crear tarea: {e}") 
         flash("Error al crear tarea. Revisa los datos.", "danger")
 
     return redirect(url_for('gestionar_grado', id_grado=id_grado))
+
+# --- REVISIÓN DE ASIGNACIONES (NOTAS) ACTUALIZADA ---
 
 # --- REVISIÓN DE ASIGNACIONES (NOTAS) ACTUALIZADA ---
 
@@ -230,7 +233,6 @@ def registrar_notas(id_grado):
 
     # 1. LÓGICA PARA GUARDAR LAS NOTAS (MÉTODO POST)
     if request.method == 'POST':
-        # Capturamos el id_tarea que viene en la URL gracias al formulario HTML
         id_tarea = request.args.get('id_tarea')
         
         if id_tarea:
@@ -240,16 +242,13 @@ def registrar_notas(id_grado):
                     alumno_db = Alumnos.query.filter_by(id_usuario=user_id_alumno).first()
                     
                     if alumno_db:
-                        # Buscamos si el maestro ya le había puesto nota a este alumno en esta tarea
                         nota_existente = Notas.query.filter_by(id_alumno=alumno_db.id_alumno, id_tarea=id_tarea).first()
                         
                         if nota_existente:
-                            # Actualizamos la nota si ya existía
                             nota_existente.calificacion = float(value)
                             nota_existente.id_maestro_autor = perfil.id_maestro
                             nota_existente.fecha_modificacion = datetime.utcnow()
                         else:
-                            # Creamos una nota nueva
                             nueva_nota = Notas(
                                 id_tarea=id_tarea,
                                 id_alumno=alumno_db.id_alumno,
@@ -283,7 +282,6 @@ def registrar_notas(id_grado):
         for usuario_al in alumnos_lista:
             alumno_perfil = Alumnos.query.filter_by(id_usuario=usuario_al.id_usuario).first()
             
-            # Consultamos la tabla de entregas y la de notas usando tus modelos
             entrega_registro = EntregasTareas.query.filter_by(id_alumno=alumno_perfil.id_alumno, id_tarea=tarea.id_tarea).first()
             nota_registro = Notas.query.filter_by(id_alumno=alumno_perfil.id_alumno, id_tarea=tarea.id_tarea).first()
             
@@ -300,8 +298,7 @@ def registrar_notas(id_grado):
         tareas_para_html.append({
             'id_tarea': tarea.id_tarea,
             'titulo': tarea.titulo,
-            # Tu modelo "Tareas" no tiene un campo 'descripcion', así que paso un texto genérico para que el HTML no se rompa
-            'descripcion': 'Entregas correspondientes a esta actividad.', 
+            'descripcion': tarea.descripcion, # <--- ¡Aquí está el cambio! Ahora muestra la descripción real.
             'fecha_entrega': tarea.fecha_entrega.strftime('%d/%m/%Y %H:%M') if tarea.fecha_entrega else 'Sin fecha',
             'entregas': entregas
         })

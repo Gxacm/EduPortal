@@ -77,6 +77,7 @@ class Tareas(db.Model):
     id_tarea = db.Column(db.Integer, primary_key=True)
     id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase'))
     titulo = db.Column(db.String(150), nullable=False)
+    descripcion = db.Column(db.Text)
     fecha_entrega = db.Column(db.DateTime, nullable=False)
     entregas = db.relationship('EntregasTareas', backref='tarea', lazy=True)
 
