@@ -136,8 +136,8 @@
         const el = document.getElementById('saludo-maestro');
         const name = "{{ maestro.nombre }}";
         if (hour < 12) el.innerHTML = `¡Buen día, <span class="text-success">${name}</span>! ☕`;
-        else if (hour < 18) el.innerHTML = `¡Tarde, <span class="text-success">${name}</span>! 📝`;
-        else el.innerHTML = `¡Noche, <span class="text-success">${name}</span>! 🌙`;
+        else if (hour < 18) el.innerHTML = `¡Buenas Tardes, <span class="text-success">${name}</span>! 📝`;
+        else el.innerHTML = `¡Buenas Noches, <span class="text-success">${name}</span>! 🌙`;
     }
     updateGreeting();
 </script>

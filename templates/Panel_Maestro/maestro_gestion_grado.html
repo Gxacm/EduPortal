@@ -13,34 +13,73 @@
         --info-main: #0ea5e9; --info-soft: #f0f9ff;
         --dark-text: #1e293b; --muted-text: #64748b;
         --bg-soft: #f8fafc;
+        --border-color: #e2e8f0;
     }
 
     body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
     .viewport-container { padding: 30px 20px; max-width: 1200px; margin: 0 auto; }
 
-    .btn-back-nav { display: inline-flex; align-items: center; gap: 8px; color: var(--muted-text); text-decoration: none; font-weight: 700; margin-bottom: 20px; transition: 0.3s; }
+    .btn-back-nav { display: inline-flex; align-items: center; gap: 8px; margin-right: 15px; color: var(--muted-text); text-decoration: none; font-weight: 700; margin-bottom: 20px; transition: 0.3s; }
     .btn-back-nav:hover { color: var(--dark-text); transform: translateX(-5px); }
 
-    .management-header { background: white; border-radius: 24px; padding: 2rem; margin-bottom: 30px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+    .management-header { background: white; border-radius: 24px; padding: 2rem; margin-bottom: 30px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
 
-    .tools-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 15px;
-        margin-bottom: 40px;
-    }
-
-    .tool-card {
-        background: white; padding: 20px 15px; border-radius: 20px;
-        text-align: center; text-decoration: none; border: 1px solid #f1f5f9;
-        transition: all 0.3s ease; display: flex; flex-direction: column;
-        align-items: center; gap: 10px;
-    }
-
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 40px; }
+    .tool-card { background: white; padding: 20px 15px; border-radius: 20px; text-align: center; text-decoration: none; border: 1px solid #f1f5f9; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .tool-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1); border-color: var(--primary-main); }
     .tool-icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
     .tool-text { font-weight: 700; color: var(--dark-text); font-size: 0.85rem; }
-    .student-card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; }
+    
+    .student-card { background: white; border-radius: 24px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .student-card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); background-color: white; }
+    
+    .custom-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .custom-table th { padding: 16px 24px; background-color: #f8fafc; color: var(--muted-text); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); }
+    .custom-table td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .custom-table tr:hover td { background-color: #f8fafc; }
+    .custom-table tr:last-child td { border-bottom: none; }
+
+    .student-info { display: flex; align-items: center; }
+    .avatar { width: 42px; height: 42px; border-radius: 50%; background-color: var(--success-soft); color: var(--success-main); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0; margin-right: 15px; }
+    .student-name { font-weight: 700; color: var(--dark-text); font-size: 0.95rem; margin: 0; display: block; }
+    .student-email { color: var(--muted-text); font-size: 0.85rem; font-weight: 500; }
+    
+    .btn-action { background-color: white; border: 1px solid var(--border-color); color: var(--primary-main); padding: 6px 16px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+    .btn-action:hover { background-color: var(--primary-soft); border-color: var(--primary-main); }
+
+    /* --- ESTILOS DEL MODAL EMERGENTE --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 9999;
+    }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    
+    .modal-card {
+        background: white; width: 90%; max-width: 400px; border-radius: 24px;
+        padding: 30px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        transform: translateY(30px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+    }
+    .modal-overlay.active .modal-card { transform: translateY(0); }
+    
+    .btn-close-modal {
+        position: absolute; top: 20px; right: 20px;
+        background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%;
+        color: var(--muted-text); cursor: pointer; display: flex; align-items: center;
+        justify-content: center; transition: 0.2s; font-size: 1.2rem;
+    }
+    .btn-close-modal:hover { background: #e2e8f0; color: var(--danger-main); }
+    
+    .modal-avatar {
+        width: 80px; height: 80px; border-radius: 50%; background: var(--success-soft);
+        color: var(--success-main); font-size: 2.2rem; font-weight: 800;
+        display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;
+    }
+    .modal-info-group { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); text-align: left; }
+    .modal-info-label { font-size: 0.75rem; color: var(--muted-text); text-transform: uppercase; font-weight: 800; display: block; margin-bottom: 5px; letter-spacing: 0.5px;}
+    .modal-info-value { font-size: 1rem; color: var(--dark-text); font-weight: 600; display: flex; align-items: center; gap: 8px;}
 </style>
 
 <div class="viewport-container">
@@ -50,19 +89,19 @@
     </a>
 
     <div class="management-header">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h1 class="fw-800 text-dark m-0">{{ grado.nombre_grado }}</h1>
-                <p class="text-muted m-0 fw-500">Gestión de alumnos y herramientas académicas</p>
+                <h1 class="fw-800 text-dark m-0" style="margin: 0;">{{ grado.nombre_grado }}</h1>
+                <p class="text-muted m-0 fw-500" style="margin: 0; color: #64748b;">Gestión de alumnos y herramientas académicas</p>
             </div>
-            <div class="p-3 bg-light rounded-4 text-center">
-                <span class="d-block fw-800 fs-4 text-dark">{{ alumnos|length }}</span>
-                <small class="text-muted fw-bold" style="font-size: 0.6rem; text-transform: uppercase;">Alumnos</small>
+            <div style="background-color: #f8fafc; padding: 15px 25px; border-radius: 16px; text-align: center;">
+                <span style="display: block; font-weight: 800; font-size: 1.5rem; color: #1e293b;">{{ alumnos|length }}</span>
+                <small style="color: #64748b; font-weight: 700; font-size: 0.7rem; text-transform: uppercase;">Alumnos</small>
             </div>
         </div>
     </div>
 
-    <h3 class="fw-800 text-dark mb-3" style="font-size: 1.1rem;">Panel de Herramientas del Grado</h3>
+    <h3 class="fw-800 text-dark mb-3" style="font-size: 1.1rem; margin-bottom: 15px;">Panel de Herramientas del Grado</h3>
     <div class="tools-grid">
         <a href="{{ url_for('vista_nueva_tarea', id_grado=grado.id_grado) }}" class="tool-card">
             <div class="tool-icon" style="background: var(--primary-soft); color: var(--primary-main);"><i class="bi bi-journal-text"></i></div>
@@ -82,37 +121,95 @@
         </a>
     </div>
 
-    <div class="student-card shadow-sm">
-        <div class="p-4 border-bottom bg-white"><h5 class="fw-800 m-0 text-dark">Estudiantes del Grado</h5></div>
-        <div class="table-responsive">
-            <table class="table align-middle m-0">
-                <thead class="bg-light">
+    <div class="student-card">
+        <div class="student-card-header">
+            <h5 style="font-weight: 800; margin: 0; color: #1e293b; font-size: 1.1rem;">Estudiantes del Grado</h5>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
+                <thead>
                     <tr>
-                        <th class="ps-4 py-3 text-muted fw-800 small text-uppercase">Nombre</th>
-                        <th class="py-3 text-muted fw-800 small text-uppercase">Correo</th>
-                        <th class="text-center py-3 text-muted fw-800 small text-uppercase">Acciones</th>
+                        <th style="width: 45%;">Nombre del Alumno</th>
+                        <th style="width: 35%;">Correo Electrónico</th>
+                        <th style="width: 20%; text-align: center;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for alumno in alumnos %}
                     <tr>
-                        <td class="ps-4">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center fw-800" style="width: 35px; height: 35px;">
-                                    {{ alumno.nombre[0] }}
+                        <td>
+                            <div class="student-info">
+                                <div class="avatar">
+                                    {{ alumno.nombre[0]|upper }}
                                 </div>
-                                <span class="fw-700 text-dark">{{ alumno.nombre }} {{ alumno.apellido }}</span>
+                                <div>
+                                    <span class="student-name">{{ alumno.nombre }} {{ alumno.apellido }}</span>
+                                </div>
                             </div>
                         </td>
-                        <td class="text-muted small">{{ alumno.correo }}</td>
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-light rounded-pill px-3 fw-700">Perfil</button>
+                        <td>
+                            <span class="student-email">{{ alumno.correo }}</span>
+                        </td>
+                        <td style="text-align: center;">
+                            <button type="button" class="btn-action" onclick="openModal('modal-alumno-{{ loop.index }}')">Ver Perfil</button>
                         </td>
                     </tr>
+
+                    <div id="modal-alumno-{{ loop.index }}" class="modal-overlay" onclick="closeModal(event, 'modal-alumno-{{ loop.index }}')">
+                        <div class="modal-card" onclick="event.stopPropagation()">
+                            <button class="btn-close-modal" onclick="closeModalBtn('modal-alumno-{{ loop.index }}')">
+                                <i class="bi bi-x"></i>
+                            </button>
+                            
+                            <div class="modal-avatar">
+                                {{ alumno.nombre[0]|upper }}
+                            </div>
+                            
+                            <h4 style="text-align: center; font-weight: 800; color: var(--dark-text); margin: 0 0 5px 0;">
+                                {{ alumno.nombre }} {{ alumno.apellido }}
+                            </h4>
+                            <p style="text-align: center; color: var(--muted-text); font-size: 0.9rem; margin: 0 0 25px 0;">
+                                Estudiante • {{ grado.nombre_grado }}
+                            </p>
+                            
+                            <div class="modal-info-group">
+                                <span class="modal-info-label">Correo Electrónico</span>
+                                <span class="modal-info-value"><i class="bi bi-envelope text-primary"></i> {{ alumno.correo }}</span>
+                            </div>
+                            
+                            <div class="modal-info-group" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                                <span class="modal-info-label">Estado</span>
+                                <span class="modal-info-value" style="color: var(--success-main);">
+                                    <i class="bi bi-check-circle-fill"></i> Activo en el sistema
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<script>
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+        document.body.style.overflow = 'hidden'; // Evita que el fondo haga scroll
+    }
+
+    function closeModal(event, modalId) {
+        // Cierra el modal si haces clic en la parte oscura del fondo
+        if(event.target.id === modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    function closeModalBtn(modalId) {
+        // Cierra el modal desde el botón de la "X"
+        document.getElementById(modalId).classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+</script>
 {% endblock %}
