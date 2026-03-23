@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="viewport-wrapper">
+    <div class="container main-content-box">
+        <h1 class="main-title">Mis Clases</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Clase</th>
+                    <th>Grado</th>
+                    <th>Horario</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for clase in mis_clases %}
+                <tr>
+                    <td>{{ clase.NombreClase }}</td>
+                    <td>{{ clase.NombreGrado }}</td>
+                    <td>{{ clase.Horario }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

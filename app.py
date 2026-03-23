@@ -354,6 +354,29 @@ def alumno_dashboard():
     anuncios = Anuncios.query.filter(Anuncios.dirigido_a.in_(['Todos', 'Alumnos'])).all()
     return render_template('Panel_Alumno/alumno_dash.html', notas=notas, asistencias=asistencias, anuncios=anuncios)
 
+@app.route('/alumno/clases')
+def alumno_clases():
+    if session.get('rol') != 3: return redirect(url_for('login'))
+    alumno = Alumnos.query.filter_by(id_usuario=session.get('user_id')).first()
+    return render_template('Panel_Alumno/mis_clases.html', alumno=alumno)
+
+@app.route('/alumno/tareas')
+def alumno_tareas():
+    if session.get('rol') != 3: return redirect(url_for('login'))
+    return render_template('Panel_Alumno/tareas.html')
+
+@app.route('/alumno/calificaciones')
+def alumno_calificaciones():
+    if session.get('rol') != 3: return redirect(url_for('login'))
+    alumno = Alumnos.query.filter_by(id_usuario=session.get('user_id')).first()
+    notas = Notas.query.filter_by(id_alumno=alumno.id_alumno).all() if alumno else []
+    return render_template('Panel_Alumno/notas.html', notas=notas)
+
+@app.route('/alumno/horario')
+def alumno_horario():
+    if session.get('rol') != 3: return redirect(url_for('login'))
+    return render_template('Panel_Alumno/horario.html')
+
 
 # ==============================================================================
 # ------------------------------ PANEL DE ADMIN --------------------------------
@@ -523,5 +546,38 @@ def eliminar_grado(id_grado):
         flash("No se puede eliminar: Registro en uso.", "error")
     return redirect(url_for('configuracion_academica'))
 
+@app.route('/admin/configuracion/eliminar_materia/<int:id_clase>', methods=['POST'])
+def eliminar_materia(id_clase):
+    if session.get('rol') != 1: 
+        return redirect(url_for('login'))
+    
+    materia = Clases.query.get_or_404(id_clase)
+    try:
+        db.session.delete(materia)
+        db.session.commit()
+        flash("Materia eliminada correctamente.", "success")
+    except Exception as e:
+        db.session.rollback()
+        # Esto sucede si la materia ya tiene notas o tareas vinculadas
+        flash("No se puede eliminar la materia: tiene registros vinculados (notas o tareas).", "error")
+    
+    return redirect(url_for('configuracion_academica'))
+
+@app.route('/admin/configuracion/eliminar_seccion/<int:id_seccion>', methods=['POST'])
+def eliminar_seccion(id_seccion):
+    if session.get('rol') != 1: 
+        return redirect(url_for('login'))
+    
+    seccion = Secciones.query.get_or_404(id_seccion)
+    try:
+        db.session.delete(seccion)
+        db.session.commit()
+        flash("Sección eliminada correctamente.", "success")
+    except Exception as e:
+        db.session.rollback()
+        # Esto falla si hay alumnos inscritos en esa sección
+        flash("No se puede eliminar la sección: tiene alumnos asignados.", "error")
+    
+    return redirect(url_for('configuracion_academica'))
 if __name__ == '__main__':
     app.run(debug=True)
