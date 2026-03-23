@@ -5,9 +5,37 @@ from config import Config
 from sqlalchemy.orm import joinedload
 from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos
 
+
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+
+import locale
+try:
+    locale.setlocale(locale.LC_TIME, 'es_ES.utf8') 
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+    except locale.Error:
+        print("No se pudo establecer el locale en español, se usará el predeterminado.")
+
+def fecha_en_espanol(fecha):
+    if not fecha:
+        return ""
+    
+    meses = {
+        1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
+        5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
+        9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
+    }
+    
+    dia = fecha.day
+    mes = meses[fecha.month]
+    año = fecha.year
+    
+    return f"{dia} de {mes}, {año}"
+app.jinja_env.filters['fecha_es'] = fecha_en_espanol
+
 
 # ==============================================================================
 # ----------------------------- RUTA RAÍZ Y LOGIN ------------------------------
@@ -55,6 +83,65 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+# ==============================================================================
+# --------------------------- CONFIGURACIÓN Y AJUSTES --------------------------
+# ==============================================================================
+
+@app.route('/ajustes', methods=['GET', 'POST'])
+def ajustes():
+    if not session.get('user_id'): 
+        return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    rol = session.get('rol')
+    usuario = Usuarios.query.get(user_id)
+
+    # Cargar perfil específico según el rol para que sea funcional
+    perfil = None
+    if rol == 2: # Maestro
+        perfil = Maestros.query.filter_by(id_usuario=user_id).first()
+    elif rol == 3: # Alumno
+        perfil = Alumnos.query.filter_by(id_usuario=user_id).first()
+
+    if request.method == 'POST':
+        accion = request.form.get('accion')
+
+        # --- ACCIÓN 1: CAMBIO DE CONTRASEÑA ---
+        if accion == 'cambiar_pass':
+            pass_actual = request.form.get('pass_actual')
+            pass_nueva = request.form.get('pass_nueva')
+            confirm_pass = request.form.get('confirm_pass')
+
+            if not check_password_hash(usuario.contrasena, pass_actual):
+                flash("La contraseña actual es incorrecta.", "error")
+            elif pass_nueva != confirm_pass:
+                flash("Las contraseñas no coinciden.", "error")
+            elif len(pass_nueva) < 8:
+                flash("Debe tener al menos 8 caracteres.", "error")
+            else:
+                usuario.contrasena = generate_password_hash(pass_nueva)
+                db.session.commit()
+                flash("Contraseña actualizada con éxito.", "success")
+
+        # --- ACCIÓN 2: ACTUALIZAR DATOS DE PERFIL (PERSONALIDAD) ---
+        elif accion == 'actualizar_perfil':
+            usuario.correo = request.form.get('correo')
+            
+            # Si es maestro, permitir cambiar especialidad
+            if rol == 2 and perfil:
+                perfil.especialidad = request.form.get('especialidad')
+            
+            db.session.commit()
+            flash("Información de perfil actualizada.", "success")
+
+        # --- ACCIÓN 3: PREFERENCIAS DE INTERFAZ ---
+        elif accion == 'guardar_interfaz':
+            # Aquí podrías guardar el modo oscuro en la BD si añades la columna a Usuarios
+            flash("Preferencias visuales aplicadas.", "success")
+            
+        return redirect(url_for('ajustes'))
+
+    return render_template('ajustes.html', usuario=usuario, perfil=perfil, rol=rol)
 
 # ==============================================================================
 # ------------------------------ PANEL DEL MAESTRO -----------------------------
@@ -207,8 +294,36 @@ def crear_anuncio():
 def vista_nuevo_maestro(): 
     return render_template('Admin_Panel/usuario_nuevo.html', active_tab='maestro')
 
+# --- FUNCIONES DE APOYO (Colócalas arriba de las rutas) ---
+
+def generar_nuevo_carnet():
+    """Genera un carnet con formato AAAA-001 basado en el año actual"""
+    año_actual = datetime.now().year
+    prefijo = f"{año_actual}-"
+    
+    # Buscamos el último carnet registrado con el prefijo del año actual
+    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%"))\
+                             .order_by(Alumnos.carnet.desc()).first()
+    
+    if ultimo_alumno:
+        try:
+            # Extraemos el número correlativo y sumamos 1
+            ultimo_numero = int(ultimo_alumno.carnet.split('-')[1])
+            nuevo_numero = ultimo_numero + 1
+        except (IndexError, ValueError):
+            nuevo_numero = 1
+    else:
+        nuevo_numero = 1
+        
+    return f"{prefijo}{nuevo_numero:03d}"
+
+# --- RUTAS DE ADMINISTRACIÓN ---
+
 @app.route('/admin/nuevo/alumno')
 def vista_nuevo_alumno():
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    
+    # Ahora la función ya está definida arriba, no dará NameError
     carnet_sugerido = generar_nuevo_carnet()
     secciones = Secciones.query.options(joinedload(Secciones.grado)).all()
     
@@ -217,36 +332,46 @@ def vista_nuevo_alumno():
                            carnet=carnet_sugerido,
                            secciones=secciones)
 
-
-
 @app.route('/admin/usuario/guardar', methods=['POST'])
 def crear_usuario_logica():
     if session.get('rol') != 1: return redirect(url_for('login'))
-    nuevo = Usuarios(nombre=request.form.get('nombre'), apellido=request.form.get('apellido'), correo=request.form.get('correo'), contrasena=generate_password_hash(request.form.get('password')), id_rol=int(request.form.get('id_rol')))
-    db.session.add(nuevo)
-    db.session.commit()
-
-    if nuevo.id_rol == 2: db.session.add(Maestros(id_usuario=nuevo.id_usuario, especialidad=request.form.get('especialidad')))
-    elif nuevo.id_rol == 3: db.session.add(Alumnos(id_usuario=nuevo.id_usuario, carnet=request.form.get('carnet')))
-        
-    db.session.commit()
-    flash("Usuario registrado correctamente")
-    return redirect(url_for('admin_dashboard'))
-
-def generar_nuevo_carnet():
-    año_actual = datetime.now().year
-    prefijo = f"{año_actual}-"
     
-    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%"))\
-                            .order_by(Alumnos.carnet.desc()).first()
-    
-    if ultimo_alumno:
-        ultimo_numero = int(ultimo_alumno.carnet.split('-')[1])
-        nuevo_numero = ultimo_numero + 1
-    else:
-        nuevo_numero = 1
+    try:
+        # 1. Crear usuario base
+        nuevo = Usuarios(
+            nombre=request.form.get('nombre'), 
+            apellido=request.form.get('apellido'), 
+            correo=request.form.get('correo'), 
+            contrasena=generate_password_hash(request.form.get('password')), 
+            id_rol=int(request.form.get('id_rol'))
+        )
+        db.session.add(nuevo)
+        db.session.commit() # Flush/Commit para obtener id_usuario
+
+        # 2. Crear perfil específico
+        if nuevo.id_rol == 2: # Maestro
+            db.session.add(Maestros(
+                id_usuario=nuevo.id_usuario, 
+                especialidad=request.form.get('especialidad')
+            ))
+        elif nuevo.id_rol == 3: # Alumno
+            id_seccion_form = request.form.get('id_seccion')
+            db.session.add(Alumnos(
+                id_usuario=nuevo.id_usuario, 
+                carnet=request.form.get('carnet'),
+                id_seccion=id_seccion_form
+            ))
+            
+        db.session.commit()
+        flash("Usuario registrado y matriculado correctamente", "success")
         
-    return f"{prefijo}{nuevo_numero:03d}"
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error al registrar: El correo o carnet ya podrían estar en uso.", "error")
+        print(f"Error detallado: {e}")
+        
+    return redirect(url_for('gestion_usuarios'))
+
 
 # ---------------- GESTIÓN CENTRALIZADA DE USUARIOS (LEER Y ELIMINAR) ----------------
 
