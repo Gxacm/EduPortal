@@ -8,8 +8,8 @@
     <div class="container main-content-box">
         
         <div class="top-action-bar">
-            <a href="{{ url_for('admin_dashboard') }}" class="chip-logout">
-                <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Volver al Panel
+            <a href="{{ url_for('gestion_usuarios') }}" class="chip-logout">
+                <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Volver a Gestión
             </a>
         </div>
 
@@ -17,63 +17,110 @@
             <div class="logo-container">
                 <i class="bi bi-person-plus-fill" style="font-size: 2rem; color: var(--primary);"></i>
             </div>
-            <h1 class="main-title">Nuevo {{ rol_nombre }}</h1>
+            <h1 class="main-title">Registro de Usuario</h1>
             <div class="badge-group">
                 <span class="chip-glass">
-                    <i class="bi bi-info-circle" style="margin-right: 5px;"></i>Completar Registro
+                    <i class="bi bi-info-circle" style="margin-right: 5px;"></i>Selecciona el rol para continuar
                 </span>
             </div>
         </header>
 
-        <div class="m-card" style="max-width: 750px; margin: 0 auto;">
-            <div class="m-card-body">
-                <form action="{{ url_for('crear_usuario_logica') }}" method="POST">
-                    <input type="hidden" name="id_rol" value="{{ id_rol }}">
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                        <div>
-                            <label class="m-label">Nombre</label>
-                            <input type="text" name="nombre" class="m-input" required placeholder="Ej. Juan">
-                        </div>
-                        <div>
-                            <label class="m-label">Apellido</label>
-                            <input type="text" name="apellido" class="m-input" required placeholder="Ej. Pérez">
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 1.5rem;">
-                        <label class="m-label">Correo Electrónico</label>
-                        <input type="email" name="correo" class="m-input" required placeholder="juan@ejemplo.com">
-                    </div>
-                    
-                    <div style="margin-bottom: 2rem;">
-                        <label class="m-label">Contraseña Temporal</label>
-                        <input type="password" name="password" class="m-input" required placeholder="••••••••">
-                    </div>
+        <div class="tabs-container" style="max-width: 750px; margin: 0 auto 2rem;">
+            <button class="tab-btn active" onclick="openTab(event, 'tab-alumno')">
+                <i class="bi bi-mortarboard-fill"></i> Nuevo Alumno
+            </button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-maestro')">
+                <i class="bi bi-person-vcard-fill"></i> Nuevo Maestro
+            </button>
+        </div>
 
-                    {% if id_rol == 2 %}
+        <div id="tab-alumno" class="tab-content active">
+            <div class="m-card" style="max-width: 750px; margin: 0 auto;">
+                <div class="m-card-body">
+                    <form action="{{ url_for('crear_usuario_logica') }}" method="POST">
+                        <input type="hidden" name="id_rol" value="3"> <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label class="m-label">Nombre</label>
+                                <input type="text" name="nombre" class="m-input" required placeholder="Ej. Juan">
+                            </div>
+                            <div>
+                                <label class="m-label">Apellido</label>
+                                <input type="text" name="apellido" class="m-input" required placeholder="Ej. Pérez">
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label class="m-label">Correo Electrónico</label>
+                            <input type="email" name="correo" class="m-input" required placeholder="juan@ejemplo.com">
+                        </div>
+                        
+                        <div style="margin-bottom: 2rem;">
+                            <label class="m-label">Contraseña Temporal</label>
+                            <input type="password" name="password" class="m-input" required placeholder="••••••••">
+                        </div>
+
+                       <div style="margin-bottom: 1.5rem;">
+                            <label class="m-label"><i class="bi bi-card-text" style="margin-right: 5px;"></i> Carnet Institucional</label>
+                            <input type="text" name="carnet" value="{{ carnet }}" readonly 
+                                class="m-input" 
+                                style="background-color: #f8faff; color: var(--primary); border: 2px dashed #e2e8f0; cursor: default; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">
+                            <p style="margin-top: 8px; font-size: 0.75rem; color: var(--muted); font-weight: 600;">
+                                <i class="bi bi-info-circle"></i> ID generado automáticamente para este registro.
+                            </p>
+                        </div>
+
+                        <div class="m-card-footer" style="justify-content: center; margin-top: 1rem;">
+                            <button type="submit" class="m-btn m-btn-primary w-100" style="padding: 15px; font-size: 1rem;">
+                                <i class="bi bi-check-circle-fill" style="margin-right: 3px;"></i> Guardar Alumno
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-maestro" class="tab-content">
+            <div class="m-card" style="max-width: 750px; margin: 0 auto;">
+                <div class="m-card-body">
+                    <form action="{{ url_for('crear_usuario_logica') }}" method="POST">
+                        <input type="hidden" name="id_rol" value="2"> <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label class="m-label">Nombre</label>
+                                <input type="text" name="nombre" class="m-input" required placeholder="Ej. María">
+                            </div>
+                            <div>
+                                <label class="m-label">Apellido</label>
+                                <input type="text" name="apellido" class="m-input" required placeholder="Ej. Gómez">
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label class="m-label">Correo Electrónico</label>
+                            <input type="email" name="correo" class="m-input" required placeholder="maria@ejemplo.com">
+                        </div>
+                        
+                        <div style="margin-bottom: 2rem;">
+                            <label class="m-label">Contraseña Temporal</label>
+                            <input type="password" name="password" class="m-input" required placeholder="••••••••">
+                        </div>
+
                         <div style="margin-bottom: 2rem;">
                             <label class="m-label">Especialidad Docente</label>
-                            <input type="text" name="especialidad" class="m-input" placeholder="Ej. Matemáticas, Ciencias...">
+                            <input type="text" name="especialidad" class="m-input" required placeholder="Ej. Matemáticas, Ciencias...">
                         </div>
-                    {% elif id_rol == 3 %}
-                        <div style="margin-bottom: 2rem;">
-                            <label class="m-label">Número de Carnet Estudiantil</label>
-                            <input type="text" name="carnet" class="m-input" placeholder="Ej. 2026-0001">
-                        </div>
-                    {% endif %}
 
-                    <div class="m-card-footer" style="justify-content: center; margin-top: 1rem;">
-                        <button type="submit" class="m-btn m-btn-primary w-100" style="padding: 15px; font-size: 1rem;">
-                            <i class="bi bi-check-circle-fill" style="margin-right: 3px;"></i> Guardar {{ rol_nombre }}
-                        </button>
-                    </div>
-                </form>
+                        <div class="m-card-footer" style="justify-content: center; margin-top: 1rem;">
+                            <button type="submit" class="m-btn m-btn-primary w-100" style="padding: 15px; font-size: 1rem; background-color: #f59e0b;">
+                                <i class="bi bi-check-circle-fill" style="margin-right: 3px;"></i> Guardar Maestro
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
 
         <footer class="footer-simple">
-            <p>© 2026 Edu-Portal • Conectado de forma segura</p>
+            <p>© 2026 EduPortal • Conectado de forma segura</p>
         </footer>
     </div>
 </div>
@@ -102,11 +149,7 @@
         font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s;
         display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
     }
-    .chip-logout:hover { 
-        background: #fee2e2; 
-        color: #ef4444; 
-        transform: translateY(-2px); 
-    }
+    .chip-logout:hover { background: #fee2e2; color: #ef4444; transform: translateY(-2px); }
 
     .header-minimal { margin-bottom: 2.5rem; }
     .logo-container {
@@ -118,31 +161,35 @@
     .badge-group { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
     .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
 
+    /* CSS de las Pestañas (Igual que en Gestión de Usuarios) */
+    .tab-content { display: none !important; }
+    .tab-content.active { display: block !important; animation: fadeIn 0.4s ease; }
+    .tabs-container { display: flex; gap: 10px; background: #eef2f8; padding: 8px; border-radius: 20px; }
+    .tab-btn { flex: 1; padding: 14px; border: none; background: transparent; font-family: inherit; font-size: 1rem; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 15px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+
     .m-card {
         background: white; padding: 3rem; border-radius: 24px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid transparent;
-        text-align: left;
+        text-align: left; margin-bottom: 20px;
     }
 
-    .m-btn { flex: 1; border: none; cursor: pointer; padding: 12px; border-radius: 12px; font-weight: 700; text-decoration: none; text-align: center; transition: 0.2s; }
-    .m-btn-primary { background: var(--dark); color: white; }
-    .m-btn-primary:hover { background: var(--primary); box-shadow: 0 10px 20px rgba(67, 24, 255, 0.2); transform: translateY(-3px); }
+    .m-btn { flex: 1; border: none; cursor: pointer; border-radius: 12px; font-weight: 700; text-decoration: none; text-align: center; transition: 0.2s; color: white; }
+    .m-btn-primary { background: var(--dark); }
+    .m-btn-primary:hover { opacity: 0.9; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); transform: translateY(-3px); }
 
     .footer-simple { margin-top: 3rem; color: var(--muted); font-size: 0.8rem; font-weight: 600; text-align: center; }
 
-    .m-label {
-        display: block; font-weight: 800; color: var(--dark); margin-bottom: 8px; font-size: 0.9rem;
-    }
+    .m-label { display: block; font-weight: 800; color: var(--dark); margin-bottom: 8px; font-size: 0.9rem; }
     .m-input {
         width: 100%; padding: 14px 18px; border-radius: 14px; background-color: var(--bg);
         border: 2px solid transparent; color: var(--dark); font-family: inherit; font-weight: 600;
         transition: all 0.3s ease; box-sizing: border-box; font-size: 0.95rem;
     }
     .m-input::placeholder { color: var(--muted); font-weight: 500; }
-    .m-input:focus {
-        outline: none; border-color: var(--primary); background-color: white;
-        box-shadow: 0 10px 20px rgba(67, 24, 255, 0.05);
-    }
+    .m-input:focus { outline: none; border-color: var(--primary); background-color: white; box-shadow: 0 10px 20px rgba(67, 24, 255, 0.05); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     @media (max-width: 768px) {
         .m-card { padding: 1.5rem; }
@@ -150,5 +197,21 @@
         div[style*="display: grid"] { grid-template-columns: 1fr !important; }
     }
 </style>
+
+<script>
+    // Script para manejar el cambio de pestañas
+    function openTab(evt, tabName) {
+        const contents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < contents.length; i++) {
+            contents[i].classList.remove("active");
+        }
+        const buttons = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < buttons.length; i++) {
+            buttons[i].classList.remove("active");
+        }
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+</script>
 
 {% endblock %}

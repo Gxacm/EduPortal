@@ -64,7 +64,11 @@
                                 <tr>
                                     <td>{{ g.nombre_grado }}</td>
                                     <td style="text-align: right;">
-                                        <button class="btn-icon delete" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                        <form action="{{ url_for('eliminar_grado', id_grado=g.id_grado) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este grado?');">
+                                            <button type="submit" class="btn-icon delete" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 {% else %}
@@ -88,7 +92,26 @@
                     <form method="POST">
                         <label class="m-label">Nombre de la Materia</label>
                         <input type="text" name="nombre_clase" class="m-input" placeholder="Ej. Matemáticas" required>
-                        <button type="submit" name="guardar_clase" class="m-btn-config">Registrar Materia</button>
+
+                        <label class="m-label">Grado Destino</label>
+                        <select name="id_grado" class="m-input" required>
+                            <option value="" disabled selected>Seleccione un grado...</option>
+                            {% for g in grados %}
+                                <option value="{{ g.id_grado }}">{{ g.nombre_grado }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label class="m-label">Maestro Encargado</label>
+                        <select name="id_maestro" class="m-input">
+                            <option value="">Sin asignar (Pendiente)</option>
+                            {% for m in maestros %}
+                                <option value="{{ m.id_maestro }}">
+                                    {{ m.usuario.nombre }} {{ m.usuario.apellido }} - {{ m.especialidad }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <button type="submit" name="guardar_clase" class="m-btn-config" style="margin-top: 15px;">Registrar Materia</button>
                     </form>
                 </div>
 
@@ -98,21 +121,33 @@
                         <table class="m-table">
                             <thead>
                                 <tr>
-                                    <th>Nombre de la Materia</th>
+                                    <th>Materia</th>
+                                    <th>Grado</th>
+                                    <th>Maestro</th>
                                     <th style="text-align: right;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for c in clases %}
                                 <tr>
-                                    <td>{{ c.nombre_clase }}</td>
+                                    <td><strong>{{ c.nombre_clase }}</strong></td>
+                                    <td>
+                                        <span class="badge-grado">{{ c.grado.nombre_grado if c.grado else 'No asignado' }}</span>
+                                    </td>
+                                    <td>
+                                        {{ c.maestro_titular.usuario.nombre ~ ' ' ~ c.maestro_titular.usuario.apellido if c.maestro_titular else 'Por asignar' }}
+                                    </td>
                                     <td style="text-align: right;">
-                                        <button class="btn-icon delete" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                        <form action="{{ url_for('eliminar_materia', id_clase=c.id_clase) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta materia?');">
+                                            <button type="submit" class="btn-icon delete" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>                                     
                                     </td>
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="2" class="text-muted" style="text-align: center; padding: 20px;">No hay materias registradas.</td>
+                                    <td colspan="4" class="text-muted" style="text-align: center; padding: 20px;">No hay materias registradas.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -136,7 +171,7 @@
                         <select name="id_grado" class="m-input" required>
                             <option value="" disabled selected>Seleccione un grado...</option>
                             {% for g in grados %}
-                            <option value="{{ g.id }}">{{ g.nombre_grado }}</option>
+                            <option value="{{ g.id_grado }}">{{ g.nombre_grado }}</option>
                             {% endfor %}
                         </select>
 
@@ -144,18 +179,47 @@
                     </form>
                 </div>
 
-                <div class="m-card">
+               <div class="m-card">
                     <h3 class="m-section-title">Secciones Registradas</h3>
-                    <div style="text-align: center; padding: 2rem 0; color: var(--muted);">
-                        <i class="bi bi-tools" style="font-size: 2.5rem; margin-bottom: 10px; display: block;"></i>
-                        <p style="margin: 0; font-weight: 600;">Módulo en construcción.</p>
-                        <p style="font-size: 0.8rem;">(Aquí se listarán las secciones por grado)</p>
+                    <div class="table-responsive">
+                        <table class="m-table">
+                            <thead>
+                                <tr>
+                                    <th>Sección</th>
+                                    <th>Grado Asignado</th>
+                                    <th style="text-align: right;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in secciones %}
+                                <tr>
+                                    <td>
+                                        <span class="badge-count" style="background: #ecfdf5; color: #059669; border: 1px solid #d1fae5;">
+                                            {{ s.nombre_seccion }}
+                                        </span>
+                                    </td>
+                                    <td>{{ s.grado.nombre_grado }}</td>
+                                    <td style="text-align: right;">
+                                        <form action="{{ url_for('eliminar_seccion', id_seccion=s.id_seccion) }}" method="POST" onsubmit="return confirm('¿Eliminar esta sección?');">
+                                            <button type="submit" class="btn-icon delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-muted" style="text-align: center; padding: 20px;">
+                                        No hay secciones registradas en la base de datos.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-
             </div>
         </div>
-
     </div>
 </div>
 
