@@ -59,7 +59,6 @@ def logout():
 # ------------------------------ PANEL DEL MAESTRO -----------------------------
 # ==============================================================================
 
-# 1. DASHBOARD PRINCIPAL
 @app.route('/maestro')
 def maestro_dashboard():
     if session.get('rol') != 2: return redirect(url_for('login'))
@@ -83,62 +82,88 @@ def maestro_dashboard():
                            maestro=maestro_usuario, clases=clases, 
                            total_clases=len(clases), grados_data=grados_data, anuncios=anuncios)
 
-# 2. ASIGNAR TAREAS (Crear y Ver Historial)
+# --- GESTIÓN DE TAREAS ---
+
 @app.route('/maestro/tareas')
 def historial_tareas():
-    """Muestra la vista de tareas_historial.html"""
     if session.get('rol') != 2: return redirect(url_for('login'))
     
     user_id = session.get('user_id')
     perfil = Maestros.query.filter_by(id_usuario=user_id).first()
     tareas = []
     if perfil:
+        # Buscamos tareas de las clases que imparte este maestro
         clases_maestro = Clases.query.filter_by(id_maestro=perfil.id_maestro).all()
         ids_clases = [c.id_clase for c in clases_maestro]
-        tareas = Tareas.query.filter(Tareas.id_clase.in_(ids_clases)).all()
+        tareas = Tareas.query.filter(Tareas.id_clase.in_(ids_clases)).order_by(Tareas.fecha_entrega.desc()).all()
         
     return render_template('Panel_Maestro/tareas_historial.html', tareas=tareas)
 
 @app.route('/maestro/tareas/crear')
 def vista_nueva_tarea():
-    """Muestra el formulario para crear una nueva tarea"""
     if session.get('rol') != 2: return redirect(url_for('login'))
-    return render_template('Panel_Maestro/tareas_nuevas.html')
+    
+    user_id = session.get('user_id')
+    perfil = Maestros.query.filter_by(id_usuario=user_id).first()
+    # Enviamos las clases para que el maestro seleccione a cuál asignar la tarea
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all() if perfil else []
+    
+    return render_template('Panel_Maestro/tareas_nuevas.html', clases=clases)
 
 @app.route('/maestro/tareas/nueva', methods=['POST'])
 def crear_tarea():
-    """Procesa el formulario cuando el maestro le da a Guardar Tarea"""
     if session.get('rol') != 2: return redirect(url_for('login'))
     
-    nueva_tarea = Tareas(
-        id_clase=request.form.get('id_clase'),
-        titulo=request.form.get('titulo'),
-        fecha_entrega=datetime.strptime(request.form.get('fecha_entrega'), '%Y-%m-%dT%H:%M')
-    )
-    db.session.add(nueva_tarea)
-    db.session.commit()
-    flash("Tarea creada exitosamente", "success")
-    
-    # Después de crearla, lo mandamos al historial para que la vea
+    try:
+        nueva_tarea = Tareas(
+            id_clase=request.form.get('id_clase'),
+            titulo=request.form.get('titulo'),
+            descripcion=request.form.get('descripcion'),
+            fecha_entrega=datetime.strptime(request.form.get('fecha_entrega'), '%Y-%m-%dT%H:%M')
+        )
+        db.session.add(nueva_tarea)
+        db.session.commit()
+        flash("Tarea creada exitosamente", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Error al crear tarea. Revisa los datos.", "danger")
+
     return redirect(url_for('historial_tareas'))
 
-# 3. REGISTRAR NOTAS
-@app.route('/maestro/notas/general')
-def registrar_notas():
-    """Abre el panel general de notas_subir.html"""
-    if session.get('rol') != 2: return redirect(url_for('login'))
-    return render_template('Panel_Maestro/notas_subir.html')
+# --- REVISIÓN DE ASIGNACIONES (NOTAS) ---
 
-# 4. VISUALIZAR ESTUDIANTES / MATERIAS
+@app.route('/maestro/notas/general', methods=['GET', 'POST'])
+def registrar_notas():
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    perfil = Maestros.query.filter_by(id_usuario=user_id).first()
+    
+    if request.method == 'POST':
+        # Aquí iría la lógica para guardar las notas enviadas por el formulario
+        flash("Calificaciones procesadas correctamente (Simulación)", "success")
+        return redirect(url_for('registrar_notas'))
+
+    alumnos_lista = []
+    if perfil:
+        # Buscamos alumnos de los grados donde el maestro da clases
+        clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all()
+        ids_grados = [c.id_grado for c in clases]
+        secciones = Secciones.query.filter(Secciones.id_grado.in_(ids_grados)).all()
+        ids_secciones = [s.id_seccion for s in secciones]
+        alumnos_lista = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
+
+    return render_template('Panel_Maestro/notas_subir.html', alumnos=alumnos_lista)
+
+# --- OTROS MÓDULOS ---
+
 @app.route('/maestro/grados/ver')
 def ver_grados():
-    """Muestra los grados asignados al maestro (grados.html)"""
     if session.get('rol') != 2: return redirect(url_for('login'))
     return render_template('Panel_Maestro/grados.html')
 
 @app.route('/maestro/grado/<int:id_grado>')
 def gestionar_grado(id_grado):
-    """Muestra los alumnos específicos de un grado (maestro_gestion_grado.html)"""
     if session.get('rol') != 2: return redirect(url_for('login'))
     secciones = Secciones.query.filter_by(id_grado=id_grado).all()
     ids_secciones = [s.id_seccion for s in secciones]
@@ -146,23 +171,20 @@ def gestionar_grado(id_grado):
     grado = Grados.query.get(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
 
-# 5. ENVIAR REPORTES
 @app.route('/maestro/reportes/enviar')
 def enviar_reportes():
-    """Muestra la vista de reportes_enviar.html"""
     if session.get('rol') != 2: return redirect(url_for('login'))
     return render_template('Panel_Maestro/reportes_enviar.html')
 
-# 6. CONTROL DE ASISTENCIA Y 7. EXPORTACIÓN DE DATOS (Módulos pendientes de HTML)
 @app.route('/maestro/asistencia/control')
 def control_asistencia():
     if session.get('rol') != 2: return redirect(url_for('login'))
-    return "Módulo de Control de Asistencia. (Aún no tienes el HTML creado para esto en tu carpeta)"
+    return "Módulo de Control de Asistencia. (Pendiente HTML)"
 
 @app.route('/maestro/datos/exportar')
 def exportar_datos():
     if session.get('rol') != 2: return redirect(url_for('login'))
-    return "Módulo para Exportar Datos. (Aún no tienes el HTML creado para esto en tu carpeta)"
+    return "Módulo para Exportar Datos. (Pendiente HTML)"
 
 
 # ==============================================================================
