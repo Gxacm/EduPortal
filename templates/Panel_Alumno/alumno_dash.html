@@ -1,12 +1,230 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Panel Alumno</h1>
 
-<h3>Mis Notas</h3>
-<ul>
-{% for n in notas %}
-    <li>{{ n.Nota }}</li>
-{% endfor %}
-</ul>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<div class="dashboard-container">
+    
+    <aside class="sidebar-modern">
+        <div class="sidebar-header-widget">
+            <small>Progreso del I Parcial</small>
+            <div class="mini-progress-bar">
+                <div class="fill" style="width: 65%;"></div>
+            </div>
+            <span class="semester-tag">Año Escolar 2026</span>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="{{ url_for('alumno_dashboard') }}" class="nav-link active">
+                <i class="bi bi-house-door"></i> Inicio
+            </a>
+            <a href="{{ url_for('alumno_clases') }}" class="nav-link">
+                <i class="bi bi-journals"></i> Mis Clases
+            </a>
+            <a href="{{ url_for('alumno_tareas') }}" class="nav-link">
+                <i class="bi bi-pencil-square"></i> Tareas
+            </a>
+            <a href="{{ url_for('alumno_calificaciones') }}" class="nav-link">
+                <i class="bi bi-star"></i> Notas
+            </a>
+            <a href="{{ url_for('alumno_horario') }}" class="nav-link">
+                <i class="bi bi-clock"></i> Horario
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-viewport">
+        
+        <header class="welcome-banner">
+            <div class="welcome-text">
+                <h1>Hola, {{ session['nombre'] }} 👋</h1>
+                <p>Hoy es lunes, 23 de marzo. Tienes 3 tareas pendientes para esta semana.</p>
+            </div>
+            <div class="quick-status-widget">
+                <div class="status-item">
+                    <i class="bi bi-lightning-charge-fill" style="color: var(--accent-orange);"></i>
+                    <div>
+                        <span class="val">95%</span>
+                        <span class="lab">Asistencia</span>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="status-item">
+                    <i class="bi bi-journal-bookmark-fill" style="color: var(--white);"></i>
+                    <div>
+                        <span class="val">8</span>
+                        <span class="lab">Materias</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="bento-grid">
+            
+            <section class="bento-item today-classes">
+                <div class="item-header">
+                    <h3><i class="bi bi-calendar-event"></i> Horario de Hoy</h3>
+                    <a href="#">Ver todo</a>
+                </div>
+                <div class="class-card">
+                    <div class="time">08:00 AM</div>
+                    <div class="details">
+                        <strong>Matemáticas II</strong>
+                        <span>Prof. Carlos Mendoza • Aula 15</span>
+                    </div>
+                    <span class="status-live">En curso</span>
+                </div>
+                <div class="class-card next">
+                    <div class="time">09:30 AM</div>
+                    <div class="details">
+                        <strong>Ciencias Naturales</strong>
+                        <span>Prof. Elena Rivas • Lab de Ciencias</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bento-item gpa-card">
+                <h3>Rendimiento</h3>
+                <div class="circular-progress">
+                    <div class="value">88%</div>
+                </div>
+                <p>Promedio General</p>
+                <span class="trend-up"><i class="bi bi-arrow-up-short"></i> +2% este mes</span>
+            </section>
+
+            <section class="bento-item tasks-urgent">
+                <div class="item-header">
+                    <h3><i class="bi bi-exclamation-circle"></i> Entregas Próximas</h3>
+                </div>
+                <div class="task-row">
+                    <div class="task-icon priority-high"><i class="bi bi-calculator"></i></div>
+                    <div class="task-info">
+                        <strong>Guía de Ejercicios</strong>
+                        <span>Vence en 4 horas</span>
+                    </div>
+                    <button class="btn-action">Subir</button>
+                </div>
+                <div class="task-row">
+                    <div class="task-icon priority-mid"><i class="bi bi-palette"></i></div>
+                    <div class="task-info">
+                        <strong>Maqueta del Sistema Solar</strong>
+                        <span>Vence Mañana</span>
+                    </div>
+                    <button class="btn-action">Subir</button>
+                </div>
+            </section>
+
+            <section class="bento-item news-feed">
+                <h3>Comunicados</h3>
+                <div class="news-item">
+                    <small>Hace 2 horas • Dirección</small>
+                    <p>Estimados padres y alumnos, este viernes habrá reunión de entrega de notas.</p>
+                </div>
+                <div class="news-item">
+                    <small>Ayer • Biblioteca</small>
+                    <p>Nuevos libros de texto y lectura comprensiva ya disponibles.</p>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<style>
+    :root {
+        --primary: #46319b;
+        --secondary: #6c757d;
+        --bg: #f4f7fe;
+        --white: #ffffff;
+        --dark: #2b3674;
+        --accent-green: #05cd99;
+        --accent-red: #ee5d50;
+        --accent-orange: #ffb547;
+    }
+
+    body { background-color: var(--bg); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* LAYOUT PRINCIPAL */
+    .dashboard-container { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar-modern {
+        width: 280px; background: var(--white); border-right: 1px solid #e0e5f2;
+        padding: 40px 20px; display: flex; flex-direction: column;
+    }
+    
+    .sidebar-header-widget { margin-bottom: 40px; padding: 15px; background: #f8faff; border-radius: 16px; border: 1px solid #edf2f7; }
+    .sidebar-header-widget small { color: var(--secondary); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;}
+    .mini-progress-bar { height: 8px; background: #e0e5f2; border-radius: 10px; margin: 12px 0; overflow: hidden; }
+    .mini-progress-bar .fill { height: 100%; background: var(--primary); border-radius: 10px; }
+    .semester-tag { font-size: 0.85rem; font-weight: 700; color: var(--dark); }
+
+    .nav-menu { flex: 1; }
+    .nav-link {
+        display: flex; align-items: center; gap: 15px; padding: 15px 20px;
+        text-decoration: none; color: #a3aed0; font-weight: 700; border-radius: 15px;
+        transition: 0.3s; margin-bottom: 5px;
+    }
+    .nav-link:hover, .nav-link.active { background: #f7f9ff; color: var(--primary); }
+    .btn-logout-mini { margin-top: auto; color: var(--accent-red); text-decoration: none; font-weight: 700; padding: 15px 20px; display: flex; align-items: center; gap: 10px; }
+
+    /* MAIN CONTENT */
+    .main-viewport { flex: 1; padding: 40px; }
+
+    /* WELCOME BANNER */
+    .welcome-banner { 
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 40px; background: linear-gradient(90deg, var(--primary), #707eff);
+        padding: 30px; border-radius: 30px; color: white; box-shadow: 0 20px 40px rgba(67, 24, 255, 0.2);
+    }
+    .welcome-text h1 { margin: 0; font-weight: 800; font-size: 2rem; }
+    
+    .quick-status-widget { background: rgba(255,255,255,0.15); padding: 15px 25px; border-radius: 20px; display: flex; align-items: center; gap: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+    .status-item { display: flex; align-items: center; gap: 12px; }
+    .status-item i { font-size: 1.5rem; }
+    .status-item .val { display: block; font-weight: 800; color: var(--white); font-size: 1.1rem; line-height: 1; }
+    .status-item .lab { display: block; font-size: 0.75rem; color: rgba(255,255,255,0.8); font-weight: 600; margin-top: 4px; }
+    .quick-status-widget .divider { width: 1px; height: 35px; background: rgba(255,255,255,0.3); }
+
+    /* BENTO GRID */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: auto auto;
+        gap: 25px;
+    }
+    .bento-item { background: var(--white); padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+
+    /* COMPONENTES ESPECIFICOS */
+    .today-classes { grid-column: span 2; }
+    .class-card { 
+        display: flex; align-items: center; gap: 20px; padding: 15px; 
+        background: #f8faff; border-radius: 18px; margin-top: 15px; border: 1px solid #edf2f7;
+    }
+    .status-live { background: var(--accent-green); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; margin-left: auto; }
+
+    .gpa-card { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .circular-progress { 
+        width: 100px; height: 100px; border-radius: 50%; 
+        border: 8px solid #f0f2f8; border-top-color: var(--primary);
+        display: flex; align-items: center; justify-content: center; margin: 20px 0;
+    }
+    .circular-progress .value { font-size: 1.8rem; font-weight: 800; color: var(--dark); }
+
+    .task-row { display: flex; align-items: center; gap: 15px; margin-top: 20px; }
+    .task-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .priority-high { background: #fee2e2; color: var(--accent-red); }
+    .priority-mid { background: #fff4e5; color: var(--accent-orange); }
+    .btn-action { background: var(--dark); color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-left: auto; }
+
+    .news-item { border-left: 3px solid var(--primary); padding-left: 15px; margin-top: 15px; }
+
+    @media (max-width: 1100px) {
+        .bento-grid { grid-template-columns: 1fr; }
+        .today-classes { grid-column: span 1; }
+        .sidebar-modern { display: none; }
+    }
+</style>
 
 {% endblock %}
