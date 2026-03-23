@@ -83,11 +83,8 @@ def maestro_dashboard():
                            maestro=maestro_usuario, clases=clases, 
                            total_clases=len(clases), grados_data=grados_data, anuncios=anuncios)
 
-<<<<<<< HEAD
 # --- GESTIÓN DE TAREAS ---
 
-=======
->>>>>>> 187b6bb3fef03920ade037ada1808bfa8bfdd9fd
 @app.route('/maestro/tareas')
 def historial_tareas():
     if session.get('rol') != 2: return redirect(url_for('login'))
@@ -118,7 +115,6 @@ def vista_nueva_tarea():
 def crear_tarea():
     if session.get('rol') != 2: return redirect(url_for('login'))
     
-<<<<<<< HEAD
     try:
         nueva_tarea = Tareas(
             id_clase=request.form.get('id_clase'),
@@ -161,24 +157,6 @@ def registrar_notas():
     return render_template('Panel_Maestro/notas_subir.html', alumnos=alumnos_lista)
 
 # --- OTROS MÓDULOS ---
-=======
-    nueva_tarea = Tareas(
-        id_clase=request.form.get('id_clase'),
-        titulo=request.form.get('titulo'),
-        fecha_entrega=datetime.strptime(request.form.get('fecha_entrega'), '%Y-%m-%dT%H:%M')
-    )
-    db.session.add(nueva_tarea)
-    db.session.commit()
-    flash("Tarea creada exitosamente", "success")
-    
-    return redirect(url_for('historial_tareas'))
-
-@app.route('/maestro/notas/general')
-def registrar_notas():
-    """Abre el panel general de notas_subir.html"""
-    if session.get('rol') != 2: return redirect(url_for('login'))
-    return render_template('Panel_Maestro/notas_subir.html')
->>>>>>> 187b6bb3fef03920ade037ada1808bfa8bfdd9fd
 
 @app.route('/maestro/grados/ver')
 def ver_grados():
