@@ -53,6 +53,20 @@
                             <label class="m-label">Correo Electrónico</label>
                             <input type="email" name="correo" class="m-input" required placeholder="juan@ejemplo.com">
                         </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <label class="m-label">Grado y Sección de Matrícula</label>
+                            <select name="id_seccion" class="m-input" required style="cursor: pointer;">
+                                <option value="" disabled selected>Seleccione el grado y sección</option>
+                                {% for sec in secciones %}
+                                    <option value="{{ sec.id_seccion }}">
+                                        {{ sec.grado.nombre_grado }} - Sección "{{ sec.nombre_seccion }}"
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <p style="margin-top: 8px; font-size: 0.75rem; color: var(--muted); font-weight: 600;">
+                                <i class="bi bi-info-circle"></i> Esto asignará al alumno a sus clases correspondientes automáticamente.
+                            </p>
+                        </div>
                         
                         <div style="margin-bottom: 2rem;">
                             <label class="m-label">Contraseña Temporal</label>
@@ -172,6 +186,19 @@
         background: white; padding: 3rem; border-radius: 24px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid transparent;
         text-align: left; margin-bottom: 20px;
+    }
+
+    select.m-input {
+    appearance: none; /* Quita el estilo por defecto del sistema */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a3aed0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+    }
+
+    select.m-input:focus {
+        border-color: var(--primary);
     }
 
     .m-btn { flex: 1; border: none; cursor: pointer; border-radius: 12px; font-weight: 700; text-decoration: none; text-align: center; transition: 0.2s; color: white; }

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="settings-wrapper role-{{ rol }}">
+    <div class="settings-container">
+        
+        <header class="settings-header">
+            <div class="header-left">
+                <h2 class="main-title">Configuración del Sistema</h2>
+                <p class="subtitle">Personaliza tu experiencia y seguridad en la plataforma</p>
+            </div>
+            <div class="header-right">
+                <a href="javascript:history.back()" class="btn-return">
+                    <i class="bi bi-arrow-left"></i> Volver al Panel
+                </a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert-custom {{ 'err' if category == 'error' else 'success' }}">
+                <i class="bi {{ 'bi-exclamation-circle' if category == 'error' else 'bi-check-circle' }}"></i>
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="settings-card shadow-sm">
+            <nav class="settings-nav">
+                <div class="nav-links">
+                    <button class="nav-btn active" onclick="tabs(event, 'seguridad')">
+                        <i class="bi bi-shield-lock"></i> Seguridad
+                    </button>
+                    <button class="nav-btn" onclick="tabs(event, 'apariencia')">
+                        <i class="bi bi-palette"></i> Apariencia
+                    </button>
+                    <button class="nav-btn" onclick="tabs(event, 'notificaciones')">
+                        <i class="bi bi-bell"></i> Notificaciones
+                    </button>
+                </div>
+                
+                <div class="sidebar-footer">
+                    <small>EduPortal v1.0.2</small>
+                </div>
+            </nav>
+
+            <main class="settings-main">
+                
+                <section id="seguridad" class="tab-pane active">
+                    <div class="pane-header">
+                        <h3>Gestión de Seguridad</h3>
+                        <p>Actualiza tus credenciales de acceso para proteger tu información.</p>
+                    </div>
+
+                    <form action="{{ url_for('ajustes') }}" method="POST" class="inner-form">
+                        <input type="hidden" name="accion" value="cambiar_pass">
+                        
+                        <div class="form-field full">
+                            <label>Contraseña Actual</label>
+                            <input type="password" name="pass_actual" placeholder="••••••••" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Nueva Contraseña</label>
+                                <input type="password" name="pass_nueva" placeholder="Mínimo 8 caracteres" required>
+                            </div>
+                            <div class="form-field">
+                                <label>Confirmar Nueva</label>
+                                <input type="password" name="confirm_pass" placeholder="Repite la Contraseña" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-submit">Guardar Nueva Contraseña</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section id="apariencia" class="tab-pane">
+                    <div class="pane-header">
+                        <h3>Personalización Visual</h3>
+                        <p>Ajusta el entorno de trabajo a tu preferencia.</p>
+                    </div>
+
+                    <div class="appearance-grid">
+                        <div class="option-card">
+                            <div class="option-info">
+                                <i class="bi bi-moon-stars"></i>
+                                <div>
+                                    <strong>Modo Oscuro</strong>
+                                    <span>Reduce la fatiga visual en ambientes oscuros.</span>
+                                </div>
+                            </div>
+                            <label class="switch-modern">
+                                <input type="checkbox" id="darkModeToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="option-card">
+                            <div class="option-info">
+                                <i class="bi bi-fonts"></i>
+                                <div>
+                                    <strong>Texto Enriquecido</strong>
+                                    <span>Aumenta el tamaño de la fuente en el contenido.</span>
+                                </div>
+                            </div>
+                            <label class="switch-modern">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="notificaciones" class="tab-pane">
+                    <div class="pane-header">
+                        <h3>Preferencias de Alerta</h3>
+                        <p>Controla qué información deseas recibir de forma prioritaria.</p>
+                    </div>
+                    
+                    <div class="inner-form">
+                        {% if rol == 1 %}
+                        <div class="notif-item">
+                            <div class="notif-text">
+                                <strong>Alertas de Mensajería</strong>
+                                <span>Cuando haya modificaciones en el sistema.</span>
+                            </div>
+                            <input type="checkbox" checked>
+                        </div>
+                        {% endif %}
+
+                        {% if rol == 2 %}
+                        <div class="notif-item">
+                            <div class="notif-text">
+                                <strong>Entregas de Tareas</strong>
+                                <span>Notificarme cada vez que un alumno suba un archivo.</span>
+                            </div>
+                            <input type="checkbox" checked>
+                        </div>
+                        {% endif %}
+
+                        {% if rol == 3 %}
+                        <div class="notif-item">
+                            <div class="notif-text">
+                                <strong>Calificaciones Publicadas</strong>
+                                <span>Avisarme inmediatamente cuando un maestro califique.</span>
+                            </div>
+                            <input type="checkbox" checked>
+                        </div>
+                        {% endif %}
+
+                        <button class="btn-submit" onclick="alert('Preferencias guardadas')">Guardar Preferencias</button>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* VARIABLES DE ROL (Colores basados en tu sistema) */
+    .role-1 { --role-color: #4318ff; --role-bg: #f4f7fe; }
+    .role-2 { --role-color: #059669; --role-bg: #ecfdf5; }
+    .role-3 { --role-color: #7c3aed; --role-bg: #f5f3ff; }
+
+    .settings-wrapper { background-color: #f8fafc; min-height: 100vh; padding: 40px 20px; display: flex; justify-content: center; }
+    .settings-container { width: 100%; max-width: 1050px; }
+
+    /* CABECERA */
+    .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .main-title { color: #2b3674; font-weight: 800; font-size: 1.8rem; margin: 0; }
+    .subtitle { color: #a3aed0; font-size: 0.95rem; margin-top: 5px; }
+    
+    .btn-return { background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: flex; align-items: center; }
+    .btn-return:hover{ background: #fee2e2;  color: #ef4444;  transform: translateY(-2px); }
+
+    /* TARJETA PRINCIPAL */
+    .settings-card { 
+        background: white; border-radius: 25px; display: grid; 
+        grid-template-columns: 260px 1fr; min-height: 550px; overflow: hidden;
+    }
+
+    /* NAVEGACIÓN */
+    .settings-nav { background: #fcfdfe; border-right: 1px solid #f4f7fe; padding: 40px 20px; display: flex; flex-direction: column; justify-content: space-between; }
+    .nav-links { display: flex; flex-direction: column; gap: 10px; }
+    .nav-btn {
+        border: none; background: transparent; padding: 14px 18px; border-radius: 14px;
+        text-align: left; display: flex; align-items: center; gap: 12px;
+        font-weight: 700; color: #a3aed0; transition: 0.2s;
+    }
+    .nav-btn.active { background: var(--role-bg); color: var(--role-color); }
+    .nav-btn:hover:not(.active) { background: #f8fafc; color: #2b3674; }
+    .sidebar-footer { text-align: center; color: #cbd5e1; font-size: 0.75rem; font-weight: 600; }
+
+    /* CONTENIDO */
+    .settings-main { padding: 50px; }
+    .pane-header { margin-bottom: 35px; border-bottom: 1px solid #f4f7fe; padding-bottom: 20px; }
+    .pane-header h3 { color: #2b3674; font-weight: 800; }
+    .pane-header p { color: #a3aed0; font-size: 0.9rem; }
+
+    /* FORMULARIOS Y OPCIONES */
+    .inner-form { max-width: 600px; }
+    .form-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .form-row { display: flex; gap: 20px; }
+    .form-field label { font-size: 0.75rem; font-weight: 800; color: #a3aed0; text-transform: uppercase; }
+    .form-field input { 
+        padding: 14px; border-radius: 14px; border: 1px solid #e0e5f2; 
+        background: #f4f7fe; font-weight: 600; color: #2b3674;
+    }
+    .form-field input:focus { border-color: var(--role-color); background: white; outline: none; }
+
+    /* APARIENCIA CARDS */
+    .appearance-grid { display: grid; gap: 15px; max-width: 600px; }
+    .option-card { 
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 20px; background: #fcfdfe; border: 1px solid #f4f7fe; border-radius: 18px;
+    }
+    .option-info { display: flex; align-items: center; gap: 15px; }
+    .option-info i { font-size: 1.4rem; color: var(--role-color); }
+    .option-info strong { display: block; color: #2b3674; font-size: 0.95rem; }
+    .option-info span { color: #a3aed0; font-size: 0.8rem; }
+
+    /* SWITCHES */
+    .switch-modern { position: relative; width: 42px; height: 22px; }
+    .switch-modern input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #cbd5e1; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background: var(--role-color); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* NOTIFICACIONES */
+    .notif-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f4f7fe; }
+    .notif-text strong { display: block; color: #2b3674; font-size: 0.9rem; }
+    .notif-text span { color: #a3aed0; font-size: 0.8rem; }
+
+    .btn-submit { 
+        background: var(--role-color); color: white; border: none; padding: 14px 28px; 
+        border-radius: 14px; font-weight: 800; cursor: pointer; transition: 0.3s; margin-top: 15px;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+
+    .tab-pane { display: none; animation: fadeIn 0.3s ease; }
+    .tab-pane.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<script>
+    function tabs(e, id) {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        e.currentTarget.classList.add('active');
+    }
+</script>
+{% endblock %}

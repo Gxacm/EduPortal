@@ -65,7 +65,8 @@
                                     <td>{{ g.nombre_grado }}</td>
                                     <td style="text-align: right;">
                                         <form action="{{ url_for('eliminar_grado', id_grado=g.id_grado) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este grado?');">
-                                            <button type="submit" class="btn-icon delete" title="Eliminar">
+                                            <button type="button" class="btn-icon delete" 
+                                                onclick="abrirModal('{{ g.id_grado }}', '{{ g.nombre_grado }}', 'grado')">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -139,7 +140,7 @@
                                     </td>
                                     <td style="text-align: right;">
                                         <form action="{{ url_for('eliminar_materia', id_clase=c.id_clase) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta materia?');">
-                                            <button type="submit" class="btn-icon delete" title="Eliminar">
+                                            <button type="button" class="btn-icon delete" onclick="abrirModal('{{ c.id_clase }}', '{{ c.nombre_clase }}', 'materia')">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>                                     
@@ -201,7 +202,8 @@
                                     <td>{{ s.grado.nombre_grado }}</td>
                                     <td style="text-align: right;">
                                         <form action="{{ url_for('eliminar_seccion', id_seccion=s.id_seccion) }}" method="POST" onsubmit="return confirm('¿Eliminar esta sección?');">
-                                            <button type="submit" class="btn-icon delete">
+                                            <button type="button" class="btn-icon delete" 
+                                                onclick="abrirModal('{{ s.id_seccion }}', '{{ s.nombre_seccion }}', 'seccion')">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -221,6 +223,18 @@
             </div>
         </div>
     </div>
+    
+    <div id="modalDelete" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <h3 class="m-section-title">¿Eliminar registro?</h3>
+        <p class="modal-desc">Estás a punto de borrar permanentemente:<br><strong id="delNombre"></strong></p>
+        <form id="formDelete" method="POST" class="modal-form">
+            <button type="button" onclick="cerrarModal()" class="btn-cancel">Cancelar</button>
+            <button type="submit" class="btn-confirm-delete">Eliminar Permanentemente</button>
+        </form>
+    </div>
+</div>
 </div>
 
 <style>
@@ -287,25 +301,76 @@
         .tabs-container { flex-direction: column; }
         .m-card { padding: 1.5rem; }
     }
+
+    /* Modal Estilo Usuarios */
+    .modal-overlay { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(43, 54, 116, 0.2); backdrop-filter: blur(8px); 
+        display: none; align-items: center; justify-content: center; z-index: 1000; 
+    }
+    .modal-card { 
+        background: white; padding: 2.5rem; border-radius: 30px; 
+        width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
+    }
+    .modal-alert-icon { font-size: 3rem; color: #ef4444; margin-bottom: 1rem; }
+    .modal-desc { color: #a3aed0; margin-top: 10px; line-height: 1.5; }
+    .modal-form { margin-top: 2rem; display: flex; gap: 12px; }
+    .btn-cancel { 
+        flex: 1; padding: 14px; border-radius: 12px; border: none; 
+        background: #f4f7fe; font-weight: 700; cursor: pointer; color: #2b3674;
+    }
+    .btn-confirm-delete { 
+        flex: 1; padding: 14px; border-radius: 12px; border: none; 
+        background: #ef4444; color: white; font-weight: 700; cursor: pointer; 
+    }
 </style>
 
 <script>
     function openTab(evt, tabName) {
-        // Ocultar todo el contenido de las pestañas
         let tabcontent = document.getElementsByClassName("tab-content");
         for (let i = 0; i < tabcontent.length; i++) {
             tabcontent[i].classList.remove("active");
         }
-        
-        // Quitar la clase "active" de todos los botones
         let tablinks = document.getElementsByClassName("tab-btn");
         for (let i = 0; i < tablinks.length; i++) {
             tablinks[i].classList.remove("active");
         }
-        
-        // Mostrar la pestaña actual y añadir "active" al botón que se hizo clic
         document.getElementById(tabName).classList.add("active");
         evt.currentTarget.classList.add("active");
+    }
+
+    // Nueva función dinámica para abrir el modal
+    function abrirModal(id, nombre, tipo) {
+    const displayNombre = document.getElementById('delNombre');
+    const form = document.getElementById('formDelete');
+    const modal = document.getElementById('modalDelete');
+
+    displayNombre.innerText = nombre;
+    
+    // Ajustado exactamente a las rutas de tu app.py
+    let url = "";
+    if (tipo === 'grado') {
+        url = "/admin/configuracion/eliminar_grado/" + id;
+    } else if (tipo === 'materia') {
+        url = "/admin/configuracion/eliminar_materia/" + id;
+    } else if (tipo === 'seccion') {
+        url = "/admin/configuracion/eliminar_seccion/" + id;
+    }
+    
+    form.action = url;
+    modal.style.display = 'flex';
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalDelete').style.display = 'none';
+    }
+
+    // Cerrar modal si hacen clic fuera de la tarjeta blanca
+    window.onclick = function(event) {
+        let modal = document.getElementById('modalDelete');
+        if (event.target == modal) {
+            cerrarModal();
+        }
     }
 </script>
 
