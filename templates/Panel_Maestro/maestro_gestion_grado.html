@@ -6,176 +6,113 @@
 
 <style>
     :root {
-        --success-main: #10b981;
-        --success-dark: #065f46;
-        --dark-text: #1e293b;
-        --muted-text: #64748b;
-        --bg-soft: #f0fdf4;
-        --card-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        --success-main: #10b981; --success-soft: #ecfdf5;
+        --danger-main: #ef4444; --danger-soft: #fef2f2;
+        --primary-main: #3b82f6; --primary-soft: #eff6ff;
+        --warning-main: #f59e0b; --warning-soft: #fffbeb;
+        --info-main: #0ea5e9; --info-soft: #f0f9ff;
+        --dark-text: #1e293b; --muted-text: #64748b;
+        --bg-soft: #f8fafc;
     }
 
-    body { 
-        background-color: var(--bg-soft); 
-        font-family: 'Plus Jakarta Sans', sans-serif; 
-        color: var(--dark-text);
-    }
+    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
+    .viewport-container { padding: 30px 20px; max-width: 1200px; margin: 0 auto; }
 
-    .viewport-container { padding: 40px 0; }
+    .btn-back-nav { display: inline-flex; align-items: center; gap: 8px; color: var(--muted-text); text-decoration: none; font-weight: 700; margin-bottom: 20px; transition: 0.3s; }
+    .btn-back-nav:hover { color: var(--dark-text); transform: translateX(-5px); }
 
-    /* HEADER */
-    .header-section { position: relative; text-align: center; margin-bottom: 3rem; }
-    .btn-back-top {
-        position: absolute; left: 0; top: 10px;
-        display: flex; align-items: center; gap: 8px;
-        color: var(--success-main); font-weight: 700; text-decoration: none;
-        transition: 0.3s; font-size: 0.9rem;
-    }
-    .btn-back-top:hover { color: var(--success-dark); transform: translateX(-5px); }
+    .management-header { background: white; border-radius: 24px; padding: 2rem; margin-bottom: 30px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
 
-    .logo-box {
-        width: 64px; height: 64px; background: white; border-radius: 18px;
-        margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.1);
-    }
-
-    /* PANEL DE HERRAMIENTAS */
-    .tool-grid {
+    .tools-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 15px;
+        margin-bottom: 40px;
     }
 
     .tool-card {
-        background: white; padding: 1.8rem; border-radius: 24px;
-        text-decoration: none; color: inherit;
-        display: flex; flex-direction: column; align-items: center;
-        text-align: center; transition: 0.3s;
-        box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02);
+        background: white; padding: 20px 15px; border-radius: 20px;
+        text-align: center; text-decoration: none; border: 1px solid #f1f5f9;
+        transition: all 0.3s ease; display: flex; flex-direction: column;
+        align-items: center; gap: 10px;
     }
 
-    .tool-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 30px rgba(16, 185, 129, 0.1);
-        border-color: var(--success-main);
-    }
-
-    .tool-icon {
-        width: 55px; height: 55px;
-        background: var(--bg-soft); color: var(--success-main);
-        border-radius: 15px; display: flex; align-items: center; justify-content: center;
-        font-size: 1.6rem; margin-bottom: 1.2rem;
-    }
-
-    .tool-card h4 { font-weight: 800; font-size: 1.1rem; margin-bottom: 8px; }
-    .tool-card p { font-size: 0.8rem; color: var(--muted-text); margin: 0; line-height: 1.4; }
-
-    /* TABLA DE NÓMINA (AHORA A ANCHO COMPLETO) */
-    .m-card-full { 
-        background: white; border-radius: 28px; padding: 2rem; 
-        box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); 
-    }
-    
-    .custom-table { width: 100%; border-collapse: collapse; }
-    .custom-table th {
-        background: #f8fafc; font-size: 0.75rem; text-transform: uppercase;
-        color: var(--muted-text); padding: 18px; border: none; text-align: center;
-        letter-spacing: 0.5px;
-    }
-    .custom-table td { padding: 18px; vertical-align: middle; text-align: center; border-bottom: 1px solid #f1f5f9; }
-
-    .avatar-box {
-        width: 42px; height: 42px; 
-        background: linear-gradient(135deg, var(--success-main), #34d399); 
-        color: white; border-radius: 12px; display: inline-flex;
-        align-items: center; justify-content: center;
-        font-weight: 800; font-size: 0.9rem;
-    }
-
-    .btn-view {
-        background: #f1f5f9; color: var(--success-main);
-        border: none; padding: 8px 16px; border-radius: 10px;
-        font-weight: 700; font-size: 0.8rem; transition: 0.2s;
-    }
-    .btn-view:hover { background: var(--success-main); color: white; }
-
-    @media (max-width: 768px) {
-        .header-section { margin-top: 40px; }
-        .btn-back-top { top: -40px; width: 100%; justify-content: center; }
-    }
+    .tool-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1); border-color: var(--primary-main); }
+    .tool-icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .tool-text { font-weight: 700; color: var(--dark-text); font-size: 0.85rem; }
+    .student-card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; }
 </style>
 
 <div class="viewport-container">
-    <div class="container">
-        
-        <header class="header-section">
-            <a href="/maestro" class="btn-back-top"><i class="bi bi-arrow-left-short fs-4"></i> Volver al Inicio</a>
-            <div class="logo-box"><i class="bi bi-person-video3 fs-3 text-success"></i></div>
-            <h1 class="fw-800 mb-1">Gestión de la <span class="text-success">Clase</span></h1>
-            <p class="text-muted fw-600 small">Grupo: {{ grado.NombreGrado }} • Control de Estudiantes</p>
-        </header>
+    
+    <a href="{{ url_for('maestro_dashboard') }}" class="btn-back-nav">
+        <i class="bi bi-chevron-left"></i> Volver al Panel Maestro
+    </a>
 
-        <section class="tool-grid">
-            <a href="/maestro/tareas/nueva" class="tool-card">
-                <div class="tool-icon"><i class="bi bi-journal-plus"></i></div>
-                <h4>Asignar Tarea</h4>
-                <p>Publicar y programar nuevas actividades académicas.</p>
-            </a>
-            
-            <a href="/maestro/notas" class="tool-card">
-                <div class="tool-icon"><i class="bi bi-pencil-square"></i></div>
-                <h4>Calificar</h4>
-                <p>Gestionar y registrar el rendimiento del grupo.</p>
-            </a>
-
-            <div class="tool-card">
-                <div class="tool-icon"><i class="bi bi-megaphone"></i></div>
-                <h4>Enviar Aviso</h4>
-                <p>Mandar un recordatorio informativo a la clase.</p>
+    <div class="management-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="fw-800 text-dark m-0">{{ grado.nombre_grado }}</h1>
+                <p class="text-muted m-0 fw-500">Gestión de alumnos y herramientas académicas</p>
             </div>
-        </section>
-
-        <div class="m-card-full">
-            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-4">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="p-2 bg-success bg-opacity-10 rounded-3">
-                        <i class="bi bi-people-fill text-success fs-5"></i>
-                    </div>
-                    <h5 class="fw-800 mb-0">Nómina de Estudiantes</h5>
-                </div>
-                <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 fw-bold">
-                    {{ alumnos|length }} Estudiantes Registrados
-                </span>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table custom-table">
-                    <thead>
-                        <tr>
-                            <th>Identificador</th>
-                            <th>Nombre Completo</th>
-                            <th>Correo Institucional</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for alumno in alumnos %}
-                        <tr>
-                            <td><div class="avatar-box">{{ alumno.Nombre[0] }}{{ alumno.Apellido[0] }}</div></td>
-                            <td class="fw-600 text-dark">{{ alumno.Nombre }} {{ alumno.Apellido }}</td>
-                            <td class="text-muted small">{{ alumno.Correo }}</td>
-                            <td>
-                                <button class="btn-view">
-                                    <i class="bi bi-eye me-1"></i> Ver Ficha
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="p-3 bg-light rounded-4 text-center">
+                <span class="d-block fw-800 fs-4 text-dark">{{ alumnos|length }}</span>
+                <small class="text-muted fw-bold" style="font-size: 0.6rem; text-transform: uppercase;">Alumnos</small>
             </div>
         </div>
     </div>
-</div>
 
+    <h3 class="fw-800 text-dark mb-3" style="font-size: 1.1rem;">Panel de Herramientas del Grado</h3>
+    <div class="tools-grid">
+        <a href="{{ url_for('vista_nueva_tarea', id_grado=grado.id_grado) }}" class="tool-card">
+            <div class="tool-icon" style="background: var(--primary-soft); color: var(--primary-main);"><i class="bi bi-journal-text"></i></div>
+            <span class="tool-text">Asignar Tareas</span>
+        </a>
+        <a href="{{ url_for('registrar_notas', id_grado=grado.id_grado) }}" class="tool-card">
+            <div class="tool-icon" style="background: var(--success-soft); color: var(--success-main);"><i class="bi bi-clipboard-check"></i></div>
+            <span class="tool-text">Revisión Notas</span>
+        </a>
+        <a href="{{ url_for('control_asistencia', id_grado=grado.id_grado) }}" class="tool-card">
+            <div class="tool-icon" style="background: var(--info-soft); color: var(--info-main);"><i class="bi bi-calendar-check"></i></div>
+            <span class="tool-text">Asistencia</span>
+        </a>
+        <a href="{{ url_for('enviar_reportes', id_grado=grado.id_grado) }}" class="tool-card">
+            <div class="tool-icon" style="background: var(--danger-soft); color: var(--danger-main);"><i class="bi bi-file-earmark-bar-graph"></i></div>
+            <span class="tool-text">Enviar Reportes</span>
+        </a>
+    </div>
+
+    <div class="student-card shadow-sm">
+        <div class="p-4 border-bottom bg-white"><h5 class="fw-800 m-0 text-dark">Estudiantes del Grado</h5></div>
+        <div class="table-responsive">
+            <table class="table align-middle m-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted fw-800 small text-uppercase">Nombre</th>
+                        <th class="py-3 text-muted fw-800 small text-uppercase">Correo</th>
+                        <th class="text-center py-3 text-muted fw-800 small text-uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alumno in alumnos %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center fw-800" style="width: 35px; height: 35px;">
+                                    {{ alumno.nombre[0] }}
+                                </div>
+                                <span class="fw-700 text-dark">{{ alumno.nombre }} {{ alumno.apellido }}</span>
+                            </div>
+                        </td>
+                        <td class="text-muted small">{{ alumno.correo }}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-light rounded-pill px-3 fw-700">Perfil</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

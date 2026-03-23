@@ -1,125 +1,203 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
 <style>
     :root {
         --primary-blue: #3b82f6;
+        --primary-blue-soft: #eff6ff;
         --success-main: #10b981;
-        --bg-soft: #f8fafc;
-        --dark-text: #1e293b;
+        --success-light: #ecfdf5;
+        --warning-main: #f59e0b;
+        --warning-light: #fffbeb;
+        --dark-text: #0f172a;
         --muted-text: #64748b;
-        --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+        --border-color: #e2e8f0;
+        --bg-soft: #f8fafc;
+        --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
     }
 
-    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
-    .viewport-container { padding: 30px 20px; max-width: 1100px; margin: 0 auto; }
+    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--dark-text); }
+    .viewport-container { padding: 40px 20px; max-width: 1100px; margin: 0 auto; }
 
     /* NAVEGACIÓN SUPERIOR */
-    .top-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+    .top-bar { display: flex; align-items: center; gap: 20px; margin-bottom: 35px; }
+    
     .btn-back-circle {
-        width: 45px; height: 45px; background: white; border-radius: 12px;
+        width: 48px; height: 48px; background: white; border-radius: 14px;
         display: flex; align-items: center; justify-content: center;
-        color: var(--dark-text); text-decoration: none; border: 1px solid #e2e8f0;
-        transition: 0.3s;
+        color: var(--muted-text); text-decoration: none; border: 1px solid var(--border-color);
+        transition: all 0.2s ease; font-size: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
     }
-    .btn-back-circle:hover { background: var(--dark-text); color: white; transform: translateX(-3px); }
+    .btn-back-circle:hover { background: white; color: var(--dark-text); transform: translateX(-4px); border-color: #cbd5e1; }
 
-    /* TARJETA PRINCIPAL */
-    .grading-card {
-        background: white; border-radius: 24px; padding: 30px;
-        box-shadow: var(--card-shadow); border: 1px solid #fff;
-    }
+    .header-text h1 { font-weight: 800; margin: 0; font-size: 1.8rem; letter-spacing: -0.5px; }
+    .header-text p { color: var(--muted-text); margin: 4px 0 0 0; font-weight: 500; font-size: 0.95rem; }
 
-    /* ESTILOS DE TABLA */
-    .grade-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
-    .grade-table th { 
-        padding: 0 20px 10px; color: var(--muted-text); font-size: 0.75rem; 
-        text-transform: uppercase; letter-spacing: 1px; font-weight: 800;
+    /* ACORDEÓN DE TAREAS (LISTA) */
+    .task-list { display: flex; flex-direction: column; gap: 16px; }
+    
+    .task-item {
+        background: white; border-radius: 24px; box-shadow: var(--card-shadow);
+        border: 1px solid rgba(255,255,255,0.5); overflow: hidden;
+        transition: all 0.3s ease;
     }
-    .grade-table td { 
-        background: #fff; padding: 18px 20px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
+    
+    .task-summary {
+        padding: 24px 30px; display: flex; justify-content: space-between; align-items: center;
+        cursor: pointer; list-style: none; user-select: none;
     }
-    .grade-table td:first-child { border-left: 1px solid #f1f5f9; border-radius: 16px 0 0 16px; }
-    .grade-table td:last-child { border-right: 1px solid #f1f5f9; border-radius: 0 16px 16px 0; }
+    
+    /* Ocultar flecha nativa del details */
+    .task-summary::-webkit-details-marker { display: none; }
+    
+    .task-summary:hover { background: #fafafa; }
+    
+    .task-icon-title { display: flex; align-items: center; gap: 16px; }
+    .task-icon {
+        width: 45px; height: 45px; background: var(--primary-blue-soft); color: var(--primary-blue);
+        border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+    }
+    .task-title { font-weight: 800; font-size: 1.1rem; color: var(--dark-text); margin: 0; }
+    .task-meta { font-size: 0.85rem; color: var(--muted-text); font-weight: 500; margin-top: 4px; display: block; }
+    
+    .chevron-icon { color: var(--muted-text); transition: transform 0.3s ease; font-size: 1.2rem; }
+    details[open] .chevron-icon { transform: rotate(180deg); color: var(--primary-blue); }
+    details[open] .task-item { border-color: var(--primary-blue-soft); }
 
-    .student-avatar {
-        width: 42px; height: 42px; background: var(--primary-blue); color: white;
-        border-radius: 12px; display: flex; align-items: center; justify-content: center;
-        font-weight: 800;
-    }
+    /* CONTENIDO INTERNO DE LA TAREA */
+    .task-content { padding: 0 30px 30px; border-top: 1px solid var(--border-color); margin-top: 15px; padding-top: 25px; }
+    .task-desc { background: var(--bg-soft); padding: 16px 20px; border-radius: 16px; color: var(--muted-text); font-size: 0.95rem; margin-bottom: 25px; border: 1px dashed #cbd5e1; }
 
-    .input-grade {
-        width: 90px; padding: 10px; border-radius: 12px; border: 2px solid #f1f5f9;
-        text-align: center; font-weight: 800; color: var(--primary-blue); transition: 0.3s;
-    }
-    .input-grade:focus { border-color: var(--success-main); outline: none; background: #f0fdf4; }
+    /* TABLA DE ENTREGAS */
+    .grade-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .grade-table th { padding: 0 15px 10px; color: var(--muted-text); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; border-bottom: 2px solid var(--bg-soft); text-align: left; }
+    .grade-table td { background: #fff; padding: 14px 15px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    .grade-table td:first-child { border-left: 1px solid var(--border-color); border-radius: 12px 0 0 12px; }
+    .grade-table td:last-child { border-right: 1px solid var(--border-color); border-radius: 0 12px 12px 0; }
 
-    .btn-save {
-        background: var(--success-main); color: white; border: none;
-        padding: 14px 30px; border-radius: 16px; font-weight: 700;
-        display: flex; align-items: center; gap: 10px; transition: 0.3s; margin-top: 25px;
+    .student-info { display: flex; align-items: center; gap: 12px; }
+    .student-avatar { width: 36px; height: 36px; background: #e2e8f0; color: var(--dark-text); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    
+    /* ETIQUETAS Y BOTONES DE CONTENIDO */
+    .badge-status { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+    .badge-success { background: var(--success-light); color: var(--success-main); }
+    .badge-warning { background: var(--warning-light); color: var(--warning-main); }
+    
+    .btn-view-content {
+        background: white; border: 1px solid var(--border-color); color: var(--primary-blue);
+        padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s;
     }
-    .btn-save:hover { transform: translateY(-3px); box-shadow: 0 12px 20px rgba(16, 185, 129, 0.2); }
+    .btn-view-content:hover { background: var(--primary-blue-soft); border-color: var(--primary-blue-soft); }
 
-    /* ESTADO VACÍO */
-    .empty-state { text-align: center; padding: 80px 20px; color: var(--muted-text); }
+    /* INPUT NOTA Y GUARDAR */
+    .input-grade { width: 85px; padding: 10px; border-radius: 10px; border: 2px solid var(--border-color); text-align: center; font-weight: 800; color: var(--dark-text); transition: 0.2s; background: var(--bg-soft); font-family: inherit; }
+    .input-grade:focus { border-color: var(--primary-blue); outline: none; background: white; }
+
+    .btn-save { background: var(--primary-blue); color: white; border: none; padding: 12px 28px; border-radius: 14px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; transition: 0.3s; margin-top: 20px; cursor: pointer; float: right; }
+    .btn-save:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); }
+    
+    /* CLEARFIX PARA EL BOTON FLOTANTE */
+    .clearfix::after { content: ""; clear: both; display: table; }
+
+    .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 24px; }
 </style>
 
 <div class="viewport-container">
     <div class="top-bar">
-        <a href="{{ url_for('maestro_dashboard') }}" class="btn-back-circle" title="Volver al Dashboard">
-            <i class="bi bi-chevron-left"></i>
+        <a href="{{ url_for('gestionar_grado', id_grado=request.view_args.get('id_grado')) }}" class="btn-back-circle" title="Volver a la Gestión">
+            <i class="bi bi-arrow-left"></i>
         </a>
-        <div>
-            <h1 class="fw-800 m-0" style="font-size: 1.8rem;">Revisión de <span class="text-success">Asignaciones</span></h1>
-            <p class="text-muted m-0 fw-500">Gestión de calificaciones por estudiante</p>
+        <div class="header-text">
+            <h1>Revisión de <span style="color: var(--primary-blue);">Tareas</span></h1>
+            <p>Haz clic en una tarea para evaluar las entregas de los alumnos</p>
         </div>
     </div>
 
-    <div class="grading-card">
-        {% if alumnos %}
-        <form action="{{ url_for('registrar_notas') }}" method="POST">
-            <table class="grade-table">
-                <thead>
-                    <tr>
-                        <th>Información del Estudiante</th>
-                        <th class="text-center">Calificación (0-100)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for alumno in alumnos %}
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="student-avatar">{{ alumno.nombre[0] }}{{ alumno.apellido[0] }}</div>
-                                <div>
-                                    <span class="d-block fw-800 text-dark">{{ alumno.nombre }} {{ alumno.apellido }}</span>
-                                    <small class="text-muted">Estudiante Activo</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="text-center">
-                            <input type="number" name="nota_{{ alumno.id_usuario }}" 
-                                   class="input-grade" placeholder="--" min="0" max="100">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="task-list">
+        {% if tareas %}
+            {% for tarea in tareas %}
+            <details class="task-item">
+                <summary class="task-summary">
+                    <div class="task-icon-title">
+                        <div class="task-icon"><i class="bi bi-journal-text"></i></div>
+                        <div>
+                            <h3 class="task-title">{{ tarea.titulo }}</h3>
+                            <span class="task-meta">Fecha límite: {{ tarea.fecha_entrega }}</span>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-down chevron-icon"></i>
+                </summary>
 
-            <button type="submit" class="btn-save">
-                <i class="bi bi-check2-circle fs-5"></i> Guardar Calificaciones
-            </button>
-        </form>
+                <div class="task-content clearfix">
+                    <div class="task-desc">
+                        <strong>Instrucciones:</strong> {{ tarea.descripcion }}
+                    </div>
+
+                    <form action="{{ url_for('registrar_notas', id_grado=request.view_args.get('id_grado'), id_tarea=tarea.id_tarea) }}" method="POST">
+                        <table class="grade-table">
+                            <thead>
+                                <tr>
+                                    <th>Estudiante</th>
+                                    <th>Estado</th>
+                                    <th>Contenido / Archivo</th>
+                                    <th style="width: 120px;">Calificación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entrega in tarea.entregas %}
+                                <tr>
+                                    <td>
+                                        <div class="student-info">
+                                            <div class="student-avatar">{{ entrega.alumno.nombre[0] }}{{ entrega.alumno.apellido[0] }}</div>
+                                            <span class="fw-700 text-dark">{{ entrega.alumno.nombre }} {{ entrega.alumno.apellido }}</span>
+                                        </div>
+                                    </td>
+                                    
+                                    <td>
+                                        {% if entrega.estado == 'Entregado' %}
+                                            <span class="badge-status badge-success"><i class="bi bi-check-circle-fill"></i> Entregado</span>
+                                        {% else %}
+                                            <span class="badge-status badge-warning"><i class="bi bi-clock-fill"></i> Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td>
+                                        {% if entrega.estado == 'Entregado' %}
+                                            <a href="{{ entrega.archivo_url }}" target="_blank" class="btn-view-content">
+                                                <i class="bi bi-file-earmark-text"></i> Ver Entrega
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted small">Sin archivo</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <input type="number" name="nota_{{ entrega.alumno.id_usuario }}" 
+                                               class="input-grade" placeholder="--" min="0" max="100" 
+                                               value="{{ entrega.nota if entrega.nota else '' }}">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        <button type="submit" class="btn-save">
+                            <i class="bi bi-save2"></i> Guardar Notas
+                        </button>
+                    </form>
+                </div>
+            </details>
+            {% endfor %}
         {% else %}
-        <div class="empty-state">
-            <i class="bi bi-person-exclamation" style="font-size: 4.5rem; color: #e2e8f0; display: block; margin-bottom: 20px;"></i>
-            <h3 class="fw-800 text-dark">Sin alumnos registrados</h3>
-            <p class="fw-500 mx-auto" style="max-width: 400px;"> <center>No hemos encontrado alumnos inscritos en los grados o secciones que tienes asignados actualmente.</center></p>
-        </div>
+            <div class="empty-state">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+                <h3 class="fw-800 text-dark">No hay tareas asignadas</h3>
+                <p class="text-muted">Aún no has creado ninguna tarea para esta materia. Ve a "Asignar Tareas" para crear la primera.</p>
+            </div>
         {% endif %}
     </div>
 </div>

@@ -3,7 +3,8 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from sqlalchemy.orm import joinedload
-from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos
+# --- LÍNEA ACTUALIZADA: Se agregó EntregasTareas ---
+from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos, EntregasTareas
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -83,36 +84,35 @@ def maestro_dashboard():
                            maestro=maestro_usuario, clases=clases, 
                            total_clases=len(clases), grados_data=grados_data, anuncios=anuncios)
 
-# --- GESTIÓN DE TAREAS ---
+# --- GESTIÓN DE TAREAS CORREGIDA ---
 
-@app.route('/maestro/tareas')
-def historial_tareas():
+@app.route('/maestro/tareas/historial/<int:id_grado>')
+def historial_tareas(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     
-    user_id = session.get('user_id')
-    perfil = Maestros.query.filter_by(id_usuario=user_id).first()
-    tareas = []
-    if perfil:
-        # Buscamos tareas de las clases que imparte este maestro
-        clases_maestro = Clases.query.filter_by(id_maestro=perfil.id_maestro).all()
-        ids_clases = [c.id_clase for c in clases_maestro]
-        tareas = Tareas.query.filter(Tareas.id_clase.in_(ids_clases)).order_by(Tareas.fecha_entrega.desc()).all()
+    grado = Grados.query.get_or_404(id_grado)
+    clases_grado = Clases.query.filter_by(id_grado=id_grado).all()
+    ids_clases = [c.id_clase for c in clases_grado]
+    
+    tareas = Tareas.query.filter(Tareas.id_clase.in_(ids_clases)).order_by(Tareas.fecha_entrega.desc()).all()
         
-    return render_template('Panel_Maestro/tareas_historial.html', tareas=tareas)
+    return render_template('Panel_Maestro/tareas_historial.html', tareas=tareas, id_grado=id_grado, grado=grado)
 
-@app.route('/maestro/tareas/crear')
-def vista_nueva_tarea():
+@app.route('/maestro/tareas/crear/<int:id_grado>')
+def vista_nueva_tarea(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     
     user_id = session.get('user_id')
     perfil = Maestros.query.filter_by(id_usuario=user_id).first()
-    # Enviamos las clases para que el maestro seleccione a cuál asignar la tarea
-    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all() if perfil else []
+    grado = Grados.query.get_or_404(id_grado)
     
-    return render_template('Panel_Maestro/tareas_nuevas.html', clases=clases)
+    # Solo mostramos las materias de este maestro en este grado específico
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all() if perfil else []
+    
+    return render_template('Panel_Maestro/tareas_nuevas.html', clases=clases, id_grado=id_grado, grado=grado)
 
-@app.route('/maestro/tareas/nueva', methods=['POST'])
-def crear_tarea():
+@app.route('/maestro/tareas/nueva/<int:id_grado>', methods=['POST'])
+def crear_tarea(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     
     try:
@@ -129,32 +129,97 @@ def crear_tarea():
         db.session.rollback()
         flash("Error al crear tarea. Revisa los datos.", "danger")
 
-    return redirect(url_for('historial_tareas'))
+    return redirect(url_for('gestionar_grado', id_grado=id_grado))
 
-# --- REVISIÓN DE ASIGNACIONES (NOTAS) ---
+# --- REVISIÓN DE ASIGNACIONES (NOTAS) ACTUALIZADA ---
 
-@app.route('/maestro/notas/general', methods=['GET', 'POST'])
-def registrar_notas():
+@app.route('/maestro/notas/general/<int:id_grado>', methods=['GET', 'POST'])
+def registrar_notas(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     
     user_id = session.get('user_id')
     perfil = Maestros.query.filter_by(id_usuario=user_id).first()
-    
+    grado = Grados.query.get_or_404(id_grado)
+
+    # 1. LÓGICA PARA GUARDAR LAS NOTAS (MÉTODO POST)
     if request.method == 'POST':
-        # Aquí iría la lógica para guardar las notas enviadas por el formulario
-        flash("Calificaciones procesadas correctamente (Simulación)", "success")
-        return redirect(url_for('registrar_notas'))
+        # Capturamos el id_tarea que viene en la URL gracias al formulario HTML
+        id_tarea = request.args.get('id_tarea')
+        
+        if id_tarea:
+            for key, value in request.form.items():
+                if key.startswith('nota_') and value.strip() != '':
+                    user_id_alumno = int(key.split('_')[1])
+                    alumno_db = Alumnos.query.filter_by(id_usuario=user_id_alumno).first()
+                    
+                    if alumno_db:
+                        # Buscamos si el maestro ya le había puesto nota a este alumno en esta tarea
+                        nota_existente = Notas.query.filter_by(id_alumno=alumno_db.id_alumno, id_tarea=id_tarea).first()
+                        
+                        if nota_existente:
+                            # Actualizamos la nota si ya existía
+                            nota_existente.calificacion = float(value)
+                            nota_existente.id_maestro_autor = perfil.id_maestro
+                            nota_existente.fecha_modificacion = datetime.utcnow()
+                        else:
+                            # Creamos una nota nueva
+                            nueva_nota = Notas(
+                                id_tarea=id_tarea,
+                                id_alumno=alumno_db.id_alumno,
+                                calificacion=float(value),
+                                id_maestro_autor=perfil.id_maestro
+                            ) 
+                            db.session.add(nueva_nota)
+            try:
+                db.session.commit()
+                flash("Calificaciones guardadas correctamente", "success")
+            except Exception as e:
+                db.session.rollback()
+                flash("Error al guardar calificaciones.", "danger")
+                
+        return redirect(url_for('registrar_notas', id_grado=id_grado))
 
-    alumnos_lista = []
-    if perfil:
-        # Buscamos alumnos de los grados donde el maestro da clases
-        clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all()
-        ids_grados = [c.id_grado for c in clases]
-        secciones = Secciones.query.filter(Secciones.id_grado.in_(ids_grados)).all()
-        ids_secciones = [s.id_seccion for s in secciones]
-        alumnos_lista = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
 
-    return render_template('Panel_Maestro/notas_subir.html', alumnos=alumnos_lista)
+    # 2. LÓGICA PARA MOSTRAR LAS TAREAS Y ENTREGAS (MÉTODO GET)
+    secciones = Secciones.query.filter_by(id_grado=id_grado).all()
+    ids_secciones = [s.id_seccion for s in secciones]
+    alumnos_lista = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
+
+    clases_maestro = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all()
+    ids_clases = [c.id_clase for c in clases_maestro]
+    tareas_db = Tareas.query.filter(Tareas.id_clase.in_(ids_clases)).order_by(Tareas.fecha_entrega.desc()).all()
+
+    tareas_para_html = []
+    
+    for tarea in tareas_db:
+        entregas = []
+        for usuario_al in alumnos_lista:
+            alumno_perfil = Alumnos.query.filter_by(id_usuario=usuario_al.id_usuario).first()
+            
+            # Consultamos la tabla de entregas y la de notas usando tus modelos
+            entrega_registro = EntregasTareas.query.filter_by(id_alumno=alumno_perfil.id_alumno, id_tarea=tarea.id_tarea).first()
+            nota_registro = Notas.query.filter_by(id_alumno=alumno_perfil.id_alumno, id_tarea=tarea.id_tarea).first()
+            
+            estado_entrega = entrega_registro.estado if entrega_registro else 'Pendiente'
+            archivo_url = entrega_registro.archivo_ruta if (entrega_registro and entrega_registro.archivo_ruta) else '#'
+            
+            entregas.append({
+                'alumno': usuario_al,
+                'estado': estado_entrega,
+                'archivo_url': archivo_url,
+                'nota': nota_registro.calificacion if nota_registro else ''
+            })
+            
+        tareas_para_html.append({
+            'id_tarea': tarea.id_tarea,
+            'titulo': tarea.titulo,
+            # Tu modelo "Tareas" no tiene un campo 'descripcion', así que paso un texto genérico para que el HTML no se rompa
+            'descripcion': 'Entregas correspondientes a esta actividad.', 
+            'fecha_entrega': tarea.fecha_entrega.strftime('%d/%m/%Y %H:%M') if tarea.fecha_entrega else 'Sin fecha',
+            'entregas': entregas
+        })
+
+    return render_template('Panel_Maestro/notas_subir.html', tareas=tareas_para_html, id_grado=id_grado, grado=grado)
 
 # --- OTROS MÓDULOS ---
 
@@ -169,18 +234,20 @@ def gestionar_grado(id_grado):
     secciones = Secciones.query.filter_by(id_grado=id_grado).all()
     ids_secciones = [s.id_seccion for s in secciones]
     alumnos = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
-    grado = Grados.query.get(id_grado)
+    grado = Grados.query.get_or_404(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
 
-@app.route('/maestro/reportes/enviar')
-def enviar_reportes():
+@app.route('/maestro/reportes/enviar/<int:id_grado>')
+def enviar_reportes(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
-    return render_template('Panel_Maestro/reportes_enviar.html')
+    grado = Grados.query.get_or_404(id_grado)
+    return render_template('Panel_Maestro/reportes_enviar.html', id_grado=id_grado, grado=grado)
 
-@app.route('/maestro/asistencia/control')
-def control_asistencia():
+@app.route('/maestro/asistencia/control/<int:id_grado>')
+def control_asistencia(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
-    return "Módulo de Control de Asistencia. (Pendiente HTML)"
+    grado = Grados.query.get_or_404(id_grado)
+    return f"Módulo de Control de Asistencia para {grado.nombre_grado}. (Pendiente HTML)"
 
 @app.route('/maestro/datos/exportar')
 def exportar_datos():
@@ -246,8 +313,6 @@ def vista_nuevo_alumno():
                            carnet=carnet_sugerido,
                            secciones=secciones)
 
-
-
 @app.route('/admin/usuario/guardar', methods=['POST'])
 def crear_usuario_logica():
     if session.get('rol') != 1: return redirect(url_for('login'))
@@ -265,127 +330,74 @@ def crear_usuario_logica():
 def generar_nuevo_carnet():
     año_actual = datetime.now().year
     prefijo = f"{año_actual}-"
-    
-    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%"))\
-                            .order_by(Alumnos.carnet.desc()).first()
-    
+    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%")).order_by(Alumnos.carnet.desc()).first()
     if ultimo_alumno:
         ultimo_numero = int(ultimo_alumno.carnet.split('-')[1])
         nuevo_numero = ultimo_numero + 1
     else:
         nuevo_numero = 1
-        
     return f"{prefijo}{nuevo_numero:03d}"
-
-# ---------------- GESTIÓN CENTRALIZADA DE USUARIOS (LEER Y ELIMINAR) ----------------
 
 @app.route('/admin/gestion_usuarios')
 def gestion_usuarios():
-
-    alumnos = Alumnos.query.options(
-        joinedload(Alumnos.usuario),
-        joinedload(Alumnos.seccion).joinedload(Secciones.grado)
-    ).all()
-
-    maestros = Maestros.query.options(
-        joinedload(Maestros.usuario),
-        joinedload(Maestros.clases)
-    ).all()
-    
-    return render_template('Admin_Panel/gestion_usuarios.html', 
-                           alumnos=alumnos, 
-                           maestros=maestros,
-                           vista_activa='alumnos')
+    alumnos = Alumnos.query.options(joinedload(Alumnos.usuario), joinedload(Alumnos.seccion).joinedload(Secciones.grado)).all()
+    maestros = Maestros.query.options(joinedload(Maestros.usuario), joinedload(Maestros.clases)).all()
+    return render_template('Admin_Panel/gestion_usuarios.html', alumnos=alumnos, maestros=maestros, vista_activa='alumnos')
 
 @app.route('/admin/editar_usuario/<int:id_usuario>', methods=['GET', 'POST'])
 def editar_usuario(id_usuario):
     usuario = Usuarios.query.get_or_404(id_usuario)
-    
     if request.method == 'POST':
         usuario.nombre = request.form.get('nombre')
         usuario.apellido = request.form.get('apellido')
         usuario.correo = request.form.get('correo')
-        
         if usuario.id_rol == 2 and usuario.maestro_perfil:
             usuario.maestro_perfil.especialidad = request.form.get('especialidad')
         elif usuario.id_rol == 3 and usuario.alumno_perfil:
             usuario.alumno_perfil.carnet = request.form.get('carnet')
-            
         db.session.commit()
         flash('Usuario actualizado', 'success')
         return redirect(url_for('gestion_usuarios'))
-
     return render_template('Admin_Panel/editar_usuario.html', usuario=usuario)
 
 @app.route('/admin/eliminar_usuario/<int:id_usuario>', methods=['POST'])
 def eliminar_usuario(id_usuario):
     if session.get('rol') != 1: return redirect(url_for('login'))
-    
     usuario = Usuarios.query.get_or_404(id_usuario)
-    
     try:
-       
         if usuario.id_rol == 2 and usuario.maestro_perfil:
             db.session.delete(usuario.maestro_perfil)
         elif usuario.id_rol == 3 and usuario.alumno_perfil:
             db.session.delete(usuario.alumno_perfil)
-        
         db.session.delete(usuario)
         db.session.commit()
-        
         flash('Registro eliminado permanentemente', 'success')
     except Exception as e:
         db.session.rollback()
-        print(f"Error al eliminar: {e}")
-        flash('No se pudo eliminar el registro porque tiene datos vinculados (notas, clases, etc.)', 'error')
-        
+        flash('No se pudo eliminar el registro porque tiene datos vinculados', 'error')
     return redirect(url_for('gestion_usuarios'))
-
-
-# ---------------- CONFIGURACION ACADEMICA ----------------
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
 def configuracion_academica():
     if session.get('rol') != 1: return redirect(url_for('login'))
-
     if request.method == 'POST':
-        # Guardar Grado
         if 'guardar_grado' in request.form:
             db.session.add(Grados(nombre_grado=request.form.get('nombre_grado')))
-        
-        # Guardar Clase/Materia
         elif 'guardar_clase' in request.form:
-            nueva_clase = Clases(
-                nombre_clase=request.form.get('nombre_clase'),
-                id_maestro=request.form.get('id_maestro') or None, 
-                id_ciclo=1, 
-                id_grado=request.form.get('id_grado')
-            )
+            nueva_clase = Clases(nombre_clase=request.form.get('nombre_clase'), id_maestro=request.form.get('id_maestro') or None, id_ciclo=1, id_grado=request.form.get('id_grado'))
             db.session.add(nueva_clase)
-        
         elif 'guardar_seccion' in request.form:
-            nueva_seccion = Secciones(
-                nombre_seccion=request.form.get('nombre_seccion'),
-                id_grado=request.form.get('id_grado')
-            )
+            nueva_seccion = Secciones(nombre_seccion=request.form.get('nombre_seccion'), id_grado=request.form.get('id_grado'))
             db.session.add(nueva_seccion)
-        
         db.session.commit()
         flash("Registro guardado correctamente")
         return redirect(url_for('configuracion_academica'))
-    
     maestros_para_select = Maestros.query.all() 
-
-    return render_template('Admin_Panel/configuracion_academica.html', 
-                            grados=Grados.query.all(), 
-                            clases=Clases.query.all(),
-                            secciones=Secciones.query.all(),
-                            maestros=maestros_para_select)
+    return render_template('Admin_Panel/configuracion_academica.html', grados=Grados.query.all(), clases=Clases.query.all(), secciones=Secciones.query.all(), maestros=maestros_para_select)
 
 @app.route('/admin/configuracion/eliminar_grado/<int:id_grado>', methods=['POST'])
 def eliminar_grado(id_grado):
     if session.get('rol') != 1: return redirect(url_for('login'))
-    
     grado = Grados.query.get_or_404(id_grado)
     try:
         db.session.delete(grado)
@@ -393,41 +405,8 @@ def eliminar_grado(id_grado):
         flash("Grado eliminado correctamente.", "success")
     except Exception as e:
         db.session.rollback()
-        flash("No se puede eliminar: Este grado ya tiene secciones o alumnos asignados.", "error")
-        
+        flash("No se puede eliminar: Registro en uso.", "error")
     return redirect(url_for('configuracion_academica'))
-
-
-@app.route('/admin/configuracion/eliminar_materia/<int:id_clase>', methods=['POST'])
-def eliminar_materia(id_clase):
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    
-    materia = Clases.query.get_or_404(id_clase)
-    try:
-        db.session.delete(materia)
-        db.session.commit()
-        flash("Materia eliminada correctamente.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash("No se puede eliminar: Esta materia ya está en uso.", "error")
-        
-    return redirect(url_for('configuracion_academica'))
-
-@app.route('/admin/configuracion/eliminar_seccion/<int:id_seccion>', methods=['POST'])
-def eliminar_seccion(id_seccion):
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    
-    seccion = Secciones.query.get_or_404(id_seccion)
-    try:
-        db.session.delete(seccion)
-        db.session.commit()
-        flash("Sección eliminada correctamente.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash("No se puede eliminar: Esta sección tiene alumnos inscritos.", "error")
-        
-    return redirect(url_for('configuracion_academica'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
