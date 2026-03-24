@@ -327,23 +327,19 @@ def enviar_reportes(id_grado):
     grado = Grados.query.get_or_404(id_grado)
     return render_template('Panel_Maestro/reportes_enviar.html', id_grado=id_grado, grado=grado)
 
-@app.route('/maestro/asistencia/control/<int:id_grado>', methods=['GET', 'POST'])
+@app.route('/maestro/asistencia/control/<int:id_grado>')
 def control_asistencia(id_grado):
-    if session.get('rol') != 2: return redirect(url_for('login'))
+    if session.get('rol') != 2: 
+        return redirect(url_for('login'))
     
     grado = Grados.query.get_or_404(id_grado)
-    user_id = session.get('user_id')
-    perfil_maestro = Maestros.query.filter_by(id_usuario=user_id).first()
-    
-    # Obtener clase asociada para guardar en la BD (tomamos la primera del maestro en este grado)
-    clase_maestro = Clases.query.filter_by(id_maestro=perfil_maestro.id_maestro, id_grado=id_grado).first()
     
     # Obtener alumnos del grado
     secciones = Secciones.query.filter_by(id_grado=id_grado).all()
     ids_secciones = [s.id_seccion for s in secciones]
     alumnos_usuarios = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
     
-    # Preparamos una lista con los datos del usuario y el ID real del alumno
+    # Preparamos la lista de alumnos
     alumnos_data = []
     for au in alumnos_usuarios:
         perfil_alumno = Alumnos.query.filter_by(id_usuario=au.id_usuario).first()
@@ -351,44 +347,8 @@ def control_asistencia(id_grado):
             'usuario': au,
             'id_alumno': perfil_alumno.id_alumno
         })
-        
-    # LÓGICA PARA GUARDAR LOS DATOS (POST)
-    if request.method == 'POST':
-        fecha_str = request.form.get('fecha')
-        fecha_asistencia = datetime.strptime(fecha_str, '%Y-%m-%d').date() if fecha_str else datetime.utcnow().date()
-        
-        for data in alumnos_data:
-            estado = request.form.get(f"estado_{data['id_alumno']}")
-            if estado:
-                # Verificamos si ya existe asistencia para ese día (para actualizarla en lugar de duplicarla)
-                asistencia_existente = Asistencias.query.filter_by(
-                    id_alumno=data['id_alumno'], 
-                    fecha=fecha_asistencia
-                ).first()
-                
-                if asistencia_existente:
-                    asistencia_existente.estado = estado
-                else:
-                    nueva_asistencia = Asistencias(
-                        id_clase=clase_maestro.id_clase if clase_maestro else None,
-                        id_alumno=data['id_alumno'],
-                        fecha=fecha_asistencia,
-                        estado=estado
-                    )
-                    db.session.add(nueva_asistencia)
-        
-        try:
-            db.session.commit()
-            flash("Asistencia registrada correctamente.", "success")
-            return redirect(url_for('gestionar_grado', id_grado=id_grado))
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error guardando asistencia: {e}")
-            flash("Ocurrió un error al guardar la asistencia.", "danger")
             
-    # LÓGICA PARA MOSTRAR LA PANTALLA (GET)
-    fecha_hoy = datetime.now().strftime('%Y-%m-%d')
-    return render_template('Panel_Maestro/asistencia.html', grado=grado, alumnos=alumnos_data, fecha_hoy=fecha_hoy)
+    return render_template('Panel_Maestro/asistencia.html', grado=grado, alumnos=alumnos_data)
 
 @app.route('/maestro/datos/exportar')
 def exportar_datos():
