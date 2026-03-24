@@ -1,26 +1,40 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="viewport-wrapper">
-    <div class="container main-content-box">
-        <h1 class="main-title">Mis Clases</h1>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Clase</th>
-                    <th>Grado</th>
-                    <th>Horario</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for clase in mis_clases %}
-                <tr>
-                    <td>{{ clase.NombreClase }}</td>
-                    <td>{{ clase.NombreGrado }}</td>
-                    <td>{{ clase.Horario }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="main-viewport">
+    <header class="content-header-minimal">
+        <h1>Mis Clases 📚</h1>
+        <p>Ciclo Lectivo 2026 - Materias Inscritas</p>
+    </header>
+
+    <div class="materias-grid">
+        <div class="materia-card" style="border-top: 5px solid #4361ee;">
+            <div class="materia-icon" style="background: #4361ee15; color: #4361ee;">
+                <i class="bi bi-journal-bookmark"></i>
+            </div>
+            <h3>Matemáticas II</h3>
+            <p><i class="bi bi-person"></i> Profe: Carlos Mendoza</p>
+            <span class="aula-tag">Aula 15</span>
+            <button class="btn-ver">Ver Material</button>
+        </div>
+
+        <div class="materia-card" style="border-top: 5px solid #06d6a0;">
+            <div class="materia-icon" style="background: #06d6a015; color: #06d6a0;">
+                <i class="bi bi-droplet-fill"></i>
+            </div>
+            <h3>Ciencias Naturales</h3>
+            <p><i class="bi bi-person"></i> Profe: Elena Rivas</p>
+            <span class="aula-tag">Laboratorio</span>
+            <button class="btn-ver">Ver Material</button>
+        </div>
     </div>
 </div>
+
+<style>
+    .materias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 25px; }
+    .materia-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .materia-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 15px; }
+    .aula-tag { background: #f1f5f9; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #64748b; }
+    .btn-ver { width: 100%; margin-top: 15px; background: #2b2d42; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+    .btn-ver:hover { background: #4361ee; }
+</style>
 {% endblock %}

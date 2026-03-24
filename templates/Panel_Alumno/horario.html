@@ -1,26 +1,28 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="viewport-wrapper">
-    <div class="container main-content-box">
-        <h1 class="main-title">Mis Clases</h1>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Clase</th>
-                    <th>Grado</th>
-                    <th>Horario</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for clase in mis_clases %}
-                <tr>
-                    <td>{{ clase.NombreClase }}</td>
-                    <td>{{ clase.NombreGrado }}</td>
-                    <td>{{ clase.Horario }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="main-viewport">
+    <h1>Mi Horario Semanal ⏰</h1>
+    
+    <div class="horario-grid">
+        <div class="dia-col">
+            <div class="dia-header">Lunes</div>
+            <div class="clase-slot">
+                <span>07:00 AM</span>
+                <p>Matemáticas</p>
+            </div>
+            <div class="clase-slot">
+                <span>08:30 AM</span>
+                <p>Español</p>
+            </div>
+        </div>
+        </div>
 </div>
+
+<style>
+    .horario-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-top: 25px; }
+    .dia-header { background: #2b2d42; color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: 700; margin-bottom: 10px; }
+    .clase-slot { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); border-left: 4px solid #ff9f1c; }
+    .clase-slot span { font-size: 0.7rem; color: #94a3b8; font-weight: 700; }
+    .clase-slot p { margin: 5px 0 0; font-size: 0.9rem; font-weight: 700; color: #2b2d42; }
+</style>
 {% endblock %}

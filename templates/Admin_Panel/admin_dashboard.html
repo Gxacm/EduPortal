@@ -163,7 +163,6 @@
 </style>
 
 <script>
-    // 1. Script del Saludo
     function setSaludo() {
         const h = new Date().getHours();
         const el = document.getElementById('saludo-admin');
@@ -177,23 +176,19 @@
         el.innerText = mensaje;
     }
 
-    // 2. Script Dinámico de la Gráfica
     document.addEventListener('DOMContentLoaded', () => {
         setSaludo();
         
         const ctx = document.getElementById('gradosChart').getContext('2d');
         
-        // Obtenemos los datos directos desde Python a través de Jinja
         const datosBase = JSON.parse('{{ mapa_grados|tojson|safe }}');
 
-        // Configuramos qué grados pertenecen a qué nivel
         const niveles = {
             kinder: ['Nursery', 'Pre-Kinder', 'Kinder'],
             primaria: ['1ro', '2do', '3ro', '4to', '5to', '6to'],
             secundaria: ['7mo', '8vo', '9no', '10mo', '11mo']
         };
 
-        // Función que arma los arrays que necesita Chart.js
         function filtrarDatos(filtro) {
             let labels = [];
             let valores = [];
@@ -208,7 +203,6 @@
             return { labels, valores };
         }
 
-        // Carga inicial (Todos los grados)
         const initialData = filtrarDatos('todos');
         let chart = new Chart(ctx, {
             type: 'bar',
@@ -233,12 +227,11 @@
             }
         });
 
-        // Evento: Cuando el administrador cambia el selector
         document.getElementById('selectorNivel').addEventListener('change', function() {
             const nuevosDatos = filtrarDatos(this.value);
             chart.data.labels = nuevosDatos.labels;
             chart.data.datasets[0].data = nuevosDatos.valores;
-            chart.update(); // Anima el cambio
+            chart.update(); 
         });
     });
 </script>
