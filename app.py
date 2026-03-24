@@ -329,9 +329,26 @@ def enviar_reportes(id_grado):
 
 @app.route('/maestro/asistencia/control/<int:id_grado>')
 def control_asistencia(id_grado):
-    if session.get('rol') != 2: return redirect(url_for('login'))
+    if session.get('rol') != 2: 
+        return redirect(url_for('login'))
+    
     grado = Grados.query.get_or_404(id_grado)
-    return f"Módulo de Control de Asistencia para {grado.nombre_grado}. (Pendiente HTML)"
+    
+    # Obtener alumnos del grado
+    secciones = Secciones.query.filter_by(id_grado=id_grado).all()
+    ids_secciones = [s.id_seccion for s in secciones]
+    alumnos_usuarios = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
+    
+    # Preparamos la lista de alumnos
+    alumnos_data = []
+    for au in alumnos_usuarios:
+        perfil_alumno = Alumnos.query.filter_by(id_usuario=au.id_usuario).first()
+        alumnos_data.append({
+            'usuario': au,
+            'id_alumno': perfil_alumno.id_alumno
+        })
+            
+    return render_template('Panel_Maestro/asistencia.html', grado=grado, alumnos=alumnos_data)
 
 @app.route('/maestro/datos/exportar')
 def exportar_datos():

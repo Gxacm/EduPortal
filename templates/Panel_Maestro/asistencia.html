@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+    :root {
+        --success-main: #10b981; --danger-main: #ef4444; --warning-main: #f59e0b; --info-main: #3b82f6;
+        --dark-text: #1e293b; --muted-text: #64748b; --bg-soft: #f8fafc; --border-color: #e2e8f0;
+    }
+    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
+    .viewport-container { padding: 30px 20px; max-width: 1200px; margin: 0 auto; }
+    
+    .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .btn-back-nav { display: inline-flex; align-items: center; gap: 8px; color: var(--muted-text); text-decoration: none; font-weight: 700; transition: 0.3s; }
+    .btn-back-nav:hover { color: var(--dark-text); transform: translateX(-5px); }
+
+    .btn-export {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .btn-export:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+    }
+    .btn-export i { font-size: 1.1rem; }
+
+    .card-container { background: white; border-radius: 24px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.02); padding: 30px;}
+    
+    .month-picker-wrapper { background: #f8fafc; padding: 10px 20px; border-radius: 12px; display: inline-flex; align-items: center; gap: 15px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+    .month-picker-wrapper input { font-family: 'Plus Jakarta Sans', sans-serif; border: none; background: transparent; font-weight: 700; color: var(--dark-text); font-size: 1.1rem; outline: none; cursor: pointer; }
+    
+    .custom-table { width: 100%; border-collapse: collapse; text-align: center; }
+    .custom-table th { padding: 8px 4px; background-color: #f8fafc; color: var(--muted-text); font-weight: 800; border: 1px solid var(--border-color); white-space: nowrap; line-height: 1.2; }
+    .custom-table th.student-col { text-align: left; position: sticky; left: 0; z-index: 2; min-width: 250px; padding: 12px; font-size: 0.85rem;}
+    .custom-table td { padding: 8px; border: 1px solid var(--border-color); vertical-align: middle; }
+    .custom-table td.student-col { text-align: left; background: white; position: sticky; left: 0; z-index: 1; }
+    
+    .weekend-cell { background-color: #f1f5f9 !important; color: #94a3b8; font-weight: 800; }
+
+    .day-name { display: block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; margin-bottom: 2px; }
+    .day-number { display: block; font-size: 0.9rem; }
+
+    .student-info { display: flex; align-items: center; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background-color: #eff6ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; font-weight: 800; margin-right: 12px; font-size: 0.8rem; flex-shrink: 0;}
+    
+    /* --- SOLUCIÓN A LOS PUNTOS/LÍNEAS EN LOS SELECTORES --- */
+    .status-select { 
+        width: 100%; min-width: 32px; height: 32px; border: none; font-weight: 800; 
+        text-align: center; text-align-last: center; cursor: pointer; 
+        border-radius: 6px; padding: 0; 
+        appearance: none; -webkit-appearance: none; -moz-appearance: none; /* Elimina flechas en Chrome/Safari/Firefox */
+        background-image: none; /* Asegura que no haya flechas de fondo */
+        outline: none; transition: 0.2s;
+    }
+    .status-select::-ms-expand { display: none; } /* Elimina flecha en navegadores antiguos de Microsoft */
+    .status-select:focus { outline: none; box-shadow: 0 0 0 2px rgba(203, 213, 225, 0.5); } /* Borde limpio al hacer clic */
+    
+    .status-select.presente { background-color: #d1fae5; color: var(--success-main); }
+    .status-select.ausente { background-color: #fee2e2; color: var(--danger-main); }
+    .status-select.excusa { background-color: #fef3c7; color: var(--warning-main); }
+    .status-select.feriado { background-color: #e0e7ff; color: var(--info-main); }
+    .status-select.vacio { background-color: transparent; color: var(--muted-text); }
+    
+    .legend { display: flex; gap: 15px; margin-top: 20px; font-size: 0.85rem; font-weight: 600; color: var(--muted-text); flex-wrap: wrap;}
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+</style>
+
+<div class="viewport-container">
+    <div class="header-actions">
+        <a href="{{ url_for('gestionar_grado', id_grado=grado.id_grado) }}" class="btn-back-nav">
+            <i class="bi bi-chevron-left"></i> Volver al Grado
+        </a>
+        
+        <button type="button" onclick="exportarPDF()" class="btn-export">
+            Exportar a PDF <i class="bi bi-file-earmark-pdf-fill"></i>
+        </button>
+    </div>
+
+    <div class="card-container" id="zona-impresion">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+            <div>
+                <h2 class="fw-800 text-dark m-0">Registro de Asistencia</h2>
+                <p class="text-muted fw-500 mb-0">{{ grado.nombre_grado }}</p>
+            </div>
+            
+            <div class="month-picker-wrapper" data-html2canvas-ignore>
+                <i class="bi bi-calendar-month text-primary fs-5"></i>
+                <input type="month" id="mes-asistencia">
+            </div>
+            
+            <div id="mes-pdf-label" style="display: none; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; color: var(--dark-text); font-size: 1.1rem; border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 12px;"></div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="custom-table" id="tabla-asistencia">
+                <thead>
+                    <tr id="tabla-cabecera">
+                        <th class="student-col">Estudiante</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-cuerpo">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legend">
+            <span><div class="dot" style="background: var(--success-main);"></div> (P) Presente</span>
+            <span><div class="dot" style="background: var(--danger-main);"></div> (A) Ausente</span>
+            <span><div class="dot" style="background: var(--warning-main);"></div> (E) Excusa</span>
+            <span><div class="dot" style="background: var(--info-main);"></div> (F) Feriado</span>
+            <span><div class="dot" style="background: #e2e8f0;"></div> (-) Fin de Semana</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ALUMNOS = [
+        {% for data in alumnos %}
+        {
+            id: "{{ data.id_alumno }}",
+            nombre: "{{ data.usuario.nombre }}",
+            apellido: "{{ data.usuario.apellido }}",
+            inicial: "{{ data.usuario.nombre[0]|upper }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    const ID_GRADO = "{{ grado.id_grado }}";
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputMes = document.getElementById('mes-asistencia');
+        const cabecera = document.getElementById('tabla-cabecera');
+        const cuerpo = document.getElementById('tabla-cuerpo');
+
+        const hoy = new Date();
+        const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+        inputMes.value = mesActual;
+
+        const diasSemana = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
+
+        function obtenerDiasDelMes(año, mes) {
+            return new Date(año, mes, 0).getDate();
+        }
+
+        function construirTabla() {
+            if (!inputMes.value) return;
+            const partes = inputMes.value.split('-');
+            const año = parseInt(partes[0]);
+            const mes = parseInt(partes[1]);
+            const diasTotales = obtenerDiasDelMes(año, mes);
+            
+            cabecera.innerHTML = '<th class="student-col">Estudiante</th>';
+            
+            for (let i = 1; i <= diasTotales; i++) {
+                const fechaDia = new Date(año, mes - 1, i);
+                const diaSemana = fechaDia.getDay();
+                const esFinDeSemana = (diaSemana === 0 || diaSemana === 6); 
+                
+                const th = document.createElement('th');
+                if (esFinDeSemana) th.className = 'weekend-cell'; 
+                
+                th.innerHTML = `
+                    <span class="day-name">${diasSemana[diaSemana]}</span>
+                    <span class="day-number">${i}</span>
+                `;
+                cabecera.appendChild(th);
+            }
+
+            cuerpo.innerHTML = '';
+            ALUMNOS.forEach(alumno => {
+                const tr = document.createElement('tr');
+                
+                const tdNombre = document.createElement('td');
+                tdNombre.className = 'student-col';
+                tdNombre.innerHTML = `
+                    <div class="student-info">
+                        <div class="avatar">${alumno.inicial}</div>
+                        <span style="font-weight: 700; color: var(--dark-text); white-space: nowrap;">${alumno.nombre} ${alumno.apellido}</span>
+                    </div>
+                `;
+                tr.appendChild(tdNombre);
+
+                for (let dia = 1; dia <= diasTotales; dia++) {
+                    const td = document.createElement('td');
+                    const fechaDia = new Date(año, mes - 1, dia);
+                    const diaSemana = fechaDia.getDay();
+                    const esFinDeSemana = (diaSemana === 0 || diaSemana === 6);
+                    
+                    if (esFinDeSemana) {
+                        td.className = 'weekend-cell';
+                        td.innerHTML = '-';
+                    } else {
+                        const fechaCompleta = `${inputMes.value}-${String(dia).padStart(2, '0')}`;
+                        const storageKey = `asistencia_grado${ID_GRADO}_${fechaCompleta}_${alumno.id}`;
+                        
+                        const valorGuardado = localStorage.getItem(storageKey) || '-';
+                        
+                        const select = document.createElement('select');
+                        select.className = `status-select ${obtenerClaseColor(valorGuardado)}`;
+                        
+                        select.innerHTML = `
+                            <option value="-" ${valorGuardado === '-' ? 'selected' : ''}>-</option>
+                            <option value="P" ${valorGuardado === 'P' ? 'selected' : ''}>P</option>
+                            <option value="A" ${valorGuardado === 'A' ? 'selected' : ''}>A</option>
+                            <option value="E" ${valorGuardado === 'E' ? 'selected' : ''}>E</option>
+                            <option value="F" ${valorGuardado === 'F' ? 'selected' : ''}>F</option>
+                        `;
+                        
+                        select.addEventListener('change', (e) => {
+                            const nuevoValor = e.target.value;
+                            e.target.className = `status-select ${obtenerClaseColor(nuevoValor)}`;
+                            if (nuevoValor === '-') {
+                                localStorage.removeItem(storageKey);
+                            } else {
+                                localStorage.setItem(storageKey, nuevoValor);
+                            }
+                        });
+
+                        td.appendChild(select);
+                    }
+                    tr.appendChild(td);
+                }
+                cuerpo.appendChild(tr);
+            });
+        }
+
+        function obtenerClaseColor(valor) {
+            if (valor === 'P') return 'presente';
+            if (valor === 'A') return 'ausente';
+            if (valor === 'E') return 'excusa';
+            if (valor === 'F') return 'feriado';
+            return 'vacio';
+        }
+
+        inputMes.addEventListener('change', construirTabla);
+        construirTabla();
+    });
+
+    function exportarPDF() {
+        const elemento = document.getElementById('zona-impresion');
+        const inputMes = document.getElementById('mes-asistencia');
+        const mesLabel = document.getElementById('mes-pdf-label');
+        const nombreGrado = "{{ grado.nombre_grado }}";
+        
+        const partes = inputMes.value.split('-');
+        const fechaParaTexto = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, 1);
+        const nombreMes = fechaParaTexto.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+        mesLabel.textContent = nombreMes;
+        
+        mesLabel.style.display = 'block';
+        inputMes.parentElement.style.display = 'none';
+
+        const opciones = {
+            margin:       10,
+            filename:     `Asistencia_${nombreGrado}_${inputMes.value}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' } 
+        };
+        
+        document.body.style.backgroundColor = "white";
+
+        html2pdf().set(opciones).from(elemento).save().then(() => {
+            document.body.style.backgroundColor = "var(--bg-soft)";
+            mesLabel.style.display = 'none';
+            inputMes.parentElement.style.display = 'inline-flex';
+        });
+    }
+</script>
+{% endblock %}
