@@ -319,19 +319,44 @@ def gestionar_grado(id_grado):
     grado = Grados.query.get_or_404(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
 
-# --- NUEVA RUTA PARA ASIGNAR EXÁMENES ---
-@app.route('/maestro/grado/<int:id_grado>/nuevo_examen', methods=['GET', 'POST'])
+# --- RUTAS PARA ASIGNAR EXÁMENES ---
+
+# 1. Menú principal de selección
+@app.route('/maestro/grado/<int:id_grado>/nuevo_examen')
 def vista_nuevo_examen(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
-    
     grado = Grados.query.get_or_404(id_grado)
-    
-    # Aquí puedes agregar la lógica POST más adelante cuando vayas a guardar el examen
-    if request.method == 'POST':
-        # Lógica para guardar el examen en la BD
-        pass
-        
     return render_template('Panel_Maestro/nuevo_examen.html', id_grado=id_grado, grado=grado)
+
+# 2. Interfaz: Subir Archivo
+@app.route('/maestro/grado/<int:id_grado>/nuevo_examen/archivo', methods=['GET', 'POST'])
+def examen_archivo(id_grado):
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    grado = Grados.query.get_or_404(id_grado)
+    if request.method == 'POST':
+        # Lógica para guardar el archivo pendiente
+        pass
+    return render_template('Panel_Maestro/examen_archivo.html', id_grado=id_grado, grado=grado)
+
+# 3. Interfaz: Solo Instrucciones
+@app.route('/maestro/grado/<int:id_grado>/nuevo_examen/instrucciones', methods=['GET', 'POST'])
+def examen_instrucciones(id_grado):
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    grado = Grados.query.get_or_404(id_grado)
+    if request.method == 'POST':
+        # Lógica para guardar instrucciones pendiente
+        pass
+    return render_template('Panel_Maestro/examen_instrucciones.html', id_grado=id_grado, grado=grado)
+
+# 4. Interfaz: Formulario/Cuestionario manual
+@app.route('/maestro/grado/<int:id_grado>/nuevo_examen/formulario', methods=['GET', 'POST'])
+def examen_formulario(id_grado):
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    grado = Grados.query.get_or_404(id_grado)
+    if request.method == 'POST':
+        # Lógica para guardar cuestionario pendiente
+        pass
+    return render_template('Panel_Maestro/examen_formulario.html', id_grado=id_grado, grado=grado)
 # ----------------------------------------
 
 @app.route('/maestro/reportes/enviar/<int:id_grado>')

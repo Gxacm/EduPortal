@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --purple-main: #8b5cf6; --purple-soft: #f3e8ff;
+        --danger-main: #ef4444;
+        --dark-text: #1e293b; --muted-text: #64748b;
+        --bg-soft: #f8fafc; --border-color: #e2e8f0;
+    }
+    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
+    .viewport-container { padding: 30px 20px; max-width: 900px; margin: 0 auto; }
+    
+    .btn-back-nav { display: inline-flex; align-items: center; gap: 8px; color: var(--muted-text); text-decoration: none; font-weight: 700; margin-bottom: 20px; transition: 0.3s; }
+    .btn-back-nav:hover { color: var(--dark-text); transform: translateX(-5px); }
+
+    .form-card { background: white; border-radius: 24px; padding: 2rem; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; transition: all 0.3s;}
+    
+    .custom-label { font-weight: 700; color: var(--dark-text); font-size: 0.9rem; margin-bottom: 8px; display: block; }
+    .custom-input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); background-color: #f8fafc; font-family: inherit; color: var(--dark-text); transition: all 0.2s; }
+    .custom-input:focus { outline: none; border-color: var(--purple-main); background-color: white; box-shadow: 0 0 0 4px var(--purple-soft); }
+    
+    .btn-submit { background-color: var(--purple-main); color: white; padding: 12px 24px; border-radius: 50px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 10px; }
+    .btn-submit:hover { background-color: #7c3aed; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3); }
+
+    .btn-add-question { background-color: white; color: var(--purple-main); border: 2px dashed var(--purple-main); padding: 12px 24px; border-radius: 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 20px;}
+    .btn-add-question:hover { background-color: var(--purple-soft); }
+
+    /* Estilos dinámicos estilo Google Forms */
+    .btn-delete-q { background: transparent; border: none; color: var(--muted-text); font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.85rem;}
+    .btn-delete-q:hover { color: var(--danger-main); }
+    
+    .option-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .option-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cbd5e1; flex-shrink: 0; }
+    .option-input { flex: 1; border: none; border-bottom: 2px solid transparent; background: transparent; padding: 8px 0; font-family: inherit; color: var(--dark-text); transition: 0.2s; font-size: 0.95rem; outline: none;}
+    .option-input:focus { border-bottom-color: var(--purple-main); }
+    .option-input:hover { border-bottom-color: var(--border-color); }
+    
+    .btn-remove-opt { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center;}
+    .btn-remove-opt:hover { background: #f1f5f9; color: var(--dark-text); }
+    
+    .btn-add-opt { background: transparent; border: none; color: var(--purple-main); font-weight: 600; cursor: pointer; padding: 8px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: 0.2s;}
+    .btn-add-opt:hover { color: #7c3aed; }
+
+    .text-placeholder { padding: 15px; border-bottom: 1px dotted var(--muted-text); color: var(--muted-text); font-size: 0.9rem; background: #f8fafc; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 10px;}
+</style>
+
+<div class="viewport-container">
+    <a href="{{ url_for('vista_nuevo_examen', id_grado=id_grado) }}" class="btn-back-nav">
+        <i class="bi bi-chevron-left"></i> Volver a opciones
+    </a>
+
+    <form action="{{ url_for('examen_formulario', id_grado=id_grado) }}" method="POST" id="form-examen">
+        <input type="hidden" name="total_preguntas" id="total_preguntas" value="1">
+
+        <div class="form-card">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+                <div style="width: 50px; height: 50px; background: var(--purple-soft); color: var(--purple-main); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    <i class="bi bi-ui-checks-grid"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-weight: 800; color: var(--dark-text); font-size: 1.4rem;">Cuestionario Dinámico</h2>
+                    <p style="margin: 0; color: var(--muted-text); font-size: 0.9rem;">Crea tu examen online. Las preguntas se guardan automáticamente.</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="custom-label">Título del Cuestionario</label>
+                <input type="text" name="titulo" class="custom-input" placeholder="Ej: Examen de Diagnóstico" required>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label class="custom-label">Instrucciones Generales</label>
+                <textarea name="descripcion" class="custom-input" rows="2" placeholder="Ej: Lee cuidadosamente cada pregunta antes de responder."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <label class="custom-label">Fecha y Hora Límite</label>
+                    <input type="datetime-local" name="fecha_limite" class="custom-input" required>
+                </div>
+                <div style="flex: 1;">
+                    <label class="custom-label">Puntaje Máximo (Total)</label>
+                    <input type="number" name="puntos_totales" class="custom-input" placeholder="Ej: 100" required>
+                </div>
+            </div>
+        </div>
+
+        <div id="contenedor-preguntas">
+            </div>
+
+        <button type="button" class="btn-add-question" onclick="agregarPregunta()">
+            <i class="bi bi-plus-circle-fill"></i> Agregar nueva pregunta
+        </button>
+
+        <button type="submit" class="btn-submit">Guardar y Publicar Cuestionario</button>
+    </form>
+</div>
+
+<script>
+    let contadorPreguntas = 0;
+
+    // Inicializar con 1 pregunta al cargar la página
+    document.addEventListener("DOMContentLoaded", function() {
+        agregarPregunta();
+    });
+
+    function agregarPregunta() {
+        contadorPreguntas++;
+        actualizarTotalPreguntas();
+        const idPregunta = contadorPreguntas;
+        
+        const htmlPregunta = `
+            <div class="form-card" id="pregunta-card-${idPregunta}" style="padding: 1.5rem; border-left: 6px solid var(--purple-main);">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <label class="custom-label" style="margin: 0;">Pregunta ${idPregunta}</label>
+                    ${idPregunta > 1 ? `<button type="button" class="btn-delete-q" onclick="eliminarPregunta(${idPregunta})"><i class="bi bi-trash3"></i> Eliminar</button>` : ''}
+                </div>
+                
+                <input type="text" name="pregunta_${idPregunta}" class="custom-input" style="margin-bottom: 20px; font-weight: 600; font-size: 1.05rem;" placeholder="Escribe tu pregunta aquí..." required>
+                
+                <div style="margin-bottom: 20px; background: #f8fafc; padding: 10px; border-radius: 12px;">
+                    <label class="custom-label" style="font-size: 0.8rem; color: var(--muted-text);">Tipo de respuesta</label>
+                    <select class="custom-input" name="tipo_pregunta_${idPregunta}" onchange="cambiarTipoPregunta(this.value, ${idPregunta})" style="background: white; cursor: pointer;">
+                        <option value="opciones">Opción Múltiple (Radio)</option>
+                        <option value="texto">Respuesta Larga (Párrafo)</option>
+                    </select>
+                </div>
+
+                <div id="area-respuestas-${idPregunta}">
+                    <div id="contenedor-opciones-${idPregunta}">
+                        ${generarFilaOpcionHTML(idPregunta, 1)}
+                    </div>
+                    <button type="button" class="btn-add-opt" onclick="agregarOpcion(${idPregunta})">
+                        <i class="bi bi-plus-circle"></i> Agregar opción
+                    </button>
+                </div>
+
+            </div>
+        `;
+        
+        document.getElementById('contenedor-preguntas').insertAdjacentHTML('beforeend', htmlPregunta);
+    }
+
+    function eliminarPregunta(idPregunta) {
+        const tarjeta = document.getElementById(`pregunta-card-${idPregunta}`);
+        tarjeta.style.opacity = '0';
+        tarjeta.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            tarjeta.remove();
+            actualizarTotalPreguntas(); // Solo actualizamos para visualización, Flask mapeará los IDs existentes
+        }, 200);
+    }
+
+    function cambiarTipoPregunta(tipo, idPregunta) {
+        const areaRespuestas = document.getElementById(`area-respuestas-${idPregunta}`);
+        
+        if (tipo === 'texto') {
+            areaRespuestas.innerHTML = `
+                <div class="text-placeholder">
+                    <i class="bi bi-text-paragraph"></i> El alumno verá un campo de texto amplio para escribir su respuesta...
+                </div>
+            `;
+        } else if (tipo === 'opciones') {
+            areaRespuestas.innerHTML = `
+                <div id="contenedor-opciones-${idPregunta}">
+                    ${generarFilaOpcionHTML(idPregunta, 1)}
+                </div>
+                <button type="button" class="btn-add-opt" onclick="agregarOpcion(${idPregunta})">
+                    <i class="bi bi-plus-circle"></i> Agregar opción
+                </button>
+            `;
+        }
+    }
+
+    function generarFilaOpcionHTML(idPregunta, idOpcion) {
+        // Usamos un ID único aleatorio para no sobreescribir si se borran y agregan opciones
+        const uniqueId = Math.random().toString(36).substr(2, 9);
+        return `
+            <div class="option-row" id="fila-opcion-${uniqueId}">
+                <div class="option-circle"></div>
+                <input type="text" name="opciones_pregunta_${idPregunta}[]" class="option-input" placeholder="Opción ${idOpcion}" required>
+                <button type="button" class="btn-remove-opt" onclick="eliminarOpcion('${uniqueId}')" title="Quitar opción">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    function agregarOpcion(idPregunta) {
+        const contenedor = document.getElementById(`contenedor-opciones-${idPregunta}`);
+        // Calcular el número visual de la opción basada en los hijos
+        const numeroOpcion = contenedor.children.length + 1;
+        contenedor.insertAdjacentHTML('beforeend', generarFilaOpcionHTML(idPregunta, numeroOpcion));
+    }
+
+    function eliminarOpcion(uniqueId) {
+        document.getElementById(`fila-opcion-${uniqueId}`).remove();
+    }
+
+    function actualizarTotalPreguntas() {
+        // Actualiza el campo oculto con el contador más alto creado.
+        // En tu backend de Flask podrás iterar desde 1 hasta este número.
+        document.getElementById('total_preguntas').value = contadorPreguntas;
+    }
+</script>
+{% endblock %}
