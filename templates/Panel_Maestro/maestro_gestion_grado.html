@@ -11,6 +11,7 @@
         --primary-main: #3b82f6; --primary-soft: #eff6ff;
         --warning-main: #f59e0b; --warning-soft: #fffbeb;
         --info-main: #0ea5e9; --info-soft: #f0f9ff;
+        --purple-main: #8b5cf6; --purple-soft: #f3e8ff; /* Color agregado para Exámenes */
         --dark-text: #1e293b; --muted-text: #64748b;
         --bg-soft: #f8fafc;
         --border-color: #e2e8f0;
@@ -107,6 +108,12 @@
             <div class="tool-icon" style="background: var(--primary-soft); color: var(--primary-main);"><i class="bi bi-journal-text"></i></div>
             <span class="tool-text">Asignar Tareas</span>
         </a>
+        
+        <a href="{{ url_for('vista_nuevo_examen', id_grado=grado.id_grado) }}" class="tool-card">
+            <div class="tool-icon" style="background: var(--purple-soft); color: var(--purple-main);"><i class="bi bi-file-earmark-text"></i></div>
+            <span class="tool-text">Asignar Examen</span>
+        </a>
+
         <a href="{{ url_for('registrar_notas', id_grado=grado.id_grado) }}" class="tool-card">
             <div class="tool-icon" style="background: var(--success-soft); color: var(--success-main);"><i class="bi bi-clipboard-check"></i></div>
             <span class="tool-text">Revisión de Tareas</span>
@@ -195,11 +202,10 @@
 <script>
     function openModal(modalId) {
         document.getElementById(modalId).classList.add('active');
-        document.body.style.overflow = 'hidden'; // Evita que el fondo haga scroll
+        document.body.style.overflow = 'hidden'; 
     }
 
     function closeModal(event, modalId) {
-        // Cierra el modal si haces clic en la parte oscura del fondo
         if(event.target.id === modalId) {
             document.getElementById(modalId).classList.remove('active');
             document.body.style.overflow = 'auto';
@@ -207,7 +213,6 @@
     }
 
     function closeModalBtn(modalId) {
-        // Cierra el modal desde el botón de la "X"
         document.getElementById(modalId).classList.remove('active');
         document.body.style.overflow = 'auto';
     }

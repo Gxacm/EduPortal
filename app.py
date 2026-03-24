@@ -221,8 +221,6 @@ def crear_tarea(id_grado):
 
 # --- REVISIÓN DE ASIGNACIONES (NOTAS) ACTUALIZADA ---
 
-# --- REVISIÓN DE ASIGNACIONES (NOTAS) ACTUALIZADA ---
-
 @app.route('/maestro/notas/general/<int:id_grado>', methods=['GET', 'POST'])
 def registrar_notas(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
@@ -320,6 +318,21 @@ def gestionar_grado(id_grado):
     alumnos = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
     grado = Grados.query.get_or_404(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
+
+# --- NUEVA RUTA PARA ASIGNAR EXÁMENES ---
+@app.route('/maestro/grado/<int:id_grado>/nuevo_examen', methods=['GET', 'POST'])
+def vista_nuevo_examen(id_grado):
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    
+    grado = Grados.query.get_or_404(id_grado)
+    
+    # Aquí puedes agregar la lógica POST más adelante cuando vayas a guardar el examen
+    if request.method == 'POST':
+        # Lógica para guardar el examen en la BD
+        pass
+        
+    return render_template('Panel_Maestro/nuevo_examen.html', id_grado=id_grado, grado=grado)
+# ----------------------------------------
 
 @app.route('/maestro/reportes/enviar/<int:id_grado>')
 def enviar_reportes(id_grado):
@@ -479,17 +492,6 @@ def crear_usuario_logica():
     flash("Usuario registrado correctamente")
     return redirect(url_for('admin_dashboard'))
 
-def generar_nuevo_carnet():
-    año_actual = datetime.now().year
-    prefijo = f"{año_actual}-"
-    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%")).order_by(Alumnos.carnet.desc()).first()
-    if ultimo_alumno:
-        ultimo_numero = int(ultimo_alumno.carnet.split('-')[1])
-        nuevo_numero = ultimo_numero + 1
-    else:
-        nuevo_numero = 1
-    return f"{prefijo}{nuevo_numero:03d}"
-
 @app.route('/admin/gestion_usuarios')
 def gestion_usuarios():
     alumnos = Alumnos.query.options(joinedload(Alumnos.usuario), joinedload(Alumnos.seccion).joinedload(Secciones.grado)).all()
@@ -593,5 +595,6 @@ def eliminar_seccion(id_seccion):
         flash("No se puede eliminar la sección: tiene alumnos asignados.", "error")
     
     return redirect(url_for('configuracion_academica'))
+
 if __name__ == '__main__':
     app.run(debug=True)
