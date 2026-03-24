@@ -1,26 +1,46 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="viewport-wrapper">
-    <div class="container main-content-box">
-        <h1 class="main-title">Mis Clases</h1>
-        <table class="table table-striped">
+<div class="main-viewport">
+    <h1>Mis Notas ⭐</h1>
+
+    <div class="bento-item" style="margin-top: 20px; overflow-x: auto;">
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th>Clase</th>
-                    <th>Grado</th>
-                    <th>Horario</th>
+                    <th>Materia</th>
+                    <th>Acumulado (70%)</th>
+                    <th>Examen (30%)</th>
+                    <th>Final</th>
+                    <th>Estado</th>
                 </tr>
             </thead>
             <tbody>
-                {% for clase in mis_clases %}
+                {% for nota in notas %}
                 <tr>
-                    <td>{{ clase.NombreClase }}</td>
-                    <td>{{ clase.NombreGrado }}</td>
-                    <td>{{ clase.Horario }}</td>
+                    <td><strong>{{ nota.materia }}</strong></td>
+                    <td>{{ nota.acumulado }}</td>
+                    <td>{{ nota.examen }}</td>
+                    <td class="total-nota">{{ nota.puntaje }}</td>
+                    <td>
+                        {% if nota.puntaje >= 60 %}
+                        <span class="nota-pass">Aprobado</span>
+                        {% else %}
+                        <span class="nota-fail">Reprobado</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<style>
+    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .data-table th { padding: 15px; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
+    .data-table td { padding: 15px; border-top: 1px solid #f1f5f9; color: #2b2d42; }
+    .total-nota { font-weight: 800; color: #4361ee; }
+    .nota-pass { color: #06d6a0; font-weight: 700; }
+    .nota-fail { color: #ef476f; font-weight: 700; }
+</style>
 {% endblock %}

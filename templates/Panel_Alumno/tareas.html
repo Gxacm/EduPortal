@@ -1,26 +1,40 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="viewport-wrapper">
-    <div class="container main-content-box">
-        <h1 class="main-title">Mis Clases</h1>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Clase</th>
-                    <th>Grado</th>
-                    <th>Horario</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for clase in mis_clases %}
-                <tr>
-                    <td>{{ clase.NombreClase }}</td>
-                    <td>{{ clase.NombreGrado }}</td>
-                    <td>{{ clase.Horario }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="main-viewport">
+    <h1>Centro de Tareas 📝</h1>
+    
+    <div class="bento-item" style="margin-top: 20px;">
+        <div class="task-row urgent">
+            <div class="task-info">
+                <h3>Guía de Álgebra</h3>
+                <p>Matemáticas II • Vence: Hoy 11:59 PM</p>
+            </div>
+            <div class="task-actions">
+                <span class="status-badge urgent">Urgente</span>
+                <button class="btn-action">Subir Archivo</button>
+            </div>
+        </div>
+
+        <div class="task-row">
+            <div class="task-info">
+                <h3>Ensayo sobre la Célula</h3>
+                <p>Ciencias Naturales • Vence: Jueves</p>
+            </div>
+            <div class="task-actions">
+                <span class="status-badge">Pendiente</span>
+                <button class="btn-action-ghost">Subir</button>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .task-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #f1f5f9; }
+    .task-row.urgent { background: #fff1f2; border-radius: 15px; border-bottom: none; margin-bottom: 10px; }
+    .task-info h3 { margin: 0; font-size: 1.1rem; color: #2b2d42; }
+    .task-info p { margin: 5px 0 0; font-size: 0.85rem; color: #64748b; }
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; background: #e2e8f0; color: #64748b; margin-right: 15px; }
+    .status-badge.urgent { background: #ef476f; color: white; }
+    .btn-action { background: #4361ee; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+</style>
 {% endblock %}
