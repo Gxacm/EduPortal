@@ -63,7 +63,7 @@
                 </div>
                 <div>
                     <h2 style="margin: 0; font-weight: 800; color: var(--dark-text); font-size: 1.4rem;">Cuestionario Dinámico</h2>
-                    <p style="margin: 0; color: var(--muted-text); font-size: 0.9rem;">Crea tu examen online. Las preguntas se guardan automáticamente.</p>
+                    <p style="margin: 0; color: var(--muted-text); font-size: 0.9rem;">Crea tu examen online. Selecciona la respuesta correcta para autocalificar.</p>
                 </div>
             </div>
 
@@ -84,7 +84,7 @@
                 </div>
                 <div style="flex: 1;">
                     <label class="custom-label">Puntaje Máximo (Total)</label>
-                    <input type="number" name="puntos_totales" class="custom-input" placeholder="Ej: 100" required>
+                    <input type="number" step="0.5" name="puntos_totales" class="custom-input" placeholder="Ej: 100" required>
                 </div>
             </div>
         </div>
@@ -123,17 +123,27 @@
                 
                 <input type="text" name="pregunta_${idPregunta}" class="custom-input" style="margin-bottom: 20px; font-weight: 600; font-size: 1.05rem;" placeholder="Escribe tu pregunta aquí..." required>
                 
-                <div style="margin-bottom: 20px; background: #f8fafc; padding: 10px; border-radius: 12px;">
-                    <label class="custom-label" style="font-size: 0.8rem; color: var(--muted-text);">Tipo de respuesta</label>
-                    <select class="custom-input" name="tipo_pregunta_${idPregunta}" onchange="cambiarTipoPregunta(this.value, ${idPregunta})" style="background: white; cursor: pointer;">
-                        <option value="opciones">Opción Múltiple (Radio)</option>
-                        <option value="texto">Respuesta Larga (Párrafo)</option>
-                    </select>
+                <div style="margin-bottom: 20px; display: flex; gap: 15px; background: #f8fafc; padding: 10px; border-radius: 12px;">
+                    <div style="flex: 1;">
+                        <label class="custom-label" style="font-size: 0.8rem; color: var(--muted-text);">Tipo de respuesta</label>
+                        <select class="custom-input" name="tipo_pregunta_${idPregunta}" onchange="cambiarTipoPregunta(this.value, ${idPregunta})" style="background: white; cursor: pointer;">
+                            <option value="opciones">Opción Múltiple (Radio)</option>
+                            <option value="texto">Respuesta Larga (Párrafo)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="custom-label" style="font-size: 0.8rem; color: var(--muted-text);">Puntos de la pregunta</label>
+                        <input type="number" step="0.5" name="puntos_pregunta_${idPregunta}" class="custom-input" style="background: white;" placeholder="Ej: 5" value="5" required>
+                    </div>
                 </div>
 
                 <div id="area-respuestas-${idPregunta}">
+                    <p style="font-size: 0.8rem; color: var(--purple-main); font-weight: 600; margin-bottom: 10px;">
+                        <i class="bi bi-info-circle"></i> Marca el círculo de la opción que es correcta.
+                    </p>
                     <div id="contenedor-opciones-${idPregunta}">
                         ${generarFilaOpcionHTML(idPregunta, 1)}
+                        ${generarFilaOpcionHTML(idPregunta, 2)}
                     </div>
                     <button type="button" class="btn-add-opt" onclick="agregarOpcion(${idPregunta})">
                         <i class="bi bi-plus-circle"></i> Agregar opción
@@ -152,7 +162,7 @@
         tarjeta.style.transform = 'scale(0.95)';
         setTimeout(() => {
             tarjeta.remove();
-            actualizarTotalPreguntas(); // Solo actualizamos para visualización, Flask mapeará los IDs existentes
+            actualizarTotalPreguntas();
         }, 200);
     }
 
@@ -162,13 +172,17 @@
         if (tipo === 'texto') {
             areaRespuestas.innerHTML = `
                 <div class="text-placeholder">
-                    <i class="bi bi-text-paragraph"></i> El alumno verá un campo de texto amplio para escribir su respuesta...
+                    <i class="bi bi-text-paragraph"></i> El alumno verá un campo de texto amplio para escribir su respuesta. (Se califica manualmente)
                 </div>
             `;
         } else if (tipo === 'opciones') {
             areaRespuestas.innerHTML = `
+                <p style="font-size: 0.8rem; color: var(--purple-main); font-weight: 600; margin-bottom: 10px;">
+                    <i class="bi bi-info-circle"></i> Marca el círculo de la opción que es correcta.
+                </p>
                 <div id="contenedor-opciones-${idPregunta}">
                     ${generarFilaOpcionHTML(idPregunta, 1)}
+                    ${generarFilaOpcionHTML(idPregunta, 2)}
                 </div>
                 <button type="button" class="btn-add-opt" onclick="agregarOpcion(${idPregunta})">
                     <i class="bi bi-plus-circle"></i> Agregar opción
@@ -178,12 +192,15 @@
     }
 
     function generarFilaOpcionHTML(idPregunta, idOpcion) {
-        // Usamos un ID único aleatorio para no sobreescribir si se borran y agregan opciones
         const uniqueId = Math.random().toString(36).substr(2, 9);
         return `
             <div class="option-row" id="fila-opcion-${uniqueId}">
-                <div class="option-circle"></div>
-                <input type="text" name="opciones_pregunta_${idPregunta}[]" class="option-input" placeholder="Opción ${idOpcion}" required>
+                <input type="radio" name="correcta_pregunta_${idPregunta}" value="${uniqueId}" required title="Marcar como respuesta correcta" style="width: 20px; height: 20px; accent-color: var(--purple-main); cursor: pointer;">
+                
+                <input type="hidden" name="ids_opciones_${idPregunta}[]" value="${uniqueId}">
+                
+                <input type="text" name="opcion_texto_${idPregunta}_${uniqueId}" class="option-input" placeholder="Opción ${idOpcion}" required>
+                
                 <button type="button" class="btn-remove-opt" onclick="eliminarOpcion('${uniqueId}')" title="Quitar opción">
                     <i class="bi bi-x-lg"></i>
                 </button>
@@ -193,7 +210,6 @@
 
     function agregarOpcion(idPregunta) {
         const contenedor = document.getElementById(`contenedor-opciones-${idPregunta}`);
-        // Calcular el número visual de la opción basada en los hijos
         const numeroOpcion = contenedor.children.length + 1;
         contenedor.insertAdjacentHTML('beforeend', generarFilaOpcionHTML(idPregunta, numeroOpcion));
     }
@@ -203,8 +219,6 @@
     }
 
     function actualizarTotalPreguntas() {
-        // Actualiza el campo oculto con el contador más alto creado.
-        // En tu backend de Flask podrás iterar desde 1 hasta este número.
         document.getElementById('total_preguntas').value = contadorPreguntas;
     }
 </script>

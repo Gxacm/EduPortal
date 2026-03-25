@@ -114,3 +114,55 @@ class Anuncios(db.Model):
     dirigido_a = db.Column(db.String(20))
     id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'))
     fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ==============================================================================
+# ----------------------------- MODELOS DE EXÁMENES ----------------------------
+# ==============================================================================
+
+class Examenes(db.Model):
+    __tablename__ = 'examenes'
+    id_examen = db.Column(db.Integer, primary_key=True)
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase'), nullable=False)
+    titulo = db.Column(db.String(200), nullable=False)
+    descripcion = db.Column(db.Text, nullable=True)
+    modalidad = db.Column(db.String(50), nullable=False) # 'archivo', 'instrucciones', 'formulario'
+    archivo_ruta = db.Column(db.String(255), nullable=True)
+    fecha_limite = db.Column(db.DateTime, nullable=True)
+    puntos_maximos = db.Column(db.Float, default=100.0)
+    
+    # Relación
+    clase = db.relationship('Clases', backref=db.backref('examenes', lazy=True))
+
+class PreguntasExamen(db.Model):
+    __tablename__ = 'preguntas_examen'
+    id_pregunta = db.Column(db.Integer, primary_key=True)
+    id_examen = db.Column(db.Integer, db.ForeignKey('examenes.id_examen'), nullable=False)
+    texto_pregunta = db.Column(db.Text, nullable=False)
+    tipo_pregunta = db.Column(db.String(50), nullable=False) # 'opcion_multiple', 'abierta', 'verdadero_falso'
+    puntos = db.Column(db.Float, default=1.0)
+    
+    # Relación
+    examen = db.relationship('Examenes', backref=db.backref('preguntas', lazy=True, cascade="all, delete-orphan"))
+
+class OpcionesPregunta(db.Model):
+    __tablename__ = 'opciones_pregunta'
+    id_opcion = db.Column(db.Integer, primary_key=True)
+    id_pregunta = db.Column(db.Integer, db.ForeignKey('preguntas_examen.id_pregunta'), nullable=False)
+    texto_opcion = db.Column(db.String(255), nullable=False)
+    es_correcta = db.Column(db.Boolean, default=False)
+    
+    # Relación
+    pregunta = db.relationship('PreguntasExamen', backref=db.backref('opciones', lazy=True, cascade="all, delete-orphan"))
+
+class EntregasExamenes(db.Model):
+    __tablename__ = 'entregas_examenes'
+    id_entrega = db.Column(db.Integer, primary_key=True)
+    id_examen = db.Column(db.Integer, db.ForeignKey('examenes.id_examen'), nullable=False)
+    id_alumno = db.Column(db.Integer, db.ForeignKey('alumnos.id_alumno'), nullable=False)
+    archivo_ruta = db.Column(db.String(255), nullable=True)
+    calificacion = db.Column(db.Float, nullable=True)
+    estado = db.Column(db.String(50), default='Entregado') # 'Entregado', 'Calificado'
+    
+    # Relaciones
+    examen = db.relationship('Examenes', backref=db.backref('entregas', lazy=True))
+    alumno = db.relationship('Alumnos', backref=db.backref('entregas_examenes', lazy=True))

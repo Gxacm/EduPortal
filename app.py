@@ -3,8 +3,13 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from sqlalchemy.orm import joinedload
-# --- LÍNEA ACTUALIZADA: Se agregó EntregasTareas ---
-from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos, EntregasTareas
+
+# --- NUEVOS IMPORTS PARA MANEJO DE ARCHIVOS ---
+import os
+from werkzeug.utils import secure_filename
+
+# --- LÍNEA ACTUALIZADA: Se agregaron los modelos de Exámenes ---
+from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
 
 
 app = Flask(__name__)
@@ -206,7 +211,7 @@ def crear_tarea(id_grado):
         nueva_tarea = Tareas(
             id_clase=request.form.get('id_clase'),
             titulo=request.form.get('titulo'),
-            descripcion=request.form.get('descripcion'), # <--- YA PODEMOS GUARDARLA
+            descripcion=request.form.get('descripcion'),
             fecha_entrega=datetime.strptime(request.form.get('fecha_entrega'), '%Y-%m-%dT%H:%M')
         )
         db.session.add(nueva_tarea)
@@ -296,7 +301,7 @@ def registrar_notas(id_grado):
         tareas_para_html.append({
             'id_tarea': tarea.id_tarea,
             'titulo': tarea.titulo,
-            'descripcion': tarea.descripcion, # <--- ¡Aquí está el cambio! Ahora muestra la descripción real.
+            'descripcion': tarea.descripcion, 
             'fecha_entrega': tarea.fecha_entrega.strftime('%d/%m/%Y %H:%M') if tarea.fecha_entrega else 'Sin fecha',
             'entregas': entregas
         })
@@ -319,7 +324,9 @@ def gestionar_grado(id_grado):
     grado = Grados.query.get_or_404(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
 
-# --- RUTAS PARA ASIGNAR EXÁMENES ---
+# ==============================================================================
+# ---------------------- RUTAS PARA ASIGNAR EXÁMENES (NUEVO) -------------------
+# ==============================================================================
 
 # 1. Menú principal de selección
 @app.route('/maestro/grado/<int:id_grado>/nuevo_examen')
@@ -333,30 +340,140 @@ def vista_nuevo_examen(id_grado):
 def examen_archivo(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     grado = Grados.query.get_or_404(id_grado)
+    
+    # Obtener las materias del maestro para el menú desplegable
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all() if perfil else []
+
     if request.method == 'POST':
-        # Lógica para guardar el archivo pendiente
-        pass
-    return render_template('Panel_Maestro/examen_archivo.html', id_grado=id_grado, grado=grado)
+        try:
+            archivo = request.files.get('archivo')
+            archivo_ruta = None
+            if archivo and archivo.filename != '':
+                filename = secure_filename(archivo.filename)
+                # Crea la carpeta si no existe y guarda el archivo
+                os.makedirs('static/uploads/examenes', exist_ok=True)
+                archivo_ruta = os.path.join('static/uploads/examenes', filename)
+                archivo.save(archivo_ruta)
+
+            nuevo_examen = Examenes(
+                id_clase=request.form.get('id_clase'),
+                titulo=request.form.get('titulo'),
+                descripcion=request.form.get('descripcion'),
+                modalidad='archivo',
+                archivo_ruta=archivo_ruta,
+                fecha_limite=datetime.strptime(request.form.get('fecha_limite'), '%Y-%m-%dT%H:%M') if request.form.get('fecha_limite') else None,
+                puntos_maximos=float(request.form.get('puntos_maximos', 100))
+            )
+            db.session.add(nuevo_examen)
+            db.session.commit()
+            flash("Examen tipo archivo creado exitosamente", "success")
+            return redirect(url_for('gestionar_grado', id_grado=id_grado))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error guardando examen de archivo: {e}")
+            flash("Error al crear el examen. Revisa los datos.", "danger")
+
+    return render_template('Panel_Maestro/examen_archivo.html', id_grado=id_grado, grado=grado, clases=clases)
 
 # 3. Interfaz: Solo Instrucciones
 @app.route('/maestro/grado/<int:id_grado>/nuevo_examen/instrucciones', methods=['GET', 'POST'])
 def examen_instrucciones(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     grado = Grados.query.get_or_404(id_grado)
-    if request.method == 'POST':
-        # Lógica para guardar instrucciones pendiente
-        pass
-    return render_template('Panel_Maestro/examen_instrucciones.html', id_grado=id_grado, grado=grado)
+    
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all() if perfil else []
 
-# 4. Interfaz: Formulario/Cuestionario manual
+    if request.method == 'POST':
+        try:
+            nuevo_examen = Examenes(
+                id_clase=request.form.get('id_clase'),
+                titulo=request.form.get('titulo'),
+                descripcion=request.form.get('descripcion'),
+                modalidad='instrucciones',
+                fecha_limite=datetime.strptime(request.form.get('fecha_limite'), '%Y-%m-%dT%H:%M') if request.form.get('fecha_limite') else None,
+                puntos_maximos=float(request.form.get('puntos_maximos', 100))
+            )
+            db.session.add(nuevo_examen)
+            db.session.commit()
+            flash("Examen de instrucciones creado exitosamente", "success")
+            return redirect(url_for('gestionar_grado', id_grado=id_grado))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error guardando examen de instrucciones: {e}")
+            flash("Error al crear el examen.", "danger")
+
+    return render_template('Panel_Maestro/examen_instrucciones.html', id_grado=id_grado, grado=grado, clases=clases)
+
+# 4. Interfaz: Formulario/Cuestionario manual (CORREGIDO Y COMPLETO)
 @app.route('/maestro/grado/<int:id_grado>/nuevo_examen/formulario', methods=['GET', 'POST'])
 def examen_formulario(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     grado = Grados.query.get_or_404(id_grado)
+    
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all() if perfil else []
+
     if request.method == 'POST':
-        # Lógica para guardar cuestionario pendiente
-        pass
-    return render_template('Panel_Maestro/examen_formulario.html', id_grado=id_grado, grado=grado)
+        try:
+            # Primero guardamos la cabecera del examen (Título, puntos, etc)
+            nuevo_examen = Examenes(
+                id_clase=request.form.get('id_clase'),
+                titulo=request.form.get('titulo'),
+                descripcion=request.form.get('descripcion'),
+                modalidad='formulario',
+                fecha_limite=datetime.strptime(request.form.get('fecha_limite'), '%Y-%m-%dT%H:%M') if request.form.get('fecha_limite') else None,
+                puntos_maximos=float(request.form.get('puntos_maximos', 100))
+            )
+            db.session.add(nuevo_examen)
+            db.session.flush() # Nos permite obtener el ID del examen antes del commit final
+
+            # Procesar las preguntas dinámicas
+            total_preguntas = int(request.form.get('total_preguntas', 0))
+
+            for i in range(1, total_preguntas + 1):
+                texto_pregunta = request.form.get(f'pregunta_{i}')
+                
+                if texto_pregunta: # Verificamos si la pregunta existe
+                    tipo_pregunta = request.form.get(f'tipo_pregunta_{i}')
+                    puntos = float(request.form.get(f'puntos_pregunta_{i}', 1.0))
+
+                    nueva_pregunta = PreguntasExamen(
+                        id_examen=nuevo_examen.id_examen,
+                        texto_pregunta=texto_pregunta,
+                        tipo_pregunta='opcion_multiple' if tipo_pregunta == 'opciones' else 'abierta',
+                        puntos=puntos
+                    )
+                    db.session.add(nueva_pregunta)
+                    db.session.flush() # Obtenemos el ID de la pregunta
+
+                    # Guardamos las opciones si es de opción múltiple
+                    if tipo_pregunta == 'opciones':
+                        opciones_ids = request.form.getlist(f'ids_opciones_{i}[]')
+                        correcta_id = request.form.get(f'correcta_pregunta_{i}') 
+
+                        for unique_id in opciones_ids:
+                            texto_opcion = request.form.get(f'opcion_texto_{i}_{unique_id}')
+                            es_correcta = (unique_id == correcta_id)
+
+                            nueva_opcion = OpcionesPregunta(
+                                id_pregunta=nueva_pregunta.id_pregunta,
+                                texto_opcion=texto_opcion,
+                                es_correcta=es_correcta
+                            )
+                            db.session.add(nueva_opcion)
+
+            db.session.commit()
+            flash("Cuestionario creado exitosamente", "success")
+            return redirect(url_for('gestionar_grado', id_grado=id_grado))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error guardando cuestionario: {e}")
+            flash("Error al crear el cuestionario.", "danger")
+
+    return render_template('Panel_Maestro/examen_formulario.html', id_grado=id_grado, grado=grado, clases=clases)
 # ----------------------------------------
 
 @app.route('/maestro/reportes/enviar/<int:id_grado>')
@@ -616,8 +733,7 @@ def eliminar_seccion(id_seccion):
         flash("Sección eliminada correctamente.", "success")
     except Exception as e:
         db.session.rollback()
-        # Esto falla si hay alumnos inscritos en esa sección
-        flash("No se puede eliminar la sección: tiene alumnos asignados.", "error")
+        flash("No se puede eliminar la sección: tiene alumnos vinculados.", "error")
     
     return redirect(url_for('configuracion_academica'))
 
