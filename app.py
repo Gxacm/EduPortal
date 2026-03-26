@@ -324,6 +324,99 @@ def gestionar_grado(id_grado):
     grado = Grados.query.get_or_404(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
 
+@app.route('/maestro/examenes/revision/<int:id_grado>', methods=['GET', 'POST'])
+def revisar_examenes(id_grado):
+    if session.get('rol') != 2: return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    perfil = Maestros.query.filter_by(id_usuario=user_id).first()
+    grado = Grados.query.get_or_404(id_grado)
+
+    # 1. LÓGICA POST (Guardar Notas)
+    if request.method == 'POST':
+        # Obtenemos el id_examen del parámetro de la URL (?id_examen=X)
+        id_ex_form = request.args.get('id_examen')
+        
+        if id_ex_form:
+            for key, value in request.form.items():
+                if key.startswith('nota_') and value.strip() != '':
+                    id_al_entregue = int(key.split('_')[1])
+                    
+                    # Buscamos si ya tiene nota registrada
+                    nota_existente = Notas.query.filter_by(
+                        id_alumno=id_al_entregue, 
+                        id_examen=id_ex_form
+                    ).first()
+                    
+                    try:
+                        val_nota = float(value)
+                        if nota_existente:
+                            nota_existente.calificacion = val_nota
+                        else:
+                            nueva_nota = Notas(
+                                id_examen=id_ex_form,
+                                id_alumno=id_al_entregue,
+                                calificacion=val_nota,
+                                id_maestro_autor=perfil.id_maestro
+                            )
+                            db.session.add(nueva_nota)
+                            
+                        # OPCIONAL: Actualizar el estado en la tabla entregas_examenes a 'Calificado'
+                        entrega_obj = EntregasExamenes.query.filter_by(
+                            id_alumno=id_al_entregue, 
+                            id_examen=id_ex_form
+                        ).first()
+                        if entrega_obj:
+                            entrega_obj.estado = 'Calificado'
+
+                    except ValueError:
+                        continue 
+
+            db.session.commit()
+            flash("Calificaciones guardadas correctamente.", "success")
+        return redirect(url_for('revisar_examenes', id_grado=id_grado))
+
+    # 2. LÓGICA GET (Cargar Datos)
+    secciones = Secciones.query.filter_by(id_grado=id_grado).all()
+    ids_secciones = [s.id_seccion for s in secciones]
+    
+    # Obtenemos los alumnos de esas secciones
+    alumnos_lista = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
+
+    # Filtramos exámenes por las clases del maestro en este grado
+    clases_maestro = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all()
+    ids_clases = [c.id_clase for c in clases_maestro]
+    
+    examenes_db = Examenes.query.filter(Examenes.id_clase.in_(ids_clases)).order_by(Examenes.fecha_limite.desc()).all()
+
+    examenes_data = []
+    for ex in examenes_db:
+        entregas = []
+        for u_al in alumnos_lista:
+            # Obtenemos el perfil de alumno para tener el id_alumno (no el id_usuario)
+            al_perfil = Alumnos.query.filter_by(id_usuario=u_al.id_usuario).first()
+            if not al_perfil: continue
+            
+            # Consultamos entrega y nota (Asegúrate que el modelo EntregasExamenes ya esté corregido)
+            entrega = EntregasExamenes.query.filter_by(id_alumno=al_perfil.id_alumno, id_examen=ex.id_examen).first()
+            nota = Notas.query.filter_by(id_alumno=al_perfil.id_alumno, id_examen=ex.id_examen).first()
+            
+            entregas.append({
+                'alumno': u_al,
+                'id_alumno': al_perfil.id_alumno,
+                'estado': entrega.estado if entrega else 'Pendiente',
+                'archivo': entrega.archivo_ruta if entrega else None,
+                'respuestas': entrega.respuestas_json if entrega else None,
+                'nota': nota.calificacion if nota else ''
+            })
+        
+        examenes_data.append({
+            'info': ex,
+            'entregas': entregas
+        })
+
+    return render_template('Panel_Maestro/examenes_revisar.html', examenes=examenes_data, grado=grado)
+
 # ==============================================================================
 # ---------------------- RUTAS PARA ASIGNAR EXÁMENES (NUEVO) -------------------
 # ==============================================================================

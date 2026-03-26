@@ -92,11 +92,16 @@ class EntregasTareas(db.Model):
 class Notas(db.Model):
     __tablename__ = 'notas'
     id_nota = db.Column(db.Integer, primary_key=True)
-    id_tarea = db.Column(db.Integer, db.ForeignKey('tareas.id_tarea'))
+    id_tarea = db.Column(db.Integer, db.ForeignKey('tareas.id_tarea'), nullable=True) # Cambiado a nullable=True
+    id_examen = db.Column(db.Integer, db.ForeignKey('examenes.id_examen'), nullable=True) # <--- AGREGA ESTA LÍNEA
     id_alumno = db.Column(db.Integer, db.ForeignKey('alumnos.id_alumno'))
     calificacion = db.Column(db.Numeric(5,2))
     id_maestro_autor = db.Column(db.Integer, db.ForeignKey('maestros.id_maestro'))
     fecha_modificacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Opcional: Relaciones para acceder fácil desde el objeto
+    tarea = db.relationship('Tareas', backref='notas_tarea')
+    examen = db.relationship('Examenes', backref='notas_examen')
 
 class Asistencias(db.Model):
     __tablename__ = 'asistencias'
@@ -156,13 +161,11 @@ class OpcionesPregunta(db.Model):
 
 class EntregasExamenes(db.Model):
     __tablename__ = 'entregas_examenes'
-    id_entrega = db.Column(db.Integer, primary_key=True)
+    id_entrega_examen = db.Column(db.Integer, primary_key=True)
     id_examen = db.Column(db.Integer, db.ForeignKey('examenes.id_examen'), nullable=False)
     id_alumno = db.Column(db.Integer, db.ForeignKey('alumnos.id_alumno'), nullable=False)
     archivo_ruta = db.Column(db.String(255), nullable=True)
-    calificacion = db.Column(db.Float, nullable=True)
-    estado = db.Column(db.String(50), default='Entregado') # 'Entregado', 'Calificado'
-    
-    # Relaciones
-    examen = db.relationship('Examenes', backref=db.backref('entregas', lazy=True))
-    alumno = db.relationship('Alumnos', backref=db.backref('entregas_examenes', lazy=True))
+    respuestas_json = db.Column(db.JSON, nullable=True) 
+    # calificacion = db.Column(db.Float, nullable=True)  <-- ELIMINA O COMENTA ESTA LÍNEA
+    estado = db.Column(db.String(50), default='entregado')
+    fecha_entrega = db.Column(db.DateTime, default=db.func.current_timestamp())
