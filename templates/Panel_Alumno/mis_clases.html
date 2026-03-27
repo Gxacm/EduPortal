@@ -1,40 +1,226 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="main-viewport">
-    <header class="content-header-minimal">
-        <h1>Mis Clases 📚</h1>
-        <p>Ciclo Lectivo 2026 - Materias Inscritas</p>
+
+<div class="clases-wrapper">
+    <header class="clases-hero">
+        <div class="hero-left">
+            <a href="{{ url_for('alumno_dashboard') }}" class="btn-back-square" title="Volver al Panel">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <div class="hero-content">
+                <span class="badge-academico">{{ alumno.seccion.grado.nombre_grado }} • Sección {{ alumno.seccion.nombre_seccion }}</span>
+                <h1>Mis Clases</h1>
+            </div>
+        </div>    
+        <div class="hero-stats">
+            <div class="stat-card">
+                <span class="stat-value">{{ clases|length }}</span>
+                <span class="stat-label">Materias</span>
+            </div>
+        </div>
     </header>
 
-    <div class="materias-grid">
-        <div class="materia-card" style="border-top: 5px solid #4361ee;">
-            <div class="materia-icon" style="background: #4361ee15; color: #4361ee;">
-                <i class="bi bi-journal-bookmark"></i>
-            </div>
-            <h3>Matemáticas II</h3>
-            <p><i class="bi bi-person"></i> Profe: Carlos Mendoza</p>
-            <span class="aula-tag">Aula 15</span>
-            <button class="btn-ver">Ver Material</button>
-        </div>
+    <div class="capsulas-grid">
+        {% for clase in clases %}
+        {% set colors = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c', '#00bcd4'] %}
+        {% set current_color = colors[loop.index0 % colors|length] %}
 
-        <div class="materia-card" style="border-top: 5px solid #06d6a0;">
-            <div class="materia-icon" style="background: #06d6a015; color: #06d6a0;">
-                <i class="bi bi-droplet-fill"></i>
+        <div class="capsula-clase" style="--materia-color: {{ current_color }};">
+            <div class="capsula-header">
+                <div class="header-overlay-pattern"></div>
+                <div class="header-top">
+                    <div class="icon-circle">
+                        <i class="bi bi-journal-code"></i>
+                    </div>
+                    <span class="ciclo-pill">{{ clase.ciclo.nombre_ciclo }}</span>
+                </div>
             </div>
-            <h3>Ciencias Naturales</h3>
-            <p><i class="bi bi-person"></i> Profe: Elena Rivas</p>
-            <span class="aula-tag">Laboratorio</span>
-            <button class="btn-ver">Ver Material</button>
+            
+            <div class="capsula-body">
+                <div class="info-float-card">
+                    <h3>{{ clase.nombre_clase }}</h3>
+                    
+                    <div class="profesor-mention">
+                        <div class="avatar-frame">
+                            {{ clase.maestro_titular.usuario.nombre[0] }}{{ clase.maestro_titular.usuario.apellido[0] }}
+                        </div>
+                        <div class="prof-text">
+                            <small>Docente</small>
+                            <strong>{{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="capsula-footer">
+                    <a href="{{ url_for('alumno_aula', id_clase=clase.id_clase) }}" class="btn-action-primary">
+                        <span>Ver Aula</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
         </div>
+        {% endfor %}
     </div>
 </div>
 
 <style>
-    .materias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 25px; }
-    .materia-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .materia-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 15px; }
-    .aula-tag { background: #f1f5f9; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #64748b; }
-    .btn-ver { width: 100%; margin-top: 15px; background: #2b2d42; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; }
-    .btn-ver:hover { background: #4361ee; }
+    :root {
+        --bg-main: #f8fafc;
+        --text-dark: #2d3748;
+        --text-muted: #64748b;
+        --white: #ffffff;
+        --shadow-sm: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .clases-wrapper { padding: 40px; max-width: 1300px; margin: 0 auto; background-color: var(--bg-main); }
+
+    .hero-left { display: flex; align-items: center; gap: 20px; }
+    
+    .btn-back-square {
+        width: 45px; height: 45px; background: var(--light-bg); border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        text-decoration: none; color: var(--dark); transition: 0.2s;
+    }
+    .btn-back-square:hover { background: var(--dark); color: white; transform: translateX(-4px); }
+
+    /* --- RESTO DEL ESTILO (HERO, CAPSULAS, ETC) --- */
+    .clases-hero {
+        background: var(--white);
+        padding: 50px;
+        border-radius: 35px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 50px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .badge-academico { 
+        background: #f1f5f9; color: #64748b; padding: 8px 16px; 
+        border-radius: 100px; font-weight: 700; font-size: 0.75rem; 
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+    .clases-hero h1 { font-size: 2.8rem; font-weight: 900; color: var(--text-dark); margin: 15px 0; letter-spacing: -1.5px; }
+    .clases-hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 500px; }
+
+    .stat-card {
+        background: var(--text-dark); color: var(--white);
+        padding: 25px; border-radius: 28px; text-align: center;
+        min-width: 130px; box-shadow: 0 15px 30px rgba(30, 41, 59, 0.2);
+    }
+    .stat-value { display: block; font-size: 2.2rem; font-weight: 900; line-height: 1; }
+    .stat-label { font-size: 0.75rem; text-transform: uppercase; opacity: 0.8; font-weight: 700; }
+
+    .capsulas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 35px; }
+
+    .capsula-clase {
+        background: var(--white);
+        border-radius: 32px;
+        overflow: hidden;
+        border: 1px solid #eef2f6;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .capsula-clase:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--materia-color);
+    }
+
+    .capsula-header {
+        height: 140px;
+        background-color: var(--materia-color);
+        position: relative;
+        padding: 25px;
+        overflow: hidden;
+    }
+
+    .header-overlay-pattern {
+        position: absolute; inset: 0; opacity: 0.1;
+        background-image: radial-gradient(#fff 1px, transparent 1px);
+        background-size: 15px 15px;
+    }
+
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2; }
+    
+    .icon-circle {
+        width: 48px; height: 48px; background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px); border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 1.4rem; border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .ciclo-pill {
+        background: rgba(255, 255, 255, 0.2); color: white;
+        padding: 6px 14px; border-radius: 10px; font-size: 0.7rem;
+        font-weight: 800; text-transform: uppercase; border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .capsula-body { padding: 0 25px 30px 25px; margin-top: -60px; position: relative; z-index: 3; }
+
+    .info-float-card {
+        background: var(--white);
+        padding: 25px;
+        border-radius: 24px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .info-float-card h3 { font-size: 1.5rem; font-weight: 900; color: var(--text-dark); margin: 0 0 20px 0; letter-spacing: -0.5px; }
+
+    .profesor-mention { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+    .avatar-frame {
+        width: 42px; height: 42px; background: var(--materia-color); color: white;
+        border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.85rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .prof-text small { display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    .prof-text strong { font-size: 0.95rem; color: var(--text-dark); font-weight: 800; }
+
+    .progress-section { margin-top: 15px; }
+    .progress-meta { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; }
+    .progress-track { height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
+    .progress-fill { width: 85%; height: 100%; background: var(--materia-color); border-radius: 10px; transition: 1s ease; }
+
+    .capsula-footer { display: flex; justify-content: flex-end; align-items: center; padding: 0 5px; }
+    
+    .status-indicator { 
+        display: flex; align-items: center; gap: 8px; 
+        font-size: 0.75rem; font-weight: 700; color: var(--text-muted);
+    }
+    .dot-blink { 
+        width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; 
+        animation: blink 2s infinite; 
+    }
+
+    .btn-action-primary {
+        background: var(--text-dark); color: var(--white);
+        text-decoration: none; padding: 12px 22px; border-radius: 16px;
+        font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; gap: 10px;
+        transition: 0.3s ease; box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
+    }
+
+    .btn-action-primary:hover {
+        background: var(--materia-color);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    @keyframes blink {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(1.2); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+        .clases-hero { flex-direction: column; text-align: center; padding: 30px; }
+        .stat-card { margin-top: 20px; width: 100%; }
+        .capsulas-grid { grid-template-columns: 1fr; }
+    }
 </style>
+
 {% endblock %}

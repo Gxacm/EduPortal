@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="aula-wrapper">
+    <header class="aula-hero-card">
+        <div class="hero-left">
+            <a href="{{ url_for('alumno_clases') }}" class="btn-back-square" title="Volver al Panel">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <div class="title-group">
+                <span class="materia-tag">Mi Salón de Clase</span>
+                <h1>{{ clase.nombre_clase }}</h1>
+                <p class="profesor-name">
+                    <i class="bi bi-person-workspace" style = "margin-right: 5px;"></i> 
+                    Docente: {{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}
+                </p>
+            </div>
+        </div>
+        
+        <div class="hero-right">
+            <div class="stats-mini">
+                <div class="stat-item">
+                    <span class="stat-value">{{ tareas|length }}</span>
+                    <span class="stat-label">Tareas</span>
+                </div>
+                <div class="divider-v"></div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ entregadas_ids|length }}</span>
+                    <span class="stat-label">Hechas</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="aula-content-grid">
+        <main class="main-column">
+            <section class="content-section">
+                <div class="section-title">
+                    <i class="bi bi-pencil-square"></i>
+                    <h2>Mis Tareas y Trabajos</h2>
+                </div>
+
+                <div class="tareas-container">
+                    {% for tarea in tareas %}
+                    <div class="tarea-card">
+                        <div class="tarea-status-icon {% if tarea.id_tarea in entregadas_ids %}success{% endif %}">
+                            <i class="bi {% if tarea.id_tarea in entregadas_ids %}bi-check-circle-fill{% else %}bi-journal-bookmark{% endif %}"></i>
+                        </div>
+                        
+                        <div class="tarea-info">
+                            <h3>{{ tarea.titulo }}</h3>
+                            <p class="tarea-meta">
+                                <i class="bi bi-calendar-check"></i> 
+                                Entregar el: {{ tarea.fecha_entrega.strftime('%d/%m/%Y') }}
+                            </p>
+                        </div>
+
+                        <div class="tarea-actions">
+                            {% if tarea.id_tarea in entregadas_ids %}
+                                <span class="badge-status delivered">¡Listo!</span>
+                                <button class="btn-action-view" title="Ver mi tarea">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                            {% else %}
+                                <span class="badge-status pending">Por hacer</span>
+                                <a href="#" class="btn-action-upload" title="Entregar tarea">
+                                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-stars"></i>
+                        <p>¡Hurra! No hay tareas pendientes por ahora.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </main>
+
+        <aside class="side-column">
+            <section class="side-card announcement-box">
+                <div class="side-card-header">
+                    <i class="bi bi-bell-fill"></i>
+                    <h3>Avisos del Profe</h3>
+                </div>
+                <div class="announcement-content">
+                    <p class="announcement-text">
+                        ¡Hola niños! Recuerden repasar la lectura de esta semana. Tendremos un repaso grupal el viernes.
+                    </p>
+                    <span class="announcement-date">Aviso de hoy</span>
+                </div>
+            </section>
+
+            <section class="side-card resources-box">
+                <div class="side-card-header">
+                    <i class="bi bi-backpack-fill"></i>
+                    <h3>Materiales de Clase</h3>
+                </div>
+                <ul class="resource-list">
+                    <li>
+                        <a href="#" class="resource-item">
+                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                            <span>Documentos de Clase</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="resource-item">
+                            <i class="bi bi-link-45deg"></i>
+                            <span>Lectura divertida</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="resource-item">
+                            <i class="bi bi-play-btn-fill"></i>
+                            <span>Video de repaso</span>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #4361ee;
+        --dark: #1e293b;
+        --light-bg: #f8fafc;
+        --text-muted: #64748b;
+        --success: #2ecc71;
+        --warning: #e74c3c;
+    }
+
+    .aula-wrapper { padding: 30px; max-width: 1300px; margin: 0 auto; }
+
+    /* Tarjeta de Bienvenida */
+    .aula-hero-card {
+        background: white;
+        padding: 35px;
+        border-radius: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+    }
+
+    .hero-left { display: flex; align-items: center; gap: 20px; }
+    
+    .btn-back-square {
+        width: 45px; height: 45px; background: var(--light-bg); border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        text-decoration: none; color: var(--dark); transition: 0.2s;
+    }
+    .btn-back-square:hover { background: var(--dark); color: white; transform: translateX(-4px); }
+
+    .materia-tag { background: #e0e7ff; color: var(--primary); padding: 5px 12px; border-radius: 50px; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
+    .title-group h1 { font-size: 2rem; font-weight: 900; margin: 5px 0; letter-spacing: -0.5px; color: var(--dark); }
+    .profesor-name { color: var(--text-muted); font-weight: 700; font-size: 0.9rem; margin: 0; }
+
+    /* Cuadritos de Conteo */
+    .stats-mini { background: var(--light-bg); padding: 12px 20px; border-radius: 18px; display: flex; align-items: center; gap: 15px; }
+    .stat-item { text-align: center; }
+    .stat-value { display: block; font-size: 1.3rem; font-weight: 900; color: var(--dark); }
+    .stat-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
+    .divider-v { width: 1px; height: 25px; background: #cbd5e1; }
+
+    /* Cuadrícula Escolar */
+    .aula-content-grid { display: grid; grid-template-columns: 1fr 320px; gap: 25px; }
+
+    /* Bloque de Tareas */
+    .content-section { background: white; padding: 30px; border-radius: 30px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
+    .section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .section-title i { font-size: 1.4rem; color: var(--primary); }
+    .section-title h2 { font-size: 1.3rem; font-weight: 800; margin: 0; color: var(--dark); }
+
+    .tarea-card {
+        display: flex; align-items: center; padding: 18px; background: var(--light-bg);
+        border-radius: 20px; margin-bottom: 12px; transition: 0.2s;
+    }
+    .tarea-card:hover { background: white; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+
+    .tarea-status-icon {
+        width: 50px; height: 50px; border-radius: 15px; background: #fff5f5; color: var(--warning);
+        display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-right: 15px;
+    }
+    .tarea-status-icon.success { background: #f0fff4; color: var(--success); }
+
+    .tarea-info { flex: 1; }
+    .tarea-info h3 { font-size: 1.05rem; font-weight: 800; margin: 0; color: var(--dark); }
+    .tarea-meta { font-size: 0.8rem; color: var(--text-muted); margin: 3px 0 0 0; font-weight: 700; }
+
+    .tarea-actions { display: flex; align-items: center; gap: 12px; }
+    .badge-status { padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 800; }
+    .badge-status.pending { background: #fee2e2; color: var(--warning); }
+    .badge-status.delivered { background: #dcfce7; color: var(--success); }
+
+    .btn-action-upload, .btn-action-view {
+        width: 38px; height: 38px; border-radius: 12px; border: none;
+        display: flex; align-items: center; justify-content: center;
+        background: white; color: var(--dark); cursor: pointer; transition: 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-decoration: none; font-size: 1.1rem;
+    }
+    .btn-action-upload:hover { background: var(--primary); color: white; }
+    .btn-action-view:hover { background: var(--dark); color: white; }
+
+    /* Barra Lateral */
+    .side-card { background: white; padding: 22px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
+    .side-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .side-card-header i { color: var(--primary); font-size: 1.2rem; }
+    .side-card-header h3 { font-size: 1.05rem; font-weight: 800; margin: 0; }
+
+    .announcement-box { background: var(--primary); color: white; border: none; }
+    .announcement-box i, .announcement-box h3 { color: white; }
+    .announcement-text { font-size: 0.85rem; line-height: 1.5; margin-bottom: 10px; font-weight: 600; opacity: 0.95; }
+    .announcement-date { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; opacity: 0.8; }
+
+    .resource-list { list-style: none; padding: 0; margin: 0; }
+    .resource-item {
+        display: flex; align-items: center; gap: 10px; padding: 10px;
+        text-decoration: none; color: var(--dark); font-weight: 700; font-size: 0.85rem;
+        border-radius: 10px; transition: 0.2s;
+    }
+    .resource-item:hover { background: var(--light-bg); color: var(--primary); }
+
+    .empty-state { text-align: center; padding: 30px; color: var(--text-muted); }
+    .empty-state i { font-size: 2.5rem; margin-bottom: 8px; display: block; color: var(--primary); }
+
+    @media (max-width: 1024px) {
+        .aula-content-grid { grid-template-columns: 1fr; }
+        .aula-hero-card { flex-direction: column; text-align: center; gap: 20px; }
+        .hero-left { flex-direction: column; }
+        .btn-back-square { display: none; }
+    }
+</style>
+
+{% endblock %}

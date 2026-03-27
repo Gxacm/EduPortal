@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="agenda-wrapper">
+    <div class="navigation-area spacer-bottom">
+        <a href="{{ url_for('alumno_dashboard') }}" class="btn-back-chip-estilo" title="Volver al Panel">
+            <i class="bi bi-arrow-left-short"></i>
+        </a>
+    </div>
+
+    <header class="agenda-hero">
+        <div class="hero-content">
+            <h1>Mi Agenda Académica</h1>
+            <p>Organiza tus actividades y entregas de este ciclo.</p>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-pill pending">
+                <span class="stat-number" id="count-pending">0</span>
+                <span class="stat-text">Pendientes Mes</span>
+            </div>
+            <div class="stat-pill completed">
+                <span class="stat-number" id="count-completed">0</span>
+                <span class="stat-text">Listas Mes</span>
+            </div>
+        </div>
+    </header>
+
+    <section class="calendar-card">
+        <div id="calendar"></div>
+    </section>
+</div>
+
+<div id="tareaModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-category" id="modalMateria">Materia</span>
+            <button class="close-modal" onclick="closeModal()" title="Cerrar">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <h2 id="modalTitulo">Título de la Tarea</h2>
+            <div class="modal-info">
+                <div class="info-item">
+                    <i class="bi bi-calendar-event"></i>
+                    <span id="modalFecha">Fecha de entrega</span>
+                </div>
+            </div>
+            <p class="modal-description">Revisa los detalles de esta actividad en tu aula virtual para proceder con la entrega o consulta de materiales.</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn-primary-modal">Ir al Aula Virtual</a>
+        </div>
+    </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+
+<style>
+    :root {
+        --text-dark: #2d3748;
+        --text-muted: #64748b;
+        --accent: #4361ee;
+        --entregado-solid: #2ecc71;
+        --pendiente-solid: #e74c3c;
+    }
+
+    .spacer-bottom { margin-bottom: 25px; display: flex; align-items: center; }
+    .agenda-wrapper { padding: 40px; max-width: 1300px; margin: 0 auto;}
+    .agenda-hero { 
+        background: white; 
+        padding: 40px; 
+        border-radius: 35px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 30px; 
+        box-shadow: 0 10px 25px rgba(0,0,0,0.04); 
+        border: 1px solid #f1f5f9; 
+    }
+    .agenda-hero h1 { 
+        font-size: 2.2rem; 
+        font-weight: 900; 
+        color: var(--text-dark); 
+        margin: 0; 
+        letter-spacing: -1px; 
+    }
+    .agenda-hero p { color: var(--text-muted); font-size: 1rem; margin-top: 5px; }
+    .stats-container { display: flex; gap: 15px; }
+    .stat-pill { 
+        padding: 15px 25px; 
+        border-radius: 20px; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        min-width: 110px; 
+    }
+    .stat-pill.pending { background: #fff5f5; border: 1px solid #feb2b2; }
+    .stat-pill.completed { background: #f0fff4; border: 1px solid #9ae6b4; }
+    .stat-number { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+    .pending .stat-number { color: var(--pendiente-solid); }
+    .completed .stat-number { color: var(--entregado-solid); }
+    .stat-text { 
+        font-size: 0.7rem; 
+        font-weight: 800; 
+        text-transform: uppercase; 
+        color: var(--text-muted); 
+        margin-top: 5px; 
+    }
+    .calendar-card { 
+        background: white; 
+        padding: 40px; 
+        border-radius: 35px; 
+        box-shadow: 0 20px 40px rgba(0,0,0,0.03); 
+        border: 1px solid #f1f5f9; 
+    }
+    
+    .fc .fc-button-primary { 
+        background-color: #f1f5f9 !important; 
+        border: none !important; 
+        color: var(--text-dark) !important; 
+        font-weight: 800 !important; 
+        border-radius: 12px !important; 
+        padding: 8px 16px !important; 
+        text-transform: capitalize !important; 
+        transition: all 0.2s ease !important; 
+        margin: 0 4px !important;
+    }
+    .fc-toolbar-chunk {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .fc .fc-button-primary:hover { background-color: var(--text-dark) !important; color: white !important; transform: translateY(-2px); }
+    .fc .fc-button-active { background-color: var(--accent) !important; color: white !important; }
+    .fc-toolbar-title { text-transform: capitalize !important; font-weight: 900 !important; font-size: 1.6rem !important; color: var(--text-dark); }
+    .fc-event { 
+        border: none !important; 
+        padding: 6px 10px !important; 
+        border-radius: 10px !important; 
+        font-weight: 700 !important; 
+        font-size: 0.75rem !important; 
+    }
+    .fc-col-header-cell-cushion { text-transform: capitalize !important; text-decoration: none !important; color: var(--text-dark); }
+    .evt-entregado { background-color: var(--entregado-solid) !important; color: white !important; }
+    .evt-pendiente { background-color: var(--pendiente-solid) !important; color: white !important; }
+    .btn-back-chip-estilo { 
+        background: var(--text-dark); color: white; text-decoration: none; 
+        width: 45px; height: 45px; border-radius: 14px; display: flex; 
+        align-items: center; justify-content: center; transition: 0.3s;
+        box-shadow: 0 10px 15px rgba(45, 55, 72, 0.2);
+    }
+    .btn-back-chip-estilo span { display: none; }
+    .btn-back-chip-estilo i { font-size: 1.5rem; }
+    .btn-back-chip-estilo:hover { transform: translateX(-5px); background: #4a5568; }
+
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background: white;
+        width: 90%;
+        max-width: 450px;
+        padding: 40px;
+        border-radius: 35px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        animation: slideUp 0.3s ease-out;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .modal-category { background: #f1f5f9; color: var(--accent); padding: 6px 15px; border-radius: 50px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; }
+    
+    .close-modal { 
+        background: #f1f5f9; 
+        border: none; 
+        width: 35px; 
+        height: 35px; 
+        border-radius: 10px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        cursor: pointer; 
+        color: #94a3b8; 
+        transition: 0.2s;
+    }
+    .close-modal:hover { background: #fee2e2; color: var(--pendiente-solid); }
+
+    .modal-body h2 { font-size: 1.8rem; font-weight: 900; color: var(--text-dark); margin: 0 0 15px 0; letter-spacing: -1px; line-height: 1.2; }
+    .info-item { display: flex; align-items: center; gap: 8px; color: #64748b; font-weight: 700; font-size: 0.9rem; margin-bottom: 20px; }
+    .modal-description { color: #64748b; line-height: 1.6; margin-bottom: 35px; font-size: 0.95rem; }
+    
+    .btn-primary-modal { 
+        display: inline-block; 
+        width: 100%; 
+        background: var(--text-dark); 
+        color: white; 
+        text-decoration: none; 
+        padding: 18px; 
+        border-radius: 20px; 
+        font-weight: 800; 
+        text-align: center; 
+        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(45, 55, 72, 0.15);
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    .btn-primary-modal:hover { background: var(--accent); transform: translateY(-3px); box-shadow: 0 15px 25px rgba(67, 97, 238, 0.2); }
+
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        const modal = document.getElementById('tareaModal');
+        
+        const todasLasTareas = [
+            {% for tarea in tareas %}
+            {
+                id: {{ tarea.id_tarea }},
+                title: {{ tarea.titulo|tojson }},
+                start: '{{ tarea.fecha_entrega.strftime("%Y-%m-%d") }}',
+                entregada: {% if tarea.id_tarea in entregadas_ids %}true{% else %}false{% endif %},
+                materia: {{ tarea.clase.nombre_clase|tojson }}
+            },
+            {% endfor %}
+        ];
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,dayGridWeek'
+            },
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
+            events: todasLasTareas.map(t => ({
+                title: t.title,
+                start: t.start,
+                className: t.entregada ? 'evt-entregado' : 'evt-pendiente',
+                extendedProps: { materia: t.materia }
+            })),
+
+            datesSet: function(info) {
+                const currentMonth = info.view.currentStart.getMonth();
+                const currentYear = info.view.currentStart.getFullYear();
+                let pendientesMes = 0; let completadasMes = 0;
+
+                todasLasTareas.forEach(t => {
+                    const fechaTarea = new Date(t.start + 'T00:00:00');
+                    if (fechaTarea.getMonth() === currentMonth && fechaTarea.getFullYear() === currentYear) {
+                        if (t.entregada) completadasMes++; else pendientesMes++;
+                    }
+                });
+                document.getElementById('count-pending').innerText = pendientesMes;
+                document.getElementById('count-completed').innerText = completadasMes;
+            },
+
+            eventClick: function(info) {
+                const title = info.event.title;
+                const materia = info.event.extendedProps.materia;
+                const fechaRaw = info.event.start.toLocaleDateString('es-ES', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                });
+
+                document.getElementById('modalTitulo').innerText = title;
+                document.getElementById('modalMateria').innerText = materia;
+                document.getElementById('modalFecha').innerText = fechaRaw.charAt(0).toUpperCase() + fechaRaw.slice(1);
+                
+                modal.style.display = 'flex';
+            }
+        });
+
+        calendar.render();
+
+        window.onclick = function(event) {
+            if (event.target == modal) { closeModal(); }
+        }
+    });
+
+    function closeModal() {
+        document.getElementById('tareaModal').style.display = 'none';
+    }
+</script>
+
+{% endblock %}

@@ -11,6 +11,9 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
+# ==============================================================================
+# ----------------------------- Configuracion Idioma ---------------------------
+# ==============================================================================
 import locale
 try:
     locale.setlocale(locale.LC_TIME, 'es_ES.utf8') 
@@ -71,14 +74,6 @@ def login():
         flash("Credenciales incorrectas.")
     return render_template('login.html')
 
-@app.route('/mi-cuenta')
-def mi_cuenta():
-    if not session.get('user_id'): return redirect(url_for('login'))
-    user_id = session.get('user_id')
-    usuario = Usuarios.query.get(user_id)
-    perfil = Maestros.query.filter_by(id_usuario=user_id).first() if usuario.id_rol == 2 else Alumnos.query.filter_by(id_usuario=user_id).first()
-    return render_template('mi_cuenta.html', usuario=usuario, perfil=perfil)
-
 @app.route('/logout')
 def logout():
     session.clear()
@@ -87,6 +82,14 @@ def logout():
 # ==============================================================================
 # --------------------------- CONFIGURACIÓN Y AJUSTES --------------------------
 # ==============================================================================
+
+@app.route('/mi-cuenta')
+def mi_cuenta():
+    if not session.get('user_id'): return redirect(url_for('login'))
+    user_id = session.get('user_id')
+    usuario = Usuarios.query.get(user_id)
+    perfil = Maestros.query.filter_by(id_usuario=user_id).first() if usuario.id_rol == 2 else Alumnos.query.filter_by(id_usuario=user_id).first()
+    return render_template('mi_cuenta.html', usuario=usuario, perfil=perfil)
 
 @app.route('/ajustes', methods=['GET', 'POST'])
 def ajustes():
@@ -143,6 +146,7 @@ def ajustes():
         return redirect(url_for('ajustes'))
 
     return render_template('ajustes.html', usuario=usuario, perfil=perfil, rol=rol)
+
 
 # ==============================================================================
 # ------------------------------ PANEL DEL MAESTRO -----------------------------
@@ -397,37 +401,156 @@ def exportar_datos():
 # ==============================================================================
 # ------------------------------ PANEL DE ALUMNO -------------------------------
 # ==============================================================================
+
+
 @app.route('/alumno')
 def alumno_dashboard():
-    if session.get('rol') != 3: return redirect(url_for('login'))
-    alumno = Alumnos.query.filter_by(id_usuario=session.get('user_id')).first()
-    notas = Notas.query.filter_by(id_alumno=alumno.id_alumno).all() if alumno else []
-    asistencias = Asistencias.query.filter_by(id_alumno=alumno.id_alumno).all() if alumno else []
-    anuncios = Anuncios.query.filter(Anuncios.dirigido_a.in_(['Todos', 'Alumnos'])).all()
-    return render_template('Panel_Alumno/alumno_dash.html', notas=notas, asistencias=asistencias, anuncios=anuncios)
+    if session.get('rol') != 3: 
+        return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    
+    # 1. Obtenemos el perfil del alumno
+    alumno = Alumnos.query.filter_by(id_usuario=user_id).first()
+    
+    if not alumno:
+        return "Perfil de alumno no encontrado", 404
+
+    # 2. Obtener Anuncios (Dirigidos a Alumnos o Todos)
+    anuncios = Anuncios.query.filter(Anuncios.dirigido_a.in_(['Todos', 'Alumnos']))\
+                             .order_by(Anuncios.fecha_publicacion.desc()).all()
+
+    # 3. Obtener Clases del Alumno (Basadas en su Grado)
+    # Navegamos: Alumno -> Sección -> Grado -> Clases
+    clases_alumno = Clases.query.filter_by(id_grado=alumno.seccion.id_grado).all()
+    ids_clases = [c.id_clase for c in clases_alumno]
+
+    # 4. Tareas Pendientes
+    # Usamos datetime.utcnow() para comparar con la fecha de entrega
+    tareas_proximas = Tareas.query.filter(
+        Tareas.id_clase.in_(ids_clases),
+        Tareas.fecha_entrega >= datetime.utcnow()
+    ).order_by(Tareas.fecha_entrega.asc()).limit(3).all()
+
+    # 5. Cálculo de Asistencia Real
+    asistencias = Asistencias.query.filter_by(id_alumno=alumno.id_alumno).all()
+    total_a = len(asistencias)
+    presentes = len([a for a in asistencias if a.estado == 'Presente'])
+    porcentaje_asistencia = round((presentes / total_a * 100)) if total_a > 0 else 0
+
+    # 6. Rendimiento (Promedio de Notas)
+    notas_alumno = Notas.query.filter_by(id_alumno=alumno.id_alumno).all()
+    if notas_alumno:
+        promedio = sum(float(n.calificacion) for n in notas_alumno) / len(notas_alumno)
+    else:
+        promedio = 0
+
+    return render_template('Panel_Alumno/alumno_dash.html', 
+                           alumno=alumno,
+                           anuncios=anuncios,
+                           tareas=tareas_proximas,
+                           asistencia_val=porcentaje_asistencia,
+                           promedio_val=round(promedio, 1),
+                           total_materias=len(clases_alumno),
+                           datetime=datetime)
 
 @app.route('/alumno/clases')
 def alumno_clases():
-    if session.get('rol') != 3: return redirect(url_for('login'))
-    alumno = Alumnos.query.filter_by(id_usuario=session.get('user_id')).first()
-    return render_template('Panel_Alumno/mis_clases.html', alumno=alumno)
+    if session.get('rol') != 3: 
+        return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    alumno = Alumnos.query.filter_by(id_usuario=user_id).first()
+    
+    if not alumno:
+        return "Perfil no encontrado", 404
 
-@app.route('/alumno/tareas')
-def alumno_tareas():
-    if session.get('rol') != 3: return redirect(url_for('login'))
-    return render_template('Panel_Alumno/tareas.html')
+    clases = Clases.query.filter_by(id_grado=alumno.seccion.id_grado).all()
 
-@app.route('/alumno/calificaciones')
-def alumno_calificaciones():
+    return render_template('Panel_Alumno/mis_clases.html', 
+                           clases=clases, 
+                           alumno=alumno)
+@app.route('/alumno/aula/<int:id_clase>')
+def alumno_aula(id_clase):
+    # 1. Obtenemos la clase y validamos que exista
+    clase_obj = Clases.query.get_or_404(id_clase)
+    
+    # 2. Obtenemos el ID del alumno (asumiendo que está en sesión)
+    # id_usuario_actual = session.get('user_id')
+    # alumno = Alumnos.query.filter_by(id_usuario=id_usuario_actual).first()
+    
+    # 3. Consultamos las tareas de esta clase
+    tareas_clase = Tareas.query.filter_by(id_clase=id_clase).order_by(Tareas.fecha_entrega.asc()).all()
+    
+    # 4. Obtenemos los IDs de las tareas que el alumno YA entregó para marcar el check verde
+    entregas = EntregasTareas.query.filter_by(id_alumno=Alumnos.id_alumno).all()
+    entregadas_ids = [e.id_tarea for e in entregas]
+
+    return render_template('/Panel_Alumno/Aula/Aula.html', 
+                           clase=clase_obj, 
+                           tareas=tareas_clase, 
+                           entregadas_ids=entregadas_ids)
+
+@app.route('/alumno/agenda')
+def alumno_agenda():
+    if session.get('rol') != 3: 
+        return redirect(url_for('login'))
+    
+    user_id = session.get('user_id')
+    alumno = Alumnos.query.filter_by(id_usuario=user_id).first()
+    
+    if not alumno:
+        return "Perfil no encontrado", 404
+
+    clases_ids = [c.id_clase for c in alumno.seccion.grado.clases]
+    tareas = Tareas.query.filter(Tareas.id_clase.in_(clases_ids)).all()
+    notas_alumno = Notas.query.filter_by(id_alumno=alumno.id_alumno).all()
+    tareas_entregadas_ids = [n.id_tarea for n in notas_alumno]
+
+    return render_template('Panel_Alumno/agenda.html', 
+                           alumno=alumno, 
+                           tareas=tareas,
+                           entregadas_ids=tareas_entregadas_ids,
+                           now=datetime.utcnow())
+
+@app.route('/alumno/notas')
+def alumno_notas():
     if session.get('rol') != 3: return redirect(url_for('login'))
-    alumno = Alumnos.query.filter_by(id_usuario=session.get('user_id')).first()
-    notas = Notas.query.filter_by(id_alumno=alumno.id_alumno).all() if alumno else []
-    return render_template('Panel_Alumno/notas.html', notas=notas)
+    
+    user_id = session.get('user_id')
+    alumno = Alumnos.query.filter_by(id_usuario=user_id).first()
+    
+    if not alumno: return "Error: Perfil no encontrado", 404
+    notas = Notas.query.filter_by(id_alumno=alumno.id_alumno).all()
+
+    notas_por_materia = {}
+    for nota in notas:
+        nombre_clase = nota.tarea.clase.nombre_clase
+        if nombre_clase not in notas_por_materia:
+            notas_por_materia[nombre_clase] = []
+        notas_por_materia[nombre_clase].append(nota)
+
+    return render_template('Panel_Alumno/notas.html', 
+                           alumno=alumno, 
+                           notas_agrupadas=notas_por_materia)
+
+import random
 
 @app.route('/alumno/horario')
 def alumno_horario():
     if session.get('rol') != 3: return redirect(url_for('login'))
-    return render_template('Panel_Alumno/horario.html')
+    
+    user_id = session.get('user_id')
+    alumno = Alumnos.query.filter_by(id_usuario=user_id).first()
+    clases = Clases.query.filter_by(id_grado=alumno.seccion.id_grado).all()
+    
+    # Colores predefinidos para la interfaz
+    colores_ui = ['#4361ee', '#3f37c9', '#4895ef', '#4cc9f0', '#7209b7']
+    
+    return render_template('Panel_Alumno/horario.html', 
+                           alumno=alumno, 
+                           clases=clases,
+                           colores=colores_ui)
 
 
 # ==============================================================================
@@ -453,20 +576,67 @@ def admin_dashboard():
                            mapa_grados=mapa_grados, ultimos_usuarios=ultimos_usuarios,
                            fecha_actual=datetime.now().strftime("%d/%m/%Y"))
 
+@app.route('/admin/anuncios')
+def vista_anuncios():
+    if session.get('rol') != 1:
+        return redirect(url_for('login'))
+    
+    lista_anuncios = Anuncios.query.order_by(Anuncios.fecha_publicacion.desc()).all()
+    return render_template('Admin_Panel/gestion_anuncios.html', anuncios=lista_anuncios)
+
 @app.route('/admin/anuncio/nuevo', methods=['POST'])
 def crear_anuncio():
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    anuncio = Anuncios(titulo=request.form.get('titulo'), contenido=request.form.get('contenido'), dirigido_a=request.form.get('dirigido_a'), id_usuario_autor=session.get('user_id'))
-    db.session.add(anuncio)
-    db.session.commit()
-    return redirect(url_for('admin_dashboard'))
+    if session.get('rol') != 1: 
+        return redirect(url_for('login'))
+    
+    nuevo = Anuncios(
+        titulo=request.form.get('titulo'),
+        contenido=request.form.get('contenido'),
+        dirigido_a=request.form.get('dirigido_a'),
+        id_usuario_autor=session.get('user_id')
+    )
+    
+    try:
+        db.session.add(nuevo)
+        db.session.commit()
+        flash("Anuncio publicado con éxito", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error al publicar: {str(e)}", "danger")
+        
+    return redirect(url_for('vista_anuncios'))
+
+@app.route('/admin/anuncios/eliminar/<int:id>', methods=['POST'])
+def eliminar_anuncio(id):
+    if session.get('rol') != 1:
+        return redirect(url_for('login'))
+        
+    anuncio = Anuncios.query.get_or_404(id)
+    try:
+        db.session.delete(anuncio)
+        db.session.commit()
+        flash("Anuncio eliminado", "warning")
+    except:
+        db.session.rollback()
+        flash("No se pudo eliminar", "danger")
+        
+    return redirect(url_for('vista_anuncios'))
 
 @app.route('/admin/nuevo/maestro')
 def vista_nuevo_maestro(): 
     return render_template('Admin_Panel/usuario_nuevo.html', active_tab='maestro')
 
-# --- FUNCIONES DE APOYO (Colócalas arriba de las rutas) ---
-
+@app.route('/admin/nuevo/alumno')
+def vista_nuevo_alumno():
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    
+    carnet_sugerido = generar_nuevo_carnet()
+    secciones = Secciones.query.options(joinedload(Secciones.grado)).all()
+    
+    return render_template('Admin_Panel/usuario_nuevo.html', 
+                           active_tab='alumno', 
+                           carnet=carnet_sugerido,
+                           secciones=secciones)
 def generar_nuevo_carnet():
     """Genera un carnet con formato AAAA-001 basado en el año actual"""
     año_actual = datetime.now().year
@@ -488,20 +658,6 @@ def generar_nuevo_carnet():
         
     return f"{prefijo}{nuevo_numero:03d}"
 
-# --- RUTAS DE ADMINISTRACIÓN ---
-
-@app.route('/admin/nuevo/alumno')
-def vista_nuevo_alumno():
-    if session.get('rol') != 1: return redirect(url_for('login'))
-    
-    # Ahora la función ya está definida arriba, no dará NameError
-    carnet_sugerido = generar_nuevo_carnet()
-    secciones = Secciones.query.options(joinedload(Secciones.grado)).all()
-    
-    return render_template('Admin_Panel/usuario_nuevo.html', 
-                           active_tab='alumno', 
-                           carnet=carnet_sugerido,
-                           secciones=secciones)
 
 @app.route('/admin/usuario/guardar', methods=['POST'])
 def crear_usuario_logica():
@@ -555,6 +711,7 @@ def eliminar_usuario(id_usuario):
         db.session.rollback()
         flash('No se pudo eliminar el registro porque tiene datos vinculados', 'error')
     return redirect(url_for('gestion_usuarios'))
+
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
 def configuracion_academica():

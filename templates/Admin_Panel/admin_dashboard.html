@@ -96,9 +96,10 @@
             <a href="{{ url_for('configuracion_academica') }}" class="action-btn">
                 <i class="bi bi-gear"></i> Ajustes Académicos
             </a>
-            <a href="#" class="action-btn highlight">
-                <i class="bi bi-file-earmark-pdf"></i> Reporte Anual
+            <a href="{{ url_for('vista_anuncios') }}" class="action-btn btn-warning-custom">
+                <i class="bi bi-megaphone"></i> Gestionar Anuncios
             </a>
+            
         </div>
     </div>
 </div>
@@ -155,11 +156,10 @@
     .action-btn:hover { background: var(--primary); color: white; transform: translateY(-5px); }
     .action-btn.highlight { border: 2px dashed var(--primary); color: var(--primary); }
     .action-btn.highlight:hover { background: var(--primary); color: white; border-style: solid; }
-
-    @media (max-width: 992px) {
-        .main-dashboard-grid { grid-template-columns: 1fr; }
-        .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
-    }
+    .btn-warning-custom {background: #fff9e6 !important; border: 2px solid var(--warning) !important; color: var(--dark) !important;}
+    .btn-warning-custom i {color: var(--warning);}
+    .btn-warning-custom:hover {background: var(--warning) !important; color: white !important; transform: translateY(-5px);}
+    .btn-warning-custom:hover i {color: white !important;}
 </style>
 
 <script>

@@ -1,28 +1,193 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="main-viewport">
-    <h1>Mi Horario Semanal ⏰</h1>
-    
-    <div class="horario-grid">
-        <div class="dia-col">
-            <div class="dia-header">Lunes</div>
-            <div class="clase-slot">
-                <span>07:00 AM</span>
-                <p>Matemáticas</p>
-            </div>
-            <div class="clase-slot">
-                <span>08:30 AM</span>
-                <p>Español</p>
+
+<div class="clases-wrapper">
+    <header class="header-minimal">
+        <div class="header-left">
+            <a href="{{ url_for('alumno_dashboard') }}" class="btn-back-chip-estilo">
+                <i class="bi bi-arrow-left-short"></i>
+                <span>Volver al Panel</span>
+            </a>
+            <div class="header-text">
+                <h1>Mi Horario Semanal</h1>
+                <span class="sub-badge">{{ alumno.seccion.grado.nombre_grado }} • Sección {{ alumno.seccion.nombre_seccion }}</span>
             </div>
         </div>
+        <div class="header-right">
+            <div class="date-capsule">
+                <i class="bi bi-calendar-event"></i>
+                <span>Ciclo Escolar 2026</span>
+            </div>
         </div>
+    </header>
+
+    <div class="tabla-glass-wrapper">
+        <table class="horario-table">
+            <thead>
+                <tr>
+                    <th class="col-hora">Bloque</th>
+                    <th>Lunes</th>
+                    <th>Martes</th>
+                    <th>Miércoles</th>
+                    <th>Jueves</th>
+                    <th>Viernes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set horas = [
+                    ('07:00 - 08:30', 'clase'),
+                    ('08:30 - 10:00', 'clase'),
+                    ('10:00 - 10:30', 'receso'),
+                    ('10:30 - 12:00', 'clase'),
+                    ('12:00 - 13:30', 'clase')
+                ] %}
+                
+                {# Paleta de colores sutiles #}
+                {% set colores = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c'] %}
+
+                {% for hora, tipo in horas %}
+                <tr>
+                    <td class="hora-cell">
+                        <div class="time-pill">{{ hora }}</div>
+                    </td>
+                    
+                    {% if tipo == 'receso' %}
+                        <td colspan="5" class="receso-full">
+                            <div class="receso-banner">
+                                <i class="bi bi-cup-hot"></i> RECESO ESCOLAR
+                            </div>
+                        </td>
+                    {% else %}
+                        {% for i in range(5) %}
+                        <td>
+                            {# Agregamos la variable de color sin alterar el div #}
+                            <div class="materia-item" style="--accent-line: {{ colores[i % colores|length] }};">
+                                <span class="materia-name">Matemáticas</span>
+                                <div class="materia-meta">
+                                    <span class="aula"><i class="bi bi-geo-alt"></i> S-102</span>
+                                </div>
+                            </div>
+                        </td>
+                        {% endfor %}
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <style>
-    .horario-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-top: 25px; }
-    .dia-header { background: #2b2d42; color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: 700; margin-bottom: 10px; }
-    .clase-slot { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); border-left: 4px solid #ff9f1c; }
-    .clase-slot span { font-size: 0.7rem; color: #94a3b8; font-weight: 700; }
-    .clase-slot p { margin: 5px 0 0; font-size: 0.9rem; font-weight: 700; color: #2b2d42; }
+    :root {
+        --glass: rgba(255, 255, 255, 0.9);
+        --text-main: #1a202c;
+        --text-sub: #718096;
+        --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+        --accent-dark: #2d3748;
+    }
+
+    .clases-wrapper { padding: 40px; max-width: 1300px; margin: 0 auto; }
+
+    /* HEADER MINIMALISTA REFORMADO */
+    .header-minimal {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+        padding: 0 10px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 25px; }
+
+    .header-text h1 { 
+        font-size: 1.8rem; font-weight: 900; color: var(--accent-dark); 
+        margin: 0; line-height: 1;
+    }
+
+    .sub-badge { 
+        font-size: 0.75rem; font-weight: 800; color: var(--text-sub); 
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .date-capsule {
+        background: white; padding: 10px 20px; border-radius: 15px;
+        box-shadow: var(--shadow); border: 1px solid #edf2f7;
+        color: var(--accent-dark); font-weight: 700; font-size: 0.85rem;
+        display: flex; align-items: center; gap: 10px;
+    }
+
+    /* BOTÓN BACK (CHIP ESTILO EDU-PORTAL) */
+    .btn-back-chip-estilo { 
+        background: var(--accent-dark); color: white; text-decoration: none; 
+        width: 45px; height: 45px; border-radius: 14px; display: flex; 
+        align-items: center; justify-content: center; transition: 0.3s;
+        box-shadow: 0 10px 15px rgba(45, 55, 72, 0.2);
+    }
+    .btn-back-chip-estilo span { display: none; }
+    .btn-back-chip-estilo i { font-size: 1.5rem; }
+    .btn-back-chip-estilo:hover { transform: translateX(-5px); background: #4a5568; }
+
+    /* TABLA CLÁSICA GLASS */
+    .tabla-glass-wrapper {
+        background: var(--glass); border-radius: 30px; padding: 30px;
+        box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.7);
+        backdrop-filter: blur(10px); overflow-x: auto;
+    }
+
+    .horario-table { width: 100%; border-collapse: separate; border-spacing: 12px; min-width: 900px; }
+    
+    .horario-table th { 
+        padding: 15px; color: var(--text-sub); font-weight: 800; font-size: 0.75rem; 
+        text-transform: uppercase; letter-spacing: 1px; text-align: center;
+    }
+
+    .col-hora { width: 150px; }
+
+    .time-pill {
+        background: #f1f5f9; color: var(--accent-dark); padding: 8px 12px;
+        border-radius: 12px; font-weight: 800; font-size: 0.75rem; text-align: center;
+    }
+
+    /* MATERIA ITEM (INDICADORES AGREGADOS) */
+    .materia-item {
+        background: white; padding: 18px; border-radius: 20px;
+        border: 1px solid #f1f5f9; transition: 0.3s;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        position: relative; /* Necesario para el indicador */
+        overflow: hidden; /* Para que el indicador respete el border-radius */
+    }
+
+    /* La barrita de color lateral */
+    .materia-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px; /* Grosor sutil */
+        background-color: var(--accent-line);
+    }
+
+    .materia-item:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.06); 
+        border-color: var(--accent-line); /* El borde cambia al color del indicador */
+    }
+
+    .materia-name { display: block; font-weight: 800; color: var(--accent-dark); font-size: 0.95rem; margin-bottom: 5px; }
+    .materia-meta { font-size: 0.75rem; color: var(--text-sub); font-weight: 700; display: flex; align-items: center; gap: 5px; }
+
+    /* RECESO */
+    .receso-banner { 
+        background: #fffbeb; color: #b45309; border: 2px dashed #fcd34d; 
+        border-radius: 20px; padding: 15px; text-align: center;
+        font-weight: 900; font-size: 0.75rem; letter-spacing: 3px;
+    }
+
+    @media (max-width: 768px) {
+        .header-minimal { flex-direction: column; align-items: flex-start; gap: 20px; }
+        .date-capsule { display: none; }
+    }
 </style>
+
 {% endblock %}

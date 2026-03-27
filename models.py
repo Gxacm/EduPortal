@@ -114,3 +114,4 @@ class Anuncios(db.Model):
     dirigido_a = db.Column(db.String(20))
     id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'))
     fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_autor = db.relationship('Usuarios', backref='anuncios_creados', lazy=True)

@@ -8,24 +8,24 @@
     
     <aside class="sidebar-modern">
         <div class="sidebar-header-widget">
-            <small>Progreso del I Parcial</small>
+            <small>Mi Carnet: <strong>{{ alumno.carnet }}</strong></small>
             <div class="mini-progress-bar">
-                <div class="fill" style="width: 65%;"></div>
+                <div class="fill" style="width: 75%;"></div>
             </div>
-            <span class="semester-tag">Año Escolar 2026</span>
+            <span class="semester-tag">{{ alumno.seccion.grado.nombre_grado }} - "{{ alumno.seccion.nombre_seccion }}"</span>
         </div>
 
         <nav class="nav-menu">
             <a href="{{ url_for('alumno_dashboard') }}" class="nav-link active">
-                <i class="bi bi-house-door"></i> Inicio
+                <i class="bi bi-house"></i> Inicio
             </a>
             <a href="{{ url_for('alumno_clases') }}" class="nav-link">
                 <i class="bi bi-journals"></i> Mis Clases
             </a>
-            <a href="{{ url_for('alumno_tareas') }}" class="nav-link">
-                <i class="bi bi-pencil-square"></i> Tareas
+            <a href="{{ url_for('alumno_agenda') }}" class="nav-link">
+                <i class="bi bi-calendar"></i> Agenda
             </a>
-            <a href="{{ url_for('alumno_calificaciones') }}" class="nav-link">
+            <a href="{{ url_for('alumno_notas') }}" class="nav-link">
                 <i class="bi bi-star"></i> Notas
             </a>
             <a href="{{ url_for('alumno_horario') }}" class="nav-link">
@@ -39,13 +39,13 @@
         <header class="welcome-banner">
             <div class="welcome-text">
                 <h1>Hola, {{ session['nombre'] }} 👋</h1>
-                <p>Hoy es lunes, 23 de marzo. Tienes 3 tareas pendientes para esta semana.</p>
+                <p>Hoy es {{ datetime.now() | fecha_es }}. Tienes {{ tareas|length }} tareas pendientes para esta semana.</p>
             </div>
             <div class="quick-status-widget">
                 <div class="status-item">
                     <i class="bi bi-lightning-charge-fill" style="color: var(--accent-orange);"></i>
                     <div>
-                        <span class="val">95%</span>
+                        <span class="val">{{ asistencia_val }}%</span>
                         <span class="lab">Asistencia</span>
                     </div>
                 </div>
@@ -53,7 +53,7 @@
                 <div class="status-item">
                     <i class="bi bi-journal-bookmark-fill" style="color: var(--white);"></i>
                     <div>
-                        <span class="val">8</span>
+                        <span class="val">{{ total_materias }}</span>
                         <span class="lab">Materias</span>
                     </div>
                 </div>
@@ -64,66 +64,74 @@
             
             <section class="bento-item today-classes">
                 <div class="item-header">
-                    <h3><i class="bi bi-calendar-event"></i> Horario de Hoy</h3>
-                    <a href="#">Ver todo</a>
+                    <h3><i class="bi bi-calendar-event"></i> Mis Materias</h3>
+                    <a href="{{ url_for('alumno_clases') }}">Ver todas</a>
                 </div>
-                <div class="class-card">
-                    <div class="time">08:00 AM</div>
+                
+                {% for clase in alumno.seccion.grado.clases[:2] %}
+                <div class="class-card {% if loop.index == 2 %}next{% endif %}">
+                    <div class="time"><i class="bi bi-book" style="font-size: 1.2rem; color: var(--primary);"></i></div>
                     <div class="details">
-                        <strong>Matemáticas II</strong>
-                        <span>Prof. Carlos Mendoza • Aula 15</span>
+                        <strong>{{ clase.nombre_clase }}</strong>
+                        <span>Prof. {{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}</span>
                     </div>
-                    <span class="status-live">En curso</span>
+                    {% if loop.first %}
+                    <span class="status-live">Principal</span>
+                    {% endif %}
                 </div>
-                <div class="class-card next">
-                    <div class="time">09:30 AM</div>
-                    <div class="details">
-                        <strong>Ciencias Naturales</strong>
-                        <span>Prof. Elena Rivas • Lab de Ciencias</span>
-                    </div>
-                </div>
+                {% else %}
+                <p class="text-muted mt-3">No hay materias asignadas a tu grado aún.</p>
+                {% endfor %}
             </section>
 
             <section class="bento-item gpa-card">
                 <h3>Rendimiento</h3>
-                <div class="circular-progress">
-                    <div class="value">88%</div>
+                <div class="circular-progress" style="--porcentaje: {{ promedio_val }}%;">
+                    <div class="value">{{ promedio_val|int }}%</div>
                 </div>
                 <p>Promedio General</p>
-                <span class="trend-up"><i class="bi bi-arrow-up-short"></i> +2% este mes</span>
+                <span class="trend-up"><i class="bi bi-arrow-up-short"></i> Actualizado</span>
             </section>
 
             <section class="bento-item tasks-urgent">
                 <div class="item-header">
                     <h3><i class="bi bi-exclamation-circle"></i> Entregas Próximas</h3>
                 </div>
+                {% for tarea in tareas %}
                 <div class="task-row">
-                    <div class="task-icon priority-high"><i class="bi bi-calculator"></i></div>
-                    <div class="task-info">
-                        <strong>Guía de Ejercicios</strong>
-                        <span>Vence en 4 horas</span>
+                    <div class="task-icon {{ 'priority-high' if loop.first else 'priority-mid' }}">
+                        <i class="bi bi-file-earmark-arrow-up"></i>
                     </div>
-                    <button class="btn-action">Subir</button>
-                </div>
-                <div class="task-row">
-                    <div class="task-icon priority-mid"><i class="bi bi-palette"></i></div>
                     <div class="task-info">
-                        <strong>Maqueta del Sistema Solar</strong>
-                        <span>Vence Mañana</span>
+                        <strong>{{ tarea.titulo }}</strong>
+                        <span>{{ tarea.clase.nombre_clase }} • Vence: {{ tarea.fecha_entrega.strftime('%d/%m') }}</span>
                     </div>
-                    <button class="btn-action">Subir</button>
+                    <a href="{{ url_for('alumno_agenda') }}" class="btn-action" style="text-decoration: none; display: inline-block;">Subir</a>
                 </div>
+                {% else %}
+                <p class="text-muted mt-3" style="font-size: 0.9rem;">¡Genial! No tienes tareas pendientes.</p>
+                {% endfor %}
             </section>
 
             <section class="bento-item news-feed">
-                <h3>Comunicados</h3>
-                <div class="news-item">
-                    <small>Hace 2 horas • Dirección</small>
-                    <p>Estimados padres y alumnos, este viernes habrá reunión de entrega de notas.</p>
+                <div class="item-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">Comunicados</h3>
+                    <div class="notification-bell">
+                        <i class="bi bi-bell-fill" style="color: var(--primary); font-size: 1.3rem;"></i>
+                        {% if anuncios|length > 0 %}
+                        <span class="bell-badge">{{ anuncios|length }}</span>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="news-item">
-                    <small>Ayer • Biblioteca</small>
-                    <p>Nuevos libros de texto y lectura comprensiva ya disponibles.</p>
+                <div class="news-scroll-container">
+                    {% for anuncio in anuncios %}
+                    <div class="news-item">
+                        <small>{{ anuncio.fecha_publicacion.strftime('%d/%m') }} • {{ anuncio.usuario_autor.nombre }}</small>
+                        <p><strong>{{ anuncio.titulo }}:</strong> {{ anuncio.contenido }}</p>
+                    </div>
+                    {% else %}
+                    <p class="text-muted" style="font-size: 0.9rem;">No hay comunicados recientes.</p>
+                    {% endfor %}
                 </div>
             </section>
 
@@ -167,7 +175,6 @@
         transition: 0.3s; margin-bottom: 5px;
     }
     .nav-link:hover, .nav-link.active { background: #f7f9ff; color: var(--primary); }
-    .btn-logout-mini { margin-top: auto; color: var(--accent-red); text-decoration: none; font-weight: 700; padding: 15px 20px; display: flex; align-items: center; gap: 10px; }
 
     /* MAIN CONTENT */
     .main-viewport { flex: 1; padding: 40px; }
@@ -195,6 +202,9 @@
         gap: 25px;
     }
     .bento-item { background: var(--white); padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+    .item-header h3 { margin: 0; font-size: 1.1rem; color: var(--dark); font-weight: 800; display: flex; align-items: center; gap: 8px;}
+    .item-header a { font-size: 0.85rem; color: var(--primary); text-decoration: none; font-weight: 600; }
+    .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 
     /* COMPONENTES ESPECIFICOS */
     .today-classes { grid-column: span 2; }
@@ -202,23 +212,52 @@
         display: flex; align-items: center; gap: 20px; padding: 15px; 
         background: #f8faff; border-radius: 18px; margin-top: 15px; border: 1px solid #edf2f7;
     }
+    .class-card .time { background: white; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+    .class-card .details strong { display: block; color: var(--dark); font-size: 1rem; }
+    .class-card .details span { color: var(--secondary); font-size: 0.85rem; }
     .status-live { background: var(--accent-green); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; margin-left: auto; }
 
     .gpa-card { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .circular-progress { 
         width: 100px; height: 100px; border-radius: 50%; 
-        border: 8px solid #f0f2f8; border-top-color: var(--primary);
         display: flex; align-items: center; justify-content: center; margin: 20px 0;
     }
-    .circular-progress .value { font-size: 1.8rem; font-weight: 800; color: var(--dark); }
+    .circular-progress { 
+    width: 100px; 
+    height: 100px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 20px 0;
+    background: radial-gradient(closest-side, white 79%, transparent 80% 100%), 
+                conic-gradient(var(--primary) var(--porcentaje), #f0f2f8 0);
+    }
+    .trend-up { font-size: 0.85rem; color: var(--accent-green); font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
 
     .task-row { display: flex; align-items: center; gap: 15px; margin-top: 20px; }
     .task-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
     .priority-high { background: #fee2e2; color: var(--accent-red); }
     .priority-mid { background: #fff4e5; color: var(--accent-orange); }
-    .btn-action { background: var(--dark); color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-left: auto; }
+    .task-info strong { display: block; color: var(--dark); font-size: 0.95rem; }
+    .task-info span { color: var(--secondary); font-size: 0.8rem; }
+    .btn-action { background: var(--dark); color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-left: auto; transition: 0.3s;}
+    .btn-action:hover { background: var(--primary); transform: translateY(-2px); }
 
-    .news-item { border-left: 3px solid var(--primary); padding-left: 15px; margin-top: 15px; }
+    .news-item { border-left: 3px solid var(--primary); padding-left: 15px; margin-top: 15px; background: #fbfcfe; padding: 12px; border-radius: 0 10px 10px 0; }
+    .news-item small { color: var(--secondary); font-weight: 600; font-size: 0.75rem; }
+    .news-item p { margin: 5px 0 0 0; font-size: 0.9rem; color: var(--dark); line-height: 1.4; }
+    
+    .news-scroll-container { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+    .news-scroll-container::-webkit-scrollbar { width: 4px; }
+    .news-scroll-container::-webkit-scrollbar-thumb { background: #e0e5f2; border-radius: 10px; }
+
+    .notification-bell { position: relative; }
+    .bell-badge {
+        position: absolute; top: -5px; right: -5px; background: var(--accent-red);
+        color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 50%;
+        border: 2px solid white; font-weight: 800;
+    }
 
     @media (max-width: 1100px) {
         .bento-grid { grid-template-columns: 1fr; }

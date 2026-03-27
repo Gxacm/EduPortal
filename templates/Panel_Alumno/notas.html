@@ -1,46 +1,210 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="main-viewport">
-    <h1>Mis Notas ⭐</h1>
 
-    <div class="bento-item" style="margin-top: 20px; overflow-x: auto;">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Materia</th>
-                    <th>Acumulado (70%)</th>
-                    <th>Examen (30%)</th>
-                    <th>Final</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for nota in notas %}
-                <tr>
-                    <td><strong>{{ nota.materia }}</strong></td>
-                    <td>{{ nota.acumulado }}</td>
-                    <td>{{ nota.examen }}</td>
-                    <td class="total-nota">{{ nota.puntaje }}</td>
-                    <td>
-                        {% if nota.puntaje >= 60 %}
-                        <span class="nota-pass">Aprobado</span>
-                        {% else %}
-                        <span class="nota-fail">Reprobado</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="clases-wrapper">
+    <header class="header-minimal">
+        <div class="header-left">
+            <a href="{{ url_for('alumno_dashboard') }}" class="btn-back-chip-estilo">
+                <i class="bi bi-arrow-left-short"></i>
+                <span>Volver al Panel</span>
+            </a>
+            <div class="header-text">
+                <h1>Mis Calificaciones</h1>
+                <span class="sub-badge">Rendimiento Académico</span>
+            </div>
+        </div>
+        <button class="date-capsule" onclick="generarPDF()" style="cursor: pointer; border: none;">
+            <i class="bi bi-download"></i>
+            <span>Descargar Reporte</span>
+        </button>
+    </header>
+
+    <div class="notas-grid">
+        {% set colores = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c'] %}
+        
+        {% for materia, lista_notas in notas_agrupadas.items() %}
+        {# Asignamos un color por materia basado en el índice del loop #}
+        {% set color_materia = colores[loop.index0 % colores|length] %}
+        
+        <section class="materia-report-card" style="--accent-line: {{ color_materia }};">
+            <div class="materia-info-header">
+                <div class="title-group">
+                    <div class="materia-dot" style="--dot-color: {{ color_materia }};"></div>
+                    <h3>{{ materia }}</h3>
+                </div>
+                
+                {% set promedio = lista_notas|map(attribute='calificacion')|sum / lista_notas|length %}
+                <span class="promedio-pill {{ 'alto' if promedio >= 90 else 'medio' if promedio >= 70 else 'bajo' }}">
+                    Promedio: {{ promedio|round(1) }}%
+                </span>
+            </div>
+
+            <div class="tabla-notas-wrapper">
+                <table class="edu-table">
+                    <thead>
+                        <tr>
+                            <th>Actividad</th>
+                            <th>Fecha</th>
+                            <th class="text-center">Nota</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nota in lista_notas %}
+                        <tr>
+                            <td>
+                                <div class="tarea-name">
+                                    <strong>{{ nota.tarea.titulo }}</strong>
+                                    <small>Revisado por: {{ nota.maestro_autor.usuario.nombre[0] }}. {{ nota.maestro_autor.usuario.apellido }}</small>
+                                </div>
+                            </td>
+                            <td class="fecha-text">{{ nota.fecha_modificacion.strftime('%d/%m/%Y') }}</td>
+                            <td class="text-center">
+                                <span class="nota-valor">{{ nota.calificacion|int }}</span>
+                            </td>
+                            <td>
+                                <span class="status-dot-pill">Completado</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% else %}
+        <div class="tabla-glass-wrapper" style="text-align: center; padding: 60px;">
+            <i class="bi bi-clipboard-x" style="font-size: 3rem; color: var(--text-sub); display: block; margin-bottom: 20px;"></i>
+            <p style="color: var(--text-sub); font-weight: 700;">Aún no se han registrado calificaciones en el sistema.</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
 <style>
-    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .data-table th { padding: 15px; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
-    .data-table td { padding: 15px; border-top: 1px solid #f1f5f9; color: #2b2d42; }
-    .total-nota { font-weight: 800; color: #4361ee; }
-    .nota-pass { color: #06d6a0; font-weight: 700; }
-    .nota-fail { color: #ef476f; font-weight: 700; }
+    :root {
+        --glass: rgba(255, 255, 255, 0.9);
+        --text-main: #1a202c;
+        --text-sub: #718096;
+        --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+        --accent-dark: #2d3748;
+    }
+
+    .clases-wrapper { padding: 40px; max-width: 1200px; margin: 0 auto; }
+
+    /* HEADER (Igual al Horario) */
+    .header-minimal {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 40px; padding: 0 10px;
+    }
+    .header-left { display: flex; align-items: center; gap: 25px; }
+    .header-text h1 { font-size: 1.8rem; font-weight: 900; color: var(--accent-dark); margin: 0; line-height: 1; }
+    .sub-badge { font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
+
+    .date-capsule {
+        background: white; padding: 10px 20px; border-radius: 15px;
+        box-shadow: var(--shadow); border: 1px solid #edf2f7;
+        color: var(--accent-dark); font-weight: 700; font-size: 0.85rem;
+        display: flex; align-items: center; gap: 10px; transition: 0.3s;
+    }
+    .date-capsule:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+
+    /* BOTÓN BACK CHIP */
+    .btn-back-chip-estilo { 
+        background: var(--accent-dark); color: white; text-decoration: none; 
+        width: 45px; height: 45px; border-radius: 14px; display: flex; 
+        align-items: center; justify-content: center; transition: 0.3s;
+        box-shadow: 0 10px 15px rgba(45, 55, 72, 0.2);
+    }
+    .btn-back-chip-estilo span { display: none; }
+    .btn-back-chip-estilo i { font-size: 1.5rem; }
+    .btn-back-chip-estilo:hover { transform: translateX(-5px); background: #4a5568; }
+
+    /* TARJETA DE MATERIA (Evolución de la materia-item del horario) */
+    .materia-report-card { 
+        background: var(--glass); border-radius: 30px; padding: 30px; 
+        box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.7);
+        backdrop-filter: blur(10px); margin-bottom: 30px;
+        position: relative; overflow: hidden;
+    }
+
+    /* Indicador lateral sutil heredado del horario */
+    .materia-report-card::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+        width: 6px; background-color: var(--accent-line);
+    }
+
+    .materia-info-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .title-group { display: flex; align-items: center; gap: 15px; }
+    .materia-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    /* Usamos la variable definida en el HTML */
+    background-color: var(--dot-color);
+    /* Para la sombra con transparencia, usamos el color base */
+    box-shadow: 0 0 10px var(--dot-color);
+    opacity: 0.8; /* Esto le da el efecto sutil sin pelear con códigos HEX66 */
+    flex-shrink: 0;
+    }
+    .title-group h3 { font-weight: 900; color: var(--accent-dark); margin: 0; font-size: 1.5rem; }
+
+    /* PROMEDIO PILLS */
+    .promedio-pill { padding: 8px 18px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; }
+    .promedio-pill.alto { background: #d1fae5; color: #059669; }
+    .promedio-pill.medio { background: #fef3c7; color: #d97706; }
+    .promedio-pill.bajo { background: #fee2e2; color: #dc2626; }
+
+    /* TABLA DE NOTAS */
+    .edu-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+    .edu-table th { text-align: left; padding: 10px 15px; color: var(--text-sub); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+    .edu-table td { padding: 18px 15px; background: white; vertical-align: middle; border: 1px solid #f1f5f9; border-left: none; border-right: none; }
+    
+    .edu-table tr td:first-child { border-radius: 15px 0 0 15px; border-left: 1px solid #f1f5f9; }
+    .edu-table tr td:last-child { border-radius: 0 15px 15px 0; border-right: 1px solid #f1f5f9; }
+
+    .tarea-name strong { display: block; color: var(--accent-dark); font-size: 0.95rem; font-weight: 800; }
+    .tarea-name small { color: var(--text-sub); font-size: 0.75rem; font-weight: 600; }
+    .fecha-text { color: var(--text-sub); font-weight: 700; font-size: 0.85rem; }
+
+    .nota-valor { 
+        font-weight: 900; color: var(--accent-line); font-size: 1.1rem; 
+        background: #f8faff; padding: 6px 14px; border-radius: 10px; border: 1px solid #edf2f7;
+    }
+
+    .status-dot-pill { background: #f1f5f9; color: var(--text-sub); padding: 5px 12px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+
+    @media print {
+        .btn-back-chip-estilo, .date-capsule { display: none; }
+        .materia-report-card { box-shadow: none; border: 1px solid #eee; background: white; }
+    }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+    function generarPDF() {
+        // Seleccionamos el contenedor de las notas
+        const elemento = document.querySelector('.notas-grid');
+        
+        // Verificamos si el elemento existe en el DOM antes de disparar
+        if (!elemento) {
+            console.error("No se encontró el contenedor .notas-grid");
+            return;
+        }
+
+        const opciones = {
+            margin: 10,
+            filename: 'Reporte_{{ alumno.usuario.nombre}}_{{ alumno.usuario.apellido}}.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 3,
+                useCORS: true,
+                letterRendering: true
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opciones).from(elemento).save();
+    }
+</script>
+
 {% endblock %}
