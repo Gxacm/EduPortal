@@ -23,29 +23,21 @@
     .custom-input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color); background-color: #f8fafc; font-family: inherit; color: var(--dark-text); transition: all 0.2s; }
     .custom-input:focus { outline: none; border-color: var(--purple-main); background-color: white; box-shadow: 0 0 0 4px var(--purple-soft); }
     
-    .btn-submit { background-color: var(--purple-main); color: white; padding: 12px 24px; border-radius: 50px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 10px; }
+    /* Estilo para el select */
+    select.custom-input { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1rem; }
+
+    .btn-submit { background-color: var(--purple-main); color: white; padding: 15px 24px; border-radius: 16px; border: none; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 10px; }
     .btn-submit:hover { background-color: #7c3aed; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3); }
 
     .btn-add-question { background-color: white; color: var(--purple-main); border: 2px dashed var(--purple-main); padding: 12px 24px; border-radius: 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 20px;}
     .btn-add-question:hover { background-color: var(--purple-soft); }
 
-    /* Estilos dinámicos estilo Google Forms */
-    .btn-delete-q { background: transparent; border: none; color: var(--muted-text); font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.85rem;}
-    .btn-delete-q:hover { color: var(--danger-main); }
-    
     .option-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .option-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cbd5e1; flex-shrink: 0; }
     .option-input { flex: 1; border: none; border-bottom: 2px solid transparent; background: transparent; padding: 8px 0; font-family: inherit; color: var(--dark-text); transition: 0.2s; font-size: 0.95rem; outline: none;}
     .option-input:focus { border-bottom-color: var(--purple-main); }
-    .option-input:hover { border-bottom-color: var(--border-color); }
-    
-    .btn-remove-opt { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 5px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center;}
-    .btn-remove-opt:hover { background: #f1f5f9; color: var(--dark-text); }
-    
-    .btn-add-opt { background: transparent; border: none; color: var(--purple-main); font-weight: 600; cursor: pointer; padding: 8px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: 0.2s;}
-    .btn-add-opt:hover { color: #7c3aed; }
 
-    .text-placeholder { padding: 15px; border-bottom: 1px dotted var(--muted-text); color: var(--muted-text); font-size: 0.9rem; background: #f8fafc; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 10px;}
+    .btn-delete-q { background: transparent; border: none; color: var(--muted-text); font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-delete-q:hover { color: var(--danger-main); }
 </style>
 
 <div class="viewport-container">
@@ -63,8 +55,19 @@
                 </div>
                 <div>
                     <h2 style="margin: 0; font-weight: 800; color: var(--dark-text); font-size: 1.4rem;">Cuestionario Dinámico</h2>
-                    <p style="margin: 0; color: var(--muted-text); font-size: 0.9rem;">Crea tu examen online. Las preguntas se guardan automáticamente.</p>
+                    <p style="margin: 0; color: var(--muted-text); font-size: 0.9rem;">{{ grado.nombre_grado }}</p>
                 </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="custom-label">Materia / Clase que imparte</label>
+                <select name="id_clase" class="custom-input" required>
+                    <option value="" disabled selected>Selecciona la materia para este examen...</option>
+                    {% for clase in clases %}
+                        <option value="{{ clase.id_clase }}">{{ clase.nombre_materia }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">El examen solo será visible para los alumnos de esta materia.</small>
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -84,7 +87,7 @@
                 </div>
                 <div style="flex: 1;">
                     <label class="custom-label">Puntaje Máximo (Total)</label>
-                    <input type="number" name="puntos_totales" class="custom-input" placeholder="Ej: 100" required>
+                    <input type="number" step="0.5" name="puntos_maximos" class="custom-input" placeholder="Ej: 100" value="100" required>
                 </div>
             </div>
         </div>
@@ -103,7 +106,6 @@
 <script>
     let contadorPreguntas = 0;
 
-    // Inicializar con 1 pregunta al cargar la página
     document.addEventListener("DOMContentLoaded", function() {
         agregarPregunta();
     });
@@ -115,7 +117,6 @@
         
         const htmlPregunta = `
             <div class="form-card" id="pregunta-card-${idPregunta}" style="padding: 1.5rem; border-left: 6px solid var(--purple-main);">
-                
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <label class="custom-label" style="margin: 0;">Pregunta ${idPregunta}</label>
                     ${idPregunta > 1 ? `<button type="button" class="btn-delete-q" onclick="eliminarPregunta(${idPregunta})"><i class="bi bi-trash3"></i> Eliminar</button>` : ''}
@@ -123,88 +124,65 @@
                 
                 <input type="text" name="pregunta_${idPregunta}" class="custom-input" style="margin-bottom: 20px; font-weight: 600; font-size: 1.05rem;" placeholder="Escribe tu pregunta aquí..." required>
                 
-                <div style="margin-bottom: 20px; background: #f8fafc; padding: 10px; border-radius: 12px;">
-                    <label class="custom-label" style="font-size: 0.8rem; color: var(--muted-text);">Tipo de respuesta</label>
-                    <select class="custom-input" name="tipo_pregunta_${idPregunta}" onchange="cambiarTipoPregunta(this.value, ${idPregunta})" style="background: white; cursor: pointer;">
-                        <option value="opciones">Opción Múltiple (Radio)</option>
-                        <option value="texto">Respuesta Larga (Párrafo)</option>
-                    </select>
+                <div style="margin-bottom: 20px; display: flex; gap: 15px; background: #f8fafc; padding: 10px; border-radius: 12px;">
+                    <div style="flex: 1;">
+                        <label class="custom-label" style="font-size: 0.8rem; color: var(--muted-text);">Tipo de respuesta</label>
+                        <select class="custom-input" name="tipo_pregunta_${idPregunta}" onchange="cambiarTipoPregunta(this.value, ${idPregunta})" style="background: white; cursor: pointer;">
+                            <option value="opciones">Opción Múltiple (Radio)</option>
+                            <option value="texto">Respuesta Larga (Párrafo)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="custom-label" style="font-size: 0.8rem; color: var(--muted-text);">Puntos</label>
+                        <input type="number" step="0.5" name="puntos_pregunta_${idPregunta}" class="custom-input" style="background: white;" value="5" required>
+                    </div>
                 </div>
 
                 <div id="area-respuestas-${idPregunta}">
                     <div id="contenedor-opciones-${idPregunta}">
                         ${generarFilaOpcionHTML(idPregunta, 1)}
+                        ${generarFilaOpcionHTML(idPregunta, 2)}
                     </div>
                     <button type="button" class="btn-add-opt" onclick="agregarOpcion(${idPregunta})">
                         <i class="bi bi-plus-circle"></i> Agregar opción
                     </button>
                 </div>
-
             </div>
         `;
-        
         document.getElementById('contenedor-preguntas').insertAdjacentHTML('beforeend', htmlPregunta);
     }
 
-    function eliminarPregunta(idPregunta) {
-        const tarjeta = document.getElementById(`pregunta-card-${idPregunta}`);
-        tarjeta.style.opacity = '0';
-        tarjeta.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            tarjeta.remove();
-            actualizarTotalPreguntas(); // Solo actualizamos para visualización, Flask mapeará los IDs existentes
-        }, 200);
-    }
-
-    function cambiarTipoPregunta(tipo, idPregunta) {
-        const areaRespuestas = document.getElementById(`area-respuestas-${idPregunta}`);
-        
-        if (tipo === 'texto') {
-            areaRespuestas.innerHTML = `
-                <div class="text-placeholder">
-                    <i class="bi bi-text-paragraph"></i> El alumno verá un campo de texto amplio para escribir su respuesta...
-                </div>
-            `;
-        } else if (tipo === 'opciones') {
-            areaRespuestas.innerHTML = `
-                <div id="contenedor-opciones-${idPregunta}">
-                    ${generarFilaOpcionHTML(idPregunta, 1)}
-                </div>
-                <button type="button" class="btn-add-opt" onclick="agregarOpcion(${idPregunta})">
-                    <i class="bi bi-plus-circle"></i> Agregar opción
-                </button>
-            `;
-        }
-    }
-
     function generarFilaOpcionHTML(idPregunta, idOpcion) {
-        // Usamos un ID único aleatorio para no sobreescribir si se borran y agregan opciones
         const uniqueId = Math.random().toString(36).substr(2, 9);
         return `
             <div class="option-row" id="fila-opcion-${uniqueId}">
-                <div class="option-circle"></div>
-                <input type="text" name="opciones_pregunta_${idPregunta}[]" class="option-input" placeholder="Opción ${idOpcion}" required>
-                <button type="button" class="btn-remove-opt" onclick="eliminarOpcion('${uniqueId}')" title="Quitar opción">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                <input type="radio" name="correcta_pregunta_${idPregunta}" value="${uniqueId}" required style="width: 20px; height: 20px; accent-color: var(--purple-main); cursor: pointer;">
+                <input type="hidden" name="ids_opciones_${idPregunta}[]" value="${uniqueId}">
+                <input type="text" name="opcion_texto_${idPregunta}_${uniqueId}" class="option-input" placeholder="Opción ${idOpcion}" required>
+                <button type="button" class="btn-remove-opt" onclick="document.getElementById('fila-opcion-${uniqueId}').remove()" style="border:none; background:none; color:#cbd5e1;"><i class="bi bi-x-lg"></i></button>
             </div>
         `;
     }
 
-    function agregarOpcion(idPregunta) {
-        const contenedor = document.getElementById(`contenedor-opciones-${idPregunta}`);
-        // Calcular el número visual de la opción basada en los hijos
-        const numeroOpcion = contenedor.children.length + 1;
-        contenedor.insertAdjacentHTML('beforeend', generarFilaOpcionHTML(idPregunta, numeroOpcion));
+    function cambiarTipoPregunta(tipo, idPregunta) {
+        const area = document.getElementById(`area-respuestas-${idPregunta}`);
+        if (tipo === 'texto') {
+            area.innerHTML = '<div style="padding:15px; border: 1px dashed #e2e8f0; border-radius:12px; color:#64748b;">El alumno responderá con un texto libre.</div>';
+        } else {
+            // Recargar vista de opciones por defecto
+            area.innerHTML = `<div id="contenedor-opciones-${idPregunta}">${generarFilaOpcionHTML(idPregunta, 1)}${generarFilaOpcionHTML(idPregunta, 2)}</div><button type="button" class="btn-add-opt" onclick="agregarOpcion(${idPregunta})"><i class="bi bi-plus-circle"></i> Agregar opción</button>`;
+        }
     }
 
-    function eliminarOpcion(uniqueId) {
-        document.getElementById(`fila-opcion-${uniqueId}`).remove();
+    function agregarOpcion(id) {
+        document.getElementById(`contenedor-opciones-${id}`).insertAdjacentHTML('beforeend', generarFilaOpcionHTML(id, '...'));
+    }
+
+    function eliminarPregunta(id) {
+        document.getElementById(`pregunta-card-${id}`).remove();
     }
 
     function actualizarTotalPreguntas() {
-        // Actualiza el campo oculto con el contador más alto creado.
-        // En tu backend de Flask podrás iterar desde 1 hasta este número.
         document.getElementById('total_preguntas').value = contadorPreguntas;
     }
 </script>

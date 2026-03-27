@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+    :root {
+        --cobalto: #1e293b;
+        --indigo-fuerte: #4f46e5;
+        --success-soft: #ecfdf5;
+        --border-soft: #e2e8f0;
+    }
+
+    body { background-color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* Contenedor de Examen (Acordeón) */
+    .exam-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid var(--border-soft);
+        margin-bottom: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .exam-header {
+        padding: 1.5rem 2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .exam-header:hover { background-color: #fafafa; border-radius: 20px 20px 0 0; }
+
+    /* Sección Desplegable */
+    .exam-body {
+        display: none; /* Controlado por JS */
+        padding: 2rem;
+        border-top: 1px solid var(--border-soft);
+        background-color: #ffffff;
+    }
+
+    /* Tabla de Alumnos Limpia */
+    .student-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1.5fr 1fr;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        transition: 0.2s;
+    }
+
+    .student-row:hover { background-color: #f8fafc; border-radius: 12px; }
+
+    .avatar-icon {
+        width: 40px; height: 40px;
+        background: var(--indigo-fuerte);
+        color: white;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700;
+    }
+
+    /* Badge de Estado */
+    .badge-status {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-entregado { background: #dcfce7; color: #166534; }
+    .status-calificado { background: #dbeafe; color: #1e40af; }
+    .status-pendiente { background: #f1f5f9; color: #475569; }
+
+    /* Botón Ver Examen */
+    .btn-review {
+        background: white;
+        border: 1px solid var(--border-soft);
+        color: var(--cobalto);
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: 0.3s;
+    }
+
+    .btn-review:hover { background: var(--cobalto); color: white; }
+
+    /* Input de Nota */
+    .input-nota {
+        width: 80px;
+        border: 2px solid var(--border-soft);
+        border-radius: 10px;
+        padding: 8px;
+        text-align: center;
+        font-weight: 800;
+        color: var(--indigo-fuerte);
+    }
+
+    .input-nota:focus { border-color: var(--indigo-fuerte); outline: none; }
+</style>
+
+<div class="container py-5">
+    <div class="mb-5 text-center">
+        <h1 class="fw-800 text-dark">Panel de Calificaciones</h1>
+        <p class="text-muted">Selecciona un examen para ver las entregas de <strong>{{ grado.nombre_grado }}</strong></p>
+    </div>
+
+    {% if examenes %}
+        {% for item in examenes %}
+        <div class="exam-card" id="card-{{ item.info.id_examen }}">
+            <div class="exam-header" onclick="toggleExamen('{{ item.info.id_examen }}')">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="avatar-icon" style="background: #eef2ff; color: #4f46e5;">
+                        <i class="bi bi-journal-check"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-800 m-0 text-dark">{{ item.info.titulo }}</h4>
+                        <small class="text-muted text-uppercase fw-700" style="letter-spacing: 1px;">Modalidad: {{ item.info.modalidad }}</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-5">
+                    <div class="text-center d-none d-md-block">
+                        <p class="text-muted small m-0 fw-700">PUNTOS</p>
+                        <span class="badge bg-dark rounded-pill">{{ item.info.puntos_maximos }} pts</span>
+                    </div>
+                    <i class="bi bi-chevron-down fs-4 text-muted" id="icon-{{ item.info.id_examen }}"></i>
+                </div>
+            </div>
+
+            <div class="exam-body" id="body-{{ item.info.id_examen }}">
+                <form action="{{ url_for('revisar_examenes', id_grado=grado.id_grado, id_examen=item.info.id_examen) }}" method="POST">
+                    
+                    <div class="student-list-header d-grid mb-3 px-3 text-muted small fw-800" style="grid-template-columns: 2fr 1fr 1.5fr 1fr;">
+                        <span>ESTUDIANTE</span>
+                        <span>ESTADO</span>
+                        <span>EVIDENCIA / EXAMEN</span>
+                        <span class="text-center">NOTA FINAL</span>
+                    </div>
+
+                    {% for entrega in item.entregas %}
+                    <div class="student-row">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-icon" style="width: 32px; height: 32px; font-size: 0.7rem;">
+                                {{ entrega.alumno.nombre[0] }}{{ entrega.alumno.apellido[0] }}
+                            </div>
+                            <span class="fw-700 text-dark">{{ entrega.alumno.nombre }} {{ entrega.alumno.apellido }}</span>
+                        </div>
+
+                        <div>
+                            {% if entrega.estado == 'Calificado' %}
+                                <span class="badge-status status-calificado">Calificado</span>
+                            {% elif entrega.estado|lower == 'entregado' %}
+                                <span class="badge-status status-entregado">Entregado</span>
+                            {% else %}
+                                <span class="badge-status status-pendiente">Pendiente</span>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            {% if item.info.modalidad == 'archivo' and entrega.archivo %}
+                                <a href="{{ url_for('static', filename=entrega.archivo.replace('static/', '')) }}" target="_blank" class="btn-review">
+                                    <i class="bi bi-file-earmark-pdf me-2"></i>Ver PDF
+                                </a>
+                            {% elif item.info.modalidad == 'formulario' and entrega.respuestas %}
+                                <button type="button" class="btn-review" onclick="abrirVisorExamen('{{ entrega.alumno.nombre }} {{ entrega.alumno.apellido }}', {{ entrega.respuestas | tojson }})">
+                                    <i class="bi bi-eye me-2"></i>Ver Respuestas
+                                </button>
+                            {% else %}
+                                <span class="text-muted small italic">Sin entrega disponible</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-center">
+                            <input type="number" step="0.1" name="nota_{{ entrega.id_alumno }}" 
+                                   class="input-nota" value="{{ entrega.nota }}" 
+                                   max="{{ item.info.puntos_maximos }}" placeholder="0">
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="text-end mt-4">
+                        <button type="submit" class="btn btn-primary px-5 fw-800 py-3" style="border-radius: 15px; background: var(--indigo-fuerte);">
+                            <i class="bi bi-save2 me-2"></i>Guardar Cambios de este Examen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="bg-white p-5 text-center rounded-4 shadow-sm">
+            <i class="bi bi-info-circle fs-1 text-muted"></i>
+            <p class="mt-3 text-muted fw-700">No hay exámenes registrados para este grado.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="modalVisor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 25px; border: none; overflow: hidden;">
+            <div class="modal-header p-4 bg-dark text-white border-0">
+                <div>
+                    <h5 class="m-0 fw-800" id="visorNombre">Nombre Estudiante</h5>
+                    <small class="opacity-75">Revisión detallada de respuestas enviadas</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light" id="visorContenido" style="max-height: 70vh; overflow-y: auto;">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleExamen(id) {
+        const body = document.getElementById('body-' + id);
+        const icon = document.getElementById('icon-' + id);
+        const card = document.getElementById('card-' + id);
+
+        if (body.style.display === 'block') {
+            body.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+            card.style.boxShadow = 'none';
+        } else {
+            body.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+            card.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+        }
+    }
+
+    function abrirVisorExamen(nombre, respuestas) {
+        document.getElementById('visorNombre').innerText = nombre;
+        const contenedor = document.getElementById('visorContenido');
+        contenedor.innerHTML = '';
+
+        for (const [pregunta, respuesta] of Object.entries(respuestas)) {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-4 mb-3 border shadow-sm';
+            card.innerHTML = `
+                <div class="d-flex align-items-start gap-3">
+                    <div class="badge bg-primary rounded-circle p-2" style="width:30px; height:30px; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-question-lg"></i>
+                    </div>
+                    <div class="w-100">
+                        <p class="fw-800 text-muted small text-uppercase mb-1" style="letter-spacing:0.5px;">Pregunta</p>
+                        <h6 class="fw-700 text-dark mb-3">${pregunta}</h6>
+                        <div class="p-3 rounded-3" style="background:#f8fafc; border: 1px dashed #cbd5e1;">
+                            <p class="fw-800 text-primary small mb-1">Respuesta del Alumno:</p>
+                            <p class="m-0 text-dark fw-700">${respuesta}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(card);
+        }
+
+        const myModal = new bootstrap.Modal(document.getElementById('modalVisor'));
+        myModal.show();
+    }
+</script>
+
+{% endblock %}
