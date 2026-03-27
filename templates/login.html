@@ -11,68 +11,205 @@
 
     <style>
         * { font-family: 'Poppins', sans-serif; }
-        body { margin: 0; height: 100vh; display: flex; }
+        body { margin: 0; height: 100vh; display: flex; overflow: hidden; background-color: #f4f6f9; }
+
+        .corner-logo {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        .corner-logo img { width: 40px; margin-right: 12px; }
+        .corner-logo span { color: white; font-weight: 700; font-size: 22px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
 
         .left-panel {
-            flex: 1;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            flex: 1.2;
+            background: linear-gradient(135deg, #112240, #1e3c72);
             color: white;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 60px;
+            padding: 80px;
+            position: relative;
+            z-index: 10; /* Asegura que el robot pase por encima del panel derecho al acercarse mucho */
         }
 
-        .left-panel h1 { font-weight: 700; font-size: 45px; }
-        .left-panel p { font-weight: 300; font-size: 18px; margin-top: 20px; text-align: center; }
+        .left-panel h1 { font-weight: 700; font-size: 42px; margin-top: 10px; margin-bottom: 10px; }
+        .left-panel p { font-weight: 300; font-size: 16px; text-align: center; max-width: 450px; opacity: 0.8; }
 
-        .right-panel {
-            flex: 1;
-            background: #f4f6f9;
+        /* Contenedor principal con transición para el movimiento completo */
+        .robot-lean-container {
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: bottom center; /* Pivotar desde la base */
+        }
+
+        /* Clase para aplicar el movimiento de inclinación hacia la info */
+        .leaning .robot-lean-container {
+            /* Aquí aumentamos mucho el movimiento hacia la derecha (120px) y el tamaño (1.1) */
+            transform: translateX(120px) scale(1.1) rotate(5deg); 
+        }
+
+        /* Contenedor interno para el float, manteniendo el float separado de la inclinación */
+        .robot-container {
+            position: relative;
+            width: 280px;
+            height: 380px; 
+            animation: float 4s ease-in-out infinite;
             display: flex;
-            align-items: center;
             justify-content: center;
         }
 
-        .login-card {
-            width: 400px;
-            padding: 40px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(10px);
-            animation: fadeIn 0.8s ease-in-out;
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+            100% { transform: translateY(0px); }
         }
 
-        .login-title { font-weight: 600; margin-bottom: 25px; color: #2a5298; }
-        .form-control { border-radius: 12px; padding: 12px; }
-        .btn-login {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            border: none;
-            border-radius: 12px;
-            padding: 12px;
-            font-weight: 500;
-            transition: 0.3s;
+        #eye-left, #eye-right, #mouth, #antenna-pulse {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(42, 82, 152, 0.4); }
+        
+        #digital-face {
+            transition: transform 0.15s ease-out; 
+        }
+
+        #robot-body {
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: translateY(-80px);
+            opacity: 0;
+        }
+
+        .emerged #robot-body {
+            transform: translateY(20px);
+            opacity: 1;
+        }
+
+        .right-panel {
+            flex: 1;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-card {
+            width: 420px;
+            padding: 50px;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            animation: fadeIn 0.8s ease-in-out;
+            border: 1px solid #edf2f7;
+        }
+
+        .login-title { font-weight: 700; margin-bottom: 30px; color: #1e3c72; font-size: 26px; }
+        .form-label { font-weight: 600; color: #475569; font-size: 14px; }
+        .form-control { border-radius: 10px; padding: 12px 15px; border: 2px solid #e2e8f0; background-color: #f8fafc; transition: 0.3s; }
+        .form-control:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1); background-color: white; }
+        .input-group-text { border-radius: 10px; background-color: white; border: 2px solid #e2e8f0; border-right: none; color: #94a3b8; }
+        .form-control { border-left: none; }
+        .btn-outline-secondary { border: 2px solid #e2e8f0; border-left: none; background: white; color: #94a3b8; }
+        .btn-outline-secondary:hover { background: #f1f5f9; color: #1e3c72; border-color: #e2e8f0;}
+
+        .btn-login {
+            background: #1e3c72;
+            border: none;
+            border-radius: 10px;
+            padding: 14px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .btn-login:hover { background: #2a5298; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(30, 60, 114, 0.2); }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-15px); }
+            from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @media (max-width: 992px) { .left-panel { display: none; } }
+        @media (max-width: 992px) { 
+            .left-panel { display: none; } 
+            .corner-logo span { color: #1e3c72; text-shadow: none; }
+        }
     </style>
 </head>
 
 <body>
+    <div class="corner-logo">
+        <img src="{{ url_for('static', filename='imagenes/educacion2.png') }}" alt="Logo">
+        <span>Edu-Portal</span>
+    </div>
+
     <div class="left-panel">
-        <div class="logo-container mb-4">
-            <img src="{{ url_for('static', filename='imagenes/educacion2.png') }}" alt="Logo" width="200">
+        <div id="robot-lean-wrapper" class="robot-lean-container">
+            <div class="robot-container" id="robot-wrapper">
+                <svg id="mascot-svg" viewBox="0 0 300 450" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="body-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="100%" stop-color="#cbd5e1"/>
+                        </linearGradient>
+                        <linearGradient id="visor-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#0f172a"/>
+                            <stop offset="100%" stop-color="#1e293b"/>
+                        </linearGradient>
+                        <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                        </filter>
+                        <filter id="drop-shadow">
+                            <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/>
+                        </filter>
+                        <clipPath id="visor-clip">
+                            <rect x="65" y="85" width="170" height="100" rx="40" />
+                        </clipPath>
+                    </defs>
+
+                    <g filter="url(#drop-shadow)">
+                        <g id="robot-body">
+                            <g transform="translate(0, 180)">
+                                <rect x="85" y="0" width="130" height="160" rx="25" fill="url(#body-grad)" />
+                                <rect x="115" y="30" width="70" height="50" rx="10" fill="#1e293b"/>
+                                <circle cx="150" cy="55" r="12" fill="#38bdf8" filter="url(#neon-glow)"/>
+                                <rect x="35" y="15" width="35" height="100" rx="17.5" fill="#ffffff"/>
+                                <circle cx="52.5" cy="115" r="12" fill="#94a3b8"/>
+                                <rect x="230" y="15" width="35" height="100" rx="17.5" fill="#ffffff"/>
+                                <circle cx="247.5" cy="115" r="12" fill="#94a3b8"/>
+                                <rect x="105" y="150" width="25" height="60" rx="12.5" fill="#94a3b8"/>
+                                <rect x="170" y="150" width="25" height="60" rx="12.5" fill="#94a3b8"/>
+                            </g>
+                        </g>
+
+                        <g id="robot-head">
+                            <line x1="150" y1="50" x2="150" y2="20" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+                            <circle id="antenna-pulse" cx="150" cy="15" r="8" fill="#38bdf8" filter="url(#neon-glow)"/>
+                            <rect x="35" y="115" width="20" height="50" rx="8" fill="#94a3b8" />
+                            <rect x="245" y="115" width="20" height="50" rx="8" fill="#94a3b8" />
+                            <rect x="45" y="50" width="210" height="180" rx="80" fill="url(#body-grad)"/>
+                            <rect x="65" y="85" width="170" height="100" rx="40" fill="url(#visor-grad)"/>
+                            <path d="M 75 95 Q 150 75 225 95 Q 220 120 150 120 Q 80 120 75 95 Z" fill="#ffffff" opacity="0.05"/>
+                            <g clip-path="url(#visor-clip)">
+                                <g id="digital-face" filter="url(#neon-glow)">
+                                    <rect id="eye-left" x="95" y="105" width="20" height="35" rx="10" fill="#38bdf8"/>
+                                    <rect id="eye-right" x="185" y="105" width="20" height="35" rx="10" fill="#38bdf8"/>
+                                    <path id="mouth" d="M 115 155 Q 150 175 185 155" fill="none" stroke="#38bdf8" stroke-width="6" stroke-linecap="round"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+            </div>
         </div>
-        <h1>Edu-Portal</h1>
-        <p>Plataforma integral de gestión académica.<br>Administra clases, estudiantes y docentes desde un solo lugar.</p>
+
+        <h1>TU FUTURO EMPIEZA AQUI</h1>
+        <p>¡Explora, aprende y crece!</p>
     </div>
 
     <div class="right-panel">
@@ -82,7 +219,7 @@
             {% with messages = get_flashed_messages() %}
               {% if messages %}
                 {% for message in messages %}
-                  <div class="alert alert-danger border-0 small py-2 mb-3" role="alert" style="border-radius: 10px;">
+                  <div class="alert alert-danger border-0 small py-3 mb-4" role="alert" style="border-radius: 10px; background-color: #fef2f2; color: #dc2626; font-weight: 500;">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ message }}
                   </div>
                 {% endfor %}
@@ -94,35 +231,148 @@
                     <label class="form-label">Correo Electrónico</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        <input type="email" name="correo" class="form-control" placeholder="ejemplo@correo.edu" required>
+                        <input type="email" id="email" name="correo" class="form-control" placeholder="usuario@eduportal.com" required>
                     </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label">Contraseña</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
                         <input type="password" id="password" name="password" class="form-control" placeholder="Ingrese su contraseña" required>
                         <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
-                            <i class="bi bi-eye"></i>
+                            <i id="toggleIcon" class="bi bi-eye"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="d-grid mt-4">
+                <div class="d-grid">
                     <button type="submit" class="btn btn-login text-white">Ingresar al Sistema</button>
                 </div>
             </form>
 
-            <div class="text-center mt-4 text-muted small">© 2026 Edu-Portal</div>
+            <div class="text-center mt-5 text-muted small">© 2026 Edu-Portal Admin</div>
         </div>
     </div>
 
     <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById("password");
-            passwordInput.type = passwordInput.type === "password" ? "text" : "password";
+        const face = document.getElementById('digital-face');
+        const eyeL = document.getElementById('eye-left');
+        const eyeR = document.getElementById('eye-right');
+        const mouth = document.getElementById('mouth');
+        const antenna = document.getElementById('antenna-pulse');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById("toggleIcon");
+        const robotWrapper = document.getElementById('robot-wrapper');
+        const robotLeanWrapper = document.getElementById('robot-lean-wrapper');
+        const leftPanel = document.querySelector('.left-panel'); 
+
+        function resetFaceSize() {
+            eyeL.setAttribute('x', '95'); eyeL.setAttribute('width', '20');
+            eyeR.setAttribute('x', '185'); eyeR.setAttribute('width', '20');
         }
+
+        function setExpression(state) {
+            if (state === 'normal') {
+                resetFaceSize();
+                eyeL.setAttribute('y', '105'); eyeL.setAttribute('height', '35');
+                eyeR.setAttribute('y', '105'); eyeR.setAttribute('height', '35');
+                mouth.setAttribute('d', 'M 115 155 Q 150 175 185 155'); 
+                antenna.setAttribute('fill', '#38bdf8');
+                robotWrapper.classList.remove('emerged');
+                leftPanel.classList.remove('leaning'); 
+            } 
+            else if (state === 'focus') {
+                resetFaceSize();
+                eyeL.setAttribute('y', '115'); eyeL.setAttribute('height', '20');
+                eyeR.setAttribute('y', '115'); eyeR.setAttribute('height', '20');
+                mouth.setAttribute('d', 'M 120 160 Q 150 165 180 160'); 
+                antenna.setAttribute('fill', '#facc15'); 
+                leftPanel.classList.add('leaning'); // Añadido para que se acerque al panel con solo dar clic
+            } 
+            else if (state === 'shocked') {
+                eyeL.setAttribute('x', '90'); eyeL.setAttribute('width', '28');
+                eyeL.setAttribute('y', '100'); eyeL.setAttribute('height', '45');
+                
+                eyeR.setAttribute('x', '182'); eyeR.setAttribute('width', '28');
+                eyeR.setAttribute('y', '100'); eyeR.setAttribute('height', '45');
+                
+                mouth.setAttribute('d', 'M 135 160 Q 150 190 165 160'); 
+                antenna.setAttribute('fill', '#f87171'); 
+                robotWrapper.classList.add('emerged');
+                leftPanel.classList.add('leaning'); 
+            }
+        }
+
+        function togglePassword() {
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                toggleIcon.classList.replace("bi-eye", "bi-eye-slash");
+                setExpression('shocked');
+            } else {
+                passwordInput.type = "password";
+                toggleIcon.classList.replace("bi-eye-slash", "bi-eye");
+                setExpression(document.activeElement === passwordInput ? 'shocked' : 'normal');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const maxMoveX = 20; 
+            const maxMoveY = 12;
+
+            function moveFace(x, y) {
+                const svgRect = document.getElementById('mascot-svg').getBoundingClientRect();
+                const centerX = svgRect.left + svgRect.width / 2;
+                const centerY = svgRect.top + (svgRect.height * 0.3); 
+
+                const angle = Math.atan2(y - centerY, x - centerX);
+                
+                const distX = Math.min(Math.abs(x - centerX) / 20, maxMoveX);
+                const distY = Math.min(Math.abs(y - centerY) / 20, maxMoveY);
+
+                const moveX = Math.cos(angle) * distX;
+                const moveY = Math.sin(angle) * distY;
+
+                face.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            }
+
+            document.addEventListener('mousemove', (e) => {
+                if (document.activeElement !== emailInput && document.activeElement !== passwordInput) {
+                    moveFace(e.clientX, e.clientY);
+                }
+            });
+
+            emailInput.addEventListener('focus', () => {
+                const rect = emailInput.getBoundingClientRect();
+                moveFace(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                setExpression('focus');
+            });
+
+            emailInput.addEventListener('input', (e) => {
+                const rect = emailInput.getBoundingClientRect();
+                const progress = Math.min(e.target.value.length / 30, 1);
+                const targetX = rect.left + (rect.width * progress * 0.8);
+                moveFace(targetX, rect.top + rect.height / 2);
+                
+                if(e.target.value.length > 0) {
+                    setExpression('shocked');
+                } else {
+                    setExpression('focus');
+                }
+            });
+
+            passwordInput.addEventListener('focus', () => {
+                const rect = passwordInput.getBoundingClientRect();
+                moveFace(rect.right, rect.top + rect.height / 2);
+                setExpression('shocked');
+            });
+
+            emailInput.addEventListener('blur', () => {
+                if(emailInput.value.length === 0) setExpression('normal');
+            });
+            passwordInput.addEventListener('blur', () => setExpression('normal'));
+        });
     </script>
 </body>
 </html>
