@@ -1,95 +1,130 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="aula-wrapper">
+<div class="aula-wrapper" style="--materia-color: {{ materia_color }};">
     <header class="aula-hero-card">
+        <div class="header-bg-icon">
+            <i class="bi bi-people-fill"></i>
+        </div>
         <div class="hero-left">
             <a href="{{ url_for('alumno_clases') }}" class="btn-back-square" title="Volver al Panel">
                 <i class="bi bi-chevron-left"></i>
             </a>
             <div class="title-group">
-                <span class="materia-tag">Mi Salón de Clase</span>
+                <span class="materia-tag">Mi Aula Virtual</span>
                 <h1>{{ clase.nombre_clase }}</h1>
                 <p class="profesor-name">
-                    <i class="bi bi-person-workspace" style = "margin-right: 5px;"></i> 
+                    <i class="bi bi-person-workspace" style="margin-right: 5px;"></i> 
                     Docente: {{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}
                 </p>
             </div>
         </div>
-        
+
         <div class="hero-right">
-            <div class="stats-mini">
-                <div class="stat-item">
-                    <span class="stat-value">{{ tareas|length }}</span>
-                    <span class="stat-label">Tareas</span>
-                </div>
-                <div class="divider-v"></div>
-                <div class="stat-item">
-                    <span class="stat-value">{{ entregadas_ids|length }}</span>
-                    <span class="stat-label">Hechas</span>
-                </div>
+            <div class="aula-nav-group">
+                <button class="btn-nav-tab active" onclick="openTab(event, 'inicio')">
+                    <i class="bi bi-house-door-fill"></i>
+                    <span>Inicio</span>
+                </button>
+                <button id="btn-tareas" class="btn-nav-tab" onclick="openTab(event, 'tareas')">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Tareas</span>
+                </button>
             </div>
         </div>
     </header>
 
     <div class="aula-content-grid">
         <main class="main-column">
-            <section class="content-section">
-                <div class="section-title">
-                    <i class="bi bi-pencil-square"></i>
-                    <h2>Mis Tareas y Trabajos</h2>
-                </div>
+            
+            <div id="inicio" class="tab-content active">
+                <section class="content-section">
+                    <div class="section-title">
+                        <i class="bi bi-megaphone-fill"></i>
+                        <h2>Novedades de la Clase</h2>
+                    </div>
+                    
+                    <div class="news-container">
+                        <div class="news-item-simple">
+                            <div class="news-icon-box">
+                                <i class="bi bi-chat-left-dots-fill"></i>
+                            </div>
+                            <div class="news-text">
+                                <strong>Mensaje del Docente</strong>
+                                <p>¡Hola! Bienvenidos a nuestra aula virtual. En la pestaña de tareas podrán encontrar todas las actividades asignadas para este parcial.</p>
+                                <span class="news-date">Publicado recientemente</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
-                <div class="tareas-container">
-                    {% for tarea in tareas %}
-                    <div class="tarea-card">
-                        <div class="tarea-status-icon {% if tarea.id_tarea in entregadas_ids %}success{% endif %}">
-                            <i class="bi {% if tarea.id_tarea in entregadas_ids %}bi-check-circle-fill{% else %}bi-journal-bookmark{% endif %}"></i>
+            <div id="tareas" class="tab-content">
+                <section class="content-section">
+                    <div class="tareas-header-row">
+                        <div class="section-title">
+                            <i class="bi bi-pencil-square"></i>
+                            <h2>Mis Tareas y Trabajos</h2>
                         </div>
                         
-                        <div class="tarea-info">
-                            <h3>{{ tarea.titulo }}</h3>
-                            <p class="tarea-meta">
-                                <i class="bi bi-calendar-check"></i> 
-                                Entregar el: {{ tarea.fecha_entrega.strftime('%d/%m/%Y') }}
-                            </p>
+                        <div class="stats-mini-inner">
+                            <div class="stat-item">
+                                <span class="stat-value">{{ tareas|length }}</span>
+                                <span class="stat-label">Tareas</span>
+                            </div>
+                            <div class="divider-v"></div>
+                            <div class="stat-item">
+                                <span class="stat-value">{{ entregadas_ids|length }}</span>
+                                <span class="stat-label">Hechas</span>
+                            </div>
                         </div>
+                    </div>
 
-                        <div class="tarea-actions">
-                            {% if tarea.id_tarea in entregadas_ids %}
-                                <span class="badge-status delivered">¡Listo!</span>
-                                <button class="btn-action-view" title="Ver mi tarea">
-                                    <i class="bi bi-eye-fill"></i>
-                                </button>
-                            {% else %}
-                                <span class="badge-status pending">Por hacer</span>
-                                <a href="#" class="btn-action-upload" title="Entregar tarea">
-                                    <i class="bi bi-cloud-arrow-up-fill"></i>
-                                </a>
-                            {% endif %}
+                    <div class="tareas-container">
+                        {% for tarea in tareas %}
+                        <a href="{{ url_for('ver_detalle_tarea', id_tarea=tarea.id_tarea) }}" class="tarea-card-link">
+                            <div class="tarea-card">
+                                <div class="tarea-status-icon {% if tarea.id_tarea in entregadas_ids %}success{% endif %}">
+                                    <i class="bi {% if tarea.id_tarea in entregadas_ids %}bi-check-circle-fill{% else %}bi-journal-bookmark{% endif %}"></i>
+                                </div>
+                                
+                                <div class="tarea-info">
+                                    <h3>{{ tarea.titulo }}</h3>
+                                    <p class="tarea-meta">
+                                        <i class="bi bi-calendar-check" style="margin-right: 5px;"></i> 
+                                        Límite: {{ tarea.fecha_entrega.strftime('%d/%m/%Y') }}
+                                    </p>
+                                </div>
+
+                                <div class="tarea-status-tag">
+                                    {% if tarea.id_tarea in entregadas_ids %}
+                                        <span class="badge-status delivered">Entregado</span>
+                                    {% else %}
+                                        <span class="badge-status pending">Pendiente</span>
+                                    {% endif %}
+                                    <i class="bi bi-chevron-right ms-2"></i>
+                                </div>
+                            </div>
+                        </a>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-stars"></i>
+                            <p>No hay tareas pendientes por ahora.</p>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="empty-state">
-                        <i class="bi bi-stars"></i>
-                        <p>¡Hurra! No hay tareas pendientes por ahora.</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </section>
+                </section>
+            </div>
         </main>
 
         <aside class="side-column">
             <section class="side-card announcement-box">
                 <div class="side-card-header">
                     <i class="bi bi-bell-fill"></i>
-                    <h3>Avisos del Profe</h3>
+                    <h3>Avisos</h3>
                 </div>
                 <div class="announcement-content">
-                    <p class="announcement-text">
-                        ¡Hola niños! Recuerden repasar la lectura de esta semana. Tendremos un repaso grupal el viernes.
-                    </p>
-                    <span class="announcement-date">Aviso de hoy</span>
+                    <p class="announcement-text">Recuerden revisar los materiales de apoyo antes del examen.</p>
                 </div>
             </section>
 
@@ -127,29 +162,37 @@
     :root {
         --primary: #4361ee;
         --dark: #1e293b;
-        --light-bg: #f8fafc;
+        --light-bg: #f1f5f9;
         --text-muted: #64748b;
         --success: #2ecc71;
         --warning: #e74c3c;
     }
-
     .aula-wrapper { padding: 30px; max-width: 1300px; margin: 0 auto; }
 
-    /* Tarjeta de Bienvenida */
+    /* HEADER Y HERO */
     .aula-hero-card {
-        background: white;
-        padding: 35px;
-        border-radius: 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 25px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-        border: 1px solid #f1f5f9;
+        position: relative; overflow: hidden; 
+        background: color-mix(in srgb, var(--materia-color), white 92%);
+        border: 1px solid color-mix(in srgb, var(--materia-color), white 80%);
+        padding: 35px; border-radius: 30px;
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.02);
     }
 
-    .hero-left { display: flex; align-items: center; gap: 20px; }
+    /* BOTONES DE NAVEGACIÓN (Estética Original) */
+    .aula-nav-group { display: flex; gap: 10px; }
     
+    .btn-nav-tab {
+        height: 45px; padding: 0 20px; background: var(--light-bg); border-radius: 14px;
+        display: flex; align-items: center; gap: 10px; border: none;
+        text-decoration: none; color: var(--dark); transition: 0.2s;
+        font-weight: 700; cursor: pointer;
+        z-index: 1;
+    }
+
+    .btn-nav-tab:hover { background: var(--dark); color: white; transform: translateY(-2px); }
+    .btn-nav-tab.active { background: var(--materia-color); color: white; }
+
     .btn-back-square {
         width: 45px; height: 45px; background: var(--light-bg); border-radius: 14px;
         display: flex; align-items: center; justify-content: center;
@@ -157,24 +200,35 @@
     }
     .btn-back-square:hover { background: var(--dark); color: white; transform: translateX(-4px); }
 
-    .materia-tag { background: #e0e7ff; color: var(--primary); padding: 5px 12px; border-radius: 50px; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
-    .title-group h1 { font-size: 2rem; font-weight: 900; margin: 5px 0; letter-spacing: -0.5px; color: var(--dark); }
-    .profesor-name { color: var(--text-muted); font-weight: 700; font-size: 0.9rem; margin: 0; }
+    /* CONTENIDO DE PESTAÑAS */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Cuadritos de Conteo */
-    .stats-mini { background: var(--light-bg); padding: 12px 20px; border-radius: 18px; display: flex; align-items: center; gap: 15px; }
-    .stat-item { text-align: center; }
-    .stat-value { display: block; font-size: 1.3rem; font-weight: 900; color: var(--dark); }
-    .stat-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
-    .divider-v { width: 1px; height: 25px; background: #cbd5e1; }
+    /* MURO DE NOVEDADES */
+    .news-item-simple { display: flex; gap: 15px; padding: 20px; background: var(--light-bg); border-radius: 20px; align-items: flex-start; }
+    .news-icon-box { width: 40px; height: 40px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--materia-color); font-size: 1.2rem; }
+    .news-text strong { display: block; margin-bottom: 5px; color: var(--dark); }
+    .news-text p { margin: 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+    .news-date { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-top: 10px; display: block; }
 
-    /* Cuadrícula Escolar */
+    /* TAREAS (DISEÑO ORIGINAL) */
+    .tareas-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .stats-mini-inner { background: var(--light-bg); padding: 10px 18px; border-radius: 16px; display: flex; align-items: center; gap: 15px; }
+    .tarea-card-link { text-decoration: none; color: inherit; display: block; }
+    .tarea-status-tag { display: flex; align-items: center; color: var(--text-muted); font-size: 0.9rem; font-weight: 700; }
+
+    /* RESTO DE ESTILOS MANTENIDOS */
+    .hero-left { display: flex; align-items: center; gap: 20px; z-index: 1; }
+    .materia-tag { background: var(--materia-color); color: white; padding: 5px 12px; border-radius: 50px; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
+    .title-group h1 { font-size: 2rem; font-weight: 900; margin: 5px 0; color: var(--dark); }
+    .profesor-name { color: var(--text-muted); font-weight: 700; font-size: 0.9rem; }
+    .header-bg-icon { position: absolute; right: 15%; top: 50%; transform: translateY(-50%) rotate(-16deg); font-size: 20rem; color: var(--materia-color); opacity: 0.06; pointer-events: none; }
+
     .aula-content-grid { display: grid; grid-template-columns: 1fr 320px; gap: 25px; }
-
-    /* Bloque de Tareas */
     .content-section { background: white; padding: 30px; border-radius: 30px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
     .section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-    .section-title i { font-size: 1.4rem; color: var(--primary); }
+    .section-title i { font-size: 1.4rem; color: var(--materia-color); }
     .section-title h2 { font-size: 1.3rem; font-weight: 800; margin: 0; color: var(--dark); }
 
     .tarea-card {
@@ -206,35 +260,80 @@
     }
     .btn-action-upload:hover { background: var(--primary); color: white; }
     .btn-action-view:hover { background: var(--dark); color: white; }
+    
+    .stat-item { text-align: center; }
+    .stat-value { display: block; font-size: 1.3rem; font-weight: 900; color: var(--dark); }
+    .stat-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
+    .divider-v { width: 1px; height: 25px; background: #cbd5e1; }
 
-    /* Barra Lateral */
     .side-card { background: white; padding: 22px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
     .side-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
     .side-card-header i { color: var(--primary); font-size: 1.2rem; }
     .side-card-header h3 { font-size: 1.05rem; font-weight: 800; margin: 0; }
-
+    
     .announcement-box { background: var(--primary); color: white; border: none; }
     .announcement-box i, .announcement-box h3 { color: white; }
     .announcement-text { font-size: 0.85rem; line-height: 1.5; margin-bottom: 10px; font-weight: 600; opacity: 0.95; }
     .announcement-date { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; opacity: 0.8; }
-
+    
     .resource-list { list-style: none; padding: 0; margin: 0; }
     .resource-item {
         display: flex; align-items: center; gap: 10px; padding: 10px;
         text-decoration: none; color: var(--dark); font-weight: 700; font-size: 0.85rem;
         border-radius: 10px; transition: 0.2s;
     }
-    .resource-item:hover { background: var(--light-bg); color: var(--primary); }
-
-    .empty-state { text-align: center; padding: 30px; color: var(--text-muted); }
-    .empty-state i { font-size: 2.5rem; margin-bottom: 8px; display: block; color: var(--primary); }
+    .resource-item:hover { background: var(--light-bg); color: var(--primary); }    .badge-status { padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 800; }
+    .badge-status.pending { background: #fee2e2; color: var(--warning); }
+    .badge-status.delivered { background: #dcfce7; color: var(--success); }
 
     @media (max-width: 1024px) {
         .aula-content-grid { grid-template-columns: 1fr; }
-        .aula-hero-card { flex-direction: column; text-align: center; gap: 20px; }
+        .aula-hero-card { flex-direction: column; text-align: center; gap: 25px; }
         .hero-left { flex-direction: column; }
-        .btn-back-square { display: none; }
     }
 </style>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        
+        // 1. Ocultar todos los contenidos
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
+        }
+        
+        // 2. Desactivar todos los botones
+        tablinks = document.getElementsByClassName("btn-nav-tab");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+        
+        // 3. Activar la pestaña seleccionada
+        document.getElementById(tabName).classList.add("active");
+        if (evt) {
+            evt.currentTarget.classList.add("active");
+            // Actualiza la URL con el # (opcional pero recomendado)
+            window.location.hash = tabName;
+        }
+    }
+
+    // LÓGICA PARA EL RETORNO AUTOMÁTICO
+    document.addEventListener("DOMContentLoaded", function() {
+        // Si la URL termina en #tareas
+        if (window.location.hash === "#tareas") {
+            // Simulamos un click en el botón de tareas
+            const btnTareas = document.getElementById('btn-tareas');
+            if (btnTareas) {
+                // Llamamos a la función manualmente
+                openTab(null, 'tareas');
+                // Marcamos el botón como activo
+                btnTareas.classList.add("active");
+                // Quitamos el activo al de inicio
+                document.querySelector('button[onclick*="inicio"]').classList.remove("active");
+            }
+        }
+    });
+</script>
 
 {% endblock %}

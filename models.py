@@ -78,6 +78,7 @@ class Tareas(db.Model):
     id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase'))
     titulo = db.Column(db.String(150), nullable=False)
     descripcion = db.Column(db.Text)
+    fecha_publicacion = db.Column(db.DateTime, default=db.func.current_timestamp())
     fecha_entrega = db.Column(db.DateTime, nullable=False)
     entregas = db.relationship('EntregasTareas', backref='tarea', lazy=True)
 
@@ -119,10 +120,8 @@ class Anuncios(db.Model):
     dirigido_a = db.Column(db.String(20))
     id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'))
     fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
-<<<<<<< HEAD
-=======
     usuario_autor = db.relationship('Usuarios', backref='anuncios_creados', lazy=True)
->>>>>>> f5d5762f4f26fa6e7fb212a2d9c008dfc45af4de
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase'), nullable=True)
 
 # ==============================================================================
 # ----------------------------- MODELOS DE EXÁMENES ----------------------------
@@ -165,8 +164,4 @@ class EntregasExamenes(db.Model):
     archivo_ruta = db.Column(db.String(255), nullable=True)
     respuestas_json = db.Column(db.JSON, nullable=True) 
     estado = db.Column(db.String(50), default='entregado')
-<<<<<<< HEAD
     fecha_entrega = db.Column(db.DateTime, default=db.func.current_timestamp())
-=======
-    fecha_entrega = db.Column(db.DateTime, default=db.func.current_timestamp())
->>>>>>> f5d5762f4f26fa6e7fb212a2d9c008dfc45af4de

@@ -2,26 +2,31 @@
 {% block content %}
 
 <div class="agenda-wrapper">
-    <div class="navigation-area spacer-bottom">
-        <a href="{{ url_for('alumno_dashboard') }}" class="btn-back-chip-estilo" title="Volver al Panel">
-            <i class="bi bi-arrow-left-short"></i>
-        </a>
-    </div>
-
-    <header class="agenda-hero">
-        <div class="hero-content">
-            <h1>Mi Agenda Académica</h1>
-            <p>Organiza tus actividades y entregas de este ciclo.</p>
+   <header class="agenda-hero">
+        <div class="header-bg-icon">
+            <i class="bi bi-journal-bookmark"></i>
         </div>
-        
-        <div class="stats-container">
-            <div class="stat-pill pending">
-                <span class="stat-number" id="count-pending">0</span>
-                <span class="stat-text">Pendientes Mes</span>
+        <div class="hero-left">
+            <a href="{{ url_for('alumno_dashboard') }}" class="btn-back-square" title="Volver al Panel">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <div class="hero-content">
+                <h1>Mi Agenda Académica</h1>
+                <p>Organiza tus actividades y entregas de este ciclo.</p>
             </div>
-            <div class="stat-pill completed">
-                <span class="stat-number" id="count-completed">0</span>
-                <span class="stat-text">Listas Mes</span>
+        </div> 
+        
+        <div class="hero-right">
+            <div class="stats-mini">
+                <div class="stat-item">
+                    <span class="stat-value color-pending" id="count-pending">0</span>
+                    <span class="stat-label">Pendientes</span>
+                </div>
+                <div class="divider-v"></div>
+                <div class="stat-item">
+                    <span class="stat-value color-completed" id="count-completed">0</span>
+                    <span class="stat-label">Hechas</span>
+                </div>
             </div>
         </div>
     </header>
@@ -50,7 +55,7 @@
             <p class="modal-description">Revisa los detalles de esta actividad en tu aula virtual para proceder con la entrega o consulta de materiales.</p>
         </div>
         <div class="modal-footer">
-            <a href="#" class="btn-primary-modal">Ir al Aula Virtual</a>
+            <a href="#" id="btnIrAula" class="btn-primary-modal">Ir al Aula Virtual</a>
         </div>
     </div>
 </div>
@@ -60,6 +65,8 @@
 <style>
     :root {
         --text-dark: #2d3748;
+        --dark: #1e293b;
+        --light-bg: #f1f5f9;
         --text-muted: #64748b;
         --accent: #4361ee;
         --entregado-solid: #2ecc71;
@@ -69,7 +76,9 @@
     .spacer-bottom { margin-bottom: 25px; display: flex; align-items: center; }
     .agenda-wrapper { padding: 40px; max-width: 1300px; margin: 0 auto;}
     .agenda-hero { 
-        background: white; 
+        position: relative;
+        overflow: hidden;
+        background: #d9d9fe; 
         padding: 40px; 
         border-radius: 35px; 
         display: flex; 
@@ -79,6 +88,8 @@
         box-shadow: 0 10px 25px rgba(0,0,0,0.04); 
         border: 1px solid #f1f5f9; 
     }
+    .hero-left { display: flex; align-items: center; gap: 20px; z-index: 1; }
+    .hero-right { display: flex; align-items: center; gap: 20px; z-index: 2; }
     .agenda-hero h1 { 
         font-size: 2.2rem; 
         font-weight: 900; 
@@ -86,28 +97,27 @@
         margin: 0; 
         letter-spacing: -1px; 
     }
+    .header-bg-icon {
+        position: absolute;
+        right: 15%;    
+        top: 50%;
+        transform: translateY(-50%) rotate(-16deg) translateX(10%);
+        font-size: 20rem; 
+        color: #9381ff; 
+        opacity: 0.3;  
+        pointer-events: none;
+        z-index: 0;
+    }
     .agenda-hero p { color: var(--text-muted); font-size: 1rem; margin-top: 5px; }
-    .stats-container { display: flex; gap: 15px; }
-    .stat-pill { 
-        padding: 15px 25px; 
-        border-radius: 20px; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        min-width: 110px; 
-    }
-    .stat-pill.pending { background: #fff5f5; border: 1px solid #feb2b2; }
-    .stat-pill.completed { background: #f0fff4; border: 1px solid #9ae6b4; }
-    .stat-number { font-size: 1.8rem; font-weight: 900; line-height: 1; }
-    .pending .stat-number { color: var(--pendiente-solid); }
-    .completed .stat-number { color: var(--entregado-solid); }
-    .stat-text { 
-        font-size: 0.7rem; 
-        font-weight: 800; 
-        text-transform: uppercase; 
-        color: var(--text-muted); 
-        margin-top: 5px; 
-    }
+
+    .stats-mini { background: var(--light-bg); padding: 12px 20px; border-radius: 18px; display: flex; align-items: center; gap: 15px; }
+    .stat-item { text-align: center;}
+    .stat-value { display: block; font-size: 1.3rem; font-weight: 900; color: var(--dark); }
+    .color-pending { color: #ef4444; }
+    .color-completed { color: #22c55e; } 
+    .stat-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--dark); }
+    .divider-v { width: 1px; height: 25px; background: #cbd5e1; }
+
     .calendar-card { 
         background: white; 
         padding: 40px; 
@@ -145,15 +155,12 @@
     .fc-col-header-cell-cushion { text-transform: capitalize !important; text-decoration: none !important; color: var(--text-dark); }
     .evt-entregado { background-color: var(--entregado-solid) !important; color: white !important; }
     .evt-pendiente { background-color: var(--pendiente-solid) !important; color: white !important; }
-    .btn-back-chip-estilo { 
-        background: var(--text-dark); color: white; text-decoration: none; 
-        width: 45px; height: 45px; border-radius: 14px; display: flex; 
-        align-items: center; justify-content: center; transition: 0.3s;
-        box-shadow: 0 10px 15px rgba(45, 55, 72, 0.2);
+    .btn-back-square {
+        width: 45px; height: 45px; background: var(--light-bg); border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        text-decoration: none; color: var(--dark); transition: 0.2s;
     }
-    .btn-back-chip-estilo span { display: none; }
-    .btn-back-chip-estilo i { font-size: 1.5rem; }
-    .btn-back-chip-estilo:hover { transform: translateX(-5px); background: #4a5568; }
+    .btn-back-square:hover { background: var(--dark); color: white; transform: translateX(-4px); }
 
     .modal-overlay {
         display: none;
@@ -218,6 +225,11 @@
     .btn-primary-modal:hover { background: var(--accent); transform: translateY(-3px); box-shadow: 0 15px 25px rgba(67, 97, 238, 0.2); }
 
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @media (max-width: 768px) {
+        .agenda-hero { flex-direction: column; gap: 20px; text-align: center; }
+        .hero-left { flex-direction: column; }
+        .stats-mini { width: 100%; justify-content: center; }
+    }
 </style>
 
 <script>
@@ -229,6 +241,7 @@
             {% for tarea in tareas %}
             {
                 id: {{ tarea.id_tarea }},
+                id_clase: {{ tarea.id_clase }}, 
                 title: {{ tarea.titulo|tojson }},
                 start: '{{ tarea.fecha_entrega.strftime("%Y-%m-%d") }}',
                 entregada: {% if tarea.id_tarea in entregadas_ids %}true{% else %}false{% endif %},
@@ -239,6 +252,7 @@
 
         const calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
+            dayMaxEvents: true,
             locale: 'es',
             headerToolbar: {
                 left: 'prev,next today',
@@ -246,11 +260,15 @@
                 right: 'dayGridMonth,dayGridWeek'
             },
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
+            
             events: todasLasTareas.map(t => ({
                 title: t.title,
                 start: t.start,
                 className: t.entregada ? 'evt-entregado' : 'evt-pendiente',
-                extendedProps: { materia: t.materia }
+                extendedProps: { 
+                    materia: t.materia,
+                    id_clase: t.id_clase 
+                }
             })),
 
             datesSet: function(info) {
@@ -271,6 +289,8 @@
             eventClick: function(info) {
                 const title = info.event.title;
                 const materia = info.event.extendedProps.materia;
+                const idClase = info.event.extendedProps.id_clase; // Recuperamos el ID de la clase
+                
                 const fechaRaw = info.event.start.toLocaleDateString('es-ES', { 
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
                 });
@@ -278,6 +298,12 @@
                 document.getElementById('modalTitulo').innerText = title;
                 document.getElementById('modalMateria').innerText = materia;
                 document.getElementById('modalFecha').innerText = fechaRaw.charAt(0).toUpperCase() + fechaRaw.slice(1);
+                
+
+                const btnIrAula = document.querySelector('.btn-primary-modal');
+                if (btnIrAula) {
+                    btnIrAula.href = `/alumno/aula/${idClase}`;
+                }
                 
                 modal.style.display = 'flex';
             }

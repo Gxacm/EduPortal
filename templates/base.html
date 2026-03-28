@@ -141,7 +141,17 @@
 
     <nav class="top-navbar">
         <div class="navbar-left">
-            <a href="{{ url_for('admin_dashboard') if session.rol == 1 else url_for('login') }}" class="brand-text">EDU CONTROL</a>
+            <a href="{% if session.rol == 1 %}
+                {{ url_for('admin_dashboard') }}
+                {% elif session.rol == 2 %}
+                {{ url_for('maestro_dashboard') }}
+                {% elif session.rol == 3 %}
+                {{ url_for('alumno_dashboard') }}
+                {% else %}
+                {{ url_for('login') }}
+                {% endif %}" 
+            class="brand-text">EDU CONTROL
+            </a>
             
             <div class="search-bar-container">
                 <i class="bi bi-search" style="color: var(--muted);"></i>

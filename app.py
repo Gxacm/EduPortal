@@ -3,12 +3,8 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from sqlalchemy.orm import joinedload
-
-# --- NUEVOS IMPORTS PARA MANEJO DE ARCHIVOS ---
 import os
 from werkzeug.utils import secure_filename
-
-# --- LÍNEA ACTUALIZADA: Se agregaron los modelos de Exámenes ---
 from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
 
 
@@ -680,26 +676,100 @@ def alumno_clases():
     return render_template('Panel_Alumno/mis_clases.html', 
                            clases=clases, 
                            alumno=alumno)
+
+# --- FUNCIÓN AUXILIAR (Para evitar redundancia) ---
+def obtener_color_materia(alumno, id_clase):
+    colors = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c', '#00bcd4']
+    # Buscamos las clases del mismo grado del alumno para que el índice coincida
+    todas_las_clases_grado = Clases.query.filter_by(id_grado=alumno.seccion.id_grado).all()
+    
+    for index, c in enumerate(todas_las_clases_grado):
+        if c.id_clase == id_clase:
+            return colors[index % len(colors)]
+    return colors[0]
+
+# --- RUTA 1: VISTA DEL AULA ---
 @app.route('/alumno/aula/<int:id_clase>')
 def alumno_aula(id_clase):
-    # 1. Obtenemos la clase y validamos que exista
+    id_usuario_actual = session.get('user_id')
+    if not id_usuario_actual:
+        return redirect(url_for('login'))
+
+    # Obtenemos objetos base
+    alumno = Alumnos.query.filter_by(id_usuario=id_usuario_actual).first_or_404()
     clase_obj = Clases.query.get_or_404(id_clase)
     
-    # 2. Obtenemos el ID del alumno (asumiendo que está en sesión)
-    # id_usuario_actual = session.get('user_id')
-    # alumno = Alumnos.query.filter_by(id_usuario=id_usuario_actual).first()
-    
-    # 3. Consultamos las tareas de esta clase
+    # Color consistente
+    materia_color = obtener_color_materia(alumno, id_clase)
+
+    # Tareas y validación de entregas
     tareas_clase = Tareas.query.filter_by(id_clase=id_clase).order_by(Tareas.fecha_entrega.asc()).all()
-    
-    # 4. Obtenemos los IDs de las tareas que el alumno YA entregó para marcar el check verde
-    entregas = EntregasTareas.query.filter_by(id_alumno=Alumnos.id_alumno).all()
+    entregas = EntregasTareas.query.filter_by(id_alumno=alumno.id_alumno).all()
     entregadas_ids = [e.id_tarea for e in entregas]
 
     return render_template('/Panel_Alumno/Aula/Aula.html', 
                            clase=clase_obj, 
                            tareas=tareas_clase, 
-                           entregadas_ids=entregadas_ids)
+                           entregadas_ids=entregadas_ids,
+                           alumno=alumno,
+                           materia_color=materia_color)
+
+# --- RUTA 2: DETALLE DE TAREA ---
+@app.route('/alumno/tarea/<int:id_tarea>')
+def ver_detalle_tarea(id_tarea):
+    id_usuario_actual = session.get('user_id')
+    if not id_usuario_actual:
+        return redirect(url_for('login'))
+
+    alumno = Alumnos.query.filter_by(id_usuario=id_usuario_actual).first_or_404()
+    tarea = Tareas.query.get_or_404(id_tarea)
+    
+    # Usamos la misma función para que el color sea el mismo que en el aula
+    materia_color = obtener_color_materia(alumno, tarea.id_clase)
+
+    # Verificamos si este alumno ya entregó ESTA tarea
+    entrega = EntregasTareas.query.filter_by(
+        id_tarea=id_tarea, 
+        id_alumno=alumno.id_alumno
+    ).first()
+
+    return render_template('/Panel_Alumno/Aula/Detalle_Tarea.html', 
+                           tarea=tarea, 
+                           entrega=entrega,
+                           materia_color=materia_color,
+                           alumno=alumno)
+
+@app.route('/alumno/subir-tarea/<int:id_tarea>', methods=['POST'])
+def subir_tarea(id_tarea):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    file = request.files.get('archivo_tarea')
+    if not file or file.filename == '':
+        return "No se seleccionó ningún archivo", 400
+
+    id_usuario_actual = session.get('user_id')
+    alumno = Alumnos.query.filter_by(id_usuario=id_usuario_actual).first_or_404()
+    filename = secure_filename(file.filename)
+    nombre_final = f"tarea_{id_tarea}_alu_{alumno.id_alumno}_{filename}"
+    ruta_carpeta = os.path.join(app.root_path, 'static', 'uploads', 'tareas')
+    
+    if not os.path.exists(ruta_carpeta):
+        os.makedirs(ruta_carpeta)
+        
+    file.save(os.path.join(ruta_carpeta, nombre_final))
+
+    nueva_entrega = EntregasTareas(
+        id_tarea=id_tarea,
+        id_alumno=alumno.id_alumno,
+        archivo_ruta=nombre_final,
+        estado='Entregado'
+    )
+    
+    db.session.add(nueva_entrega)
+    db.session.commit()
+
+    return redirect(url_for('ver_detalle_tarea', id_tarea=id_tarea))
 
 @app.route('/alumno/agenda')
 def alumno_agenda():
