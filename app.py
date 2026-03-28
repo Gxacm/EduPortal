@@ -324,6 +324,46 @@ def gestionar_grado(id_grado):
     grado = Grados.query.get_or_404(id_grado)
     return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
 
+@app.route('/maestro/anuncios/<int:id_grado>', methods=['GET', 'POST'])
+def maestro_anuncios(id_grado):
+    # Validamos que sea un maestro
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    grado = Grados.query.get_or_404(id_grado)
+
+    # Si se envía el formulario
+    if request.method == 'POST':
+        # Recibimos los datos del HTML
+        titulo_form = request.form.get('titulo')
+        mensaje_form = request.form.get('mensaje')
+        
+        # Obtenemos el ID del maestro logueado desde la sesión
+        # OJO: Cambia 'id_usuario' por el nombre real de tu variable de sesión si es diferente
+        autor_id = session.get('id_usuario') 
+
+        # Creamos el anuncio usando EXACTAMENTE las columnas de tu imagen
+        nuevo_anuncio = Anuncios(
+            titulo=titulo_form,
+            contenido=mensaje_form,              # Tu tabla lo llama 'contenido'
+            dirigido_a=f'Grado_{id_grado}',      # Guardamos a qué grado va dirigido
+            id_usuario_autor=autor_id            # Guardamos quién lo escribió
+            # Nota: No enviamos 'prioridad' porque tu tabla no tiene esa columna
+        )
+        
+        db.session.add(nuevo_anuncio)
+        db.session.commit()
+        
+        # Recargamos la página para ver el anuncio nuevo
+        return redirect(url_for('maestro_anuncios', id_grado=id_grado))
+
+    # Mostrar la página con el historial de anuncios
+    anuncios = Anuncios.query.filter(
+        Anuncios.dirigido_a.in_(['Todos', f'Grado_{id_grado}'])
+    ).order_by(Anuncios.fecha_publicacion.desc()).all()
+
+    return render_template('Panel_Maestro/anuncios.html', anuncios=anuncios, grado=grado)
+
 @app.route('/maestro/examenes/revision/<int:id_grado>', methods=['GET', 'POST'])
 def revisar_examenes(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
@@ -1056,6 +1096,122 @@ def eliminar_seccion(id_seccion):
         flash("No se puede eliminar la sección: tiene alumnos vinculados.", "error")
     
     return redirect(url_for('configuracion_academica'))
+
+
+# ==========================================
+# GESTIÓN Y EDICIÓN DE ASIGNACIONES
+# ==========================================
+
+@app.route('/maestro/grado/<int:id_grado>/gestionar_asignaciones')
+def gestionar_asignaciones(id_grado):
+    # 1. Validar que sea un maestro logueado
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    grado = Grados.query.get_or_404(id_grado)
+
+    # 2. Obtener todas las clases (materias) que pertenecen a este grado
+    # Nota: Asegúrate de que tu modelo Clases tenga la columna id_grado
+    clases_del_grado = Clases.query.filter_by(id_grado=id_grado).all()
+    
+    # Extraemos solo los IDs de esas clases (ej: [1, 2, 5])
+    ids_clases = [clase.id_clase for clase in clases_del_grado]
+
+    # 3. Buscar las tareas y exámenes usando el id_clase
+    if ids_clases:
+        tareas = Tareas.query.filter(Tareas.id_clase.in_(ids_clases)).order_by(Tareas.fecha_entrega.desc()).all()
+        examenes = Examenes.query.filter(Examenes.id_clase.in_(ids_clases)).order_by(Examenes.fecha_limite.desc()).all()
+    else:
+        # Si el grado no tiene clases aún, enviamos listas vacías
+        tareas = []
+        examenes = []
+
+    return render_template('Panel_Maestro/gestionar_asignaciones.html', 
+                           grado=grado, 
+                           tareas=tareas, 
+                           examenes=examenes)
+
+
+@app.route('/maestro/tarea/borrar/<int:id_tarea>', methods=['POST'])
+def borrar_tarea(id_tarea):
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    id_grado = request.form.get('id_grado')
+    tarea = Tareas.query.get_or_404(id_tarea)
+
+    try:
+        db.session.delete(tarea)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al borrar tarea: {e}")
+
+    return redirect(url_for('gestionar_asignaciones', id_grado=id_grado))
+
+
+@app.route('/maestro/examen/borrar/<int:id_examen>', methods=['POST'])
+def borrar_examen(id_examen):
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    id_grado = request.form.get('id_grado')
+    examen = Examenes.query.get_or_404(id_examen)
+
+    try:
+        db.session.delete(examen)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al borrar examen: {e}")
+
+    return redirect(url_for('gestionar_asignaciones', id_grado=id_grado))
+
+# ==========================================
+# RUTAS PARA EDITAR DESDE EL MODAL
+# ==========================================
+
+@app.route('/maestro/tarea/editar/<int:id_tarea>', methods=['POST'])
+def editar_tarea(id_tarea):
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    tarea = Tareas.query.get_or_404(id_tarea)
+    clase = Clases.query.get(tarea.id_clase) # Para saber a qué grado regresar
+
+    # Actualizamos los datos con lo que venga del modal
+    tarea.titulo = request.form.get('titulo')
+    tarea.descripcion = request.form.get('descripcion')
+    
+    fecha_str = request.form.get('fecha_entrega')
+    if fecha_str:
+        # Convertimos la fecha del input datetime-local a formato de base de datos
+        tarea.fecha_entrega = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M')
+    
+    db.session.commit()
+    return redirect(url_for('gestionar_asignaciones', id_grado=clase.id_grado))
+
+
+@app.route('/maestro/examen/editar/<int:id_examen>', methods=['POST'])
+def editar_examen(id_examen):
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    examen = Examenes.query.get_or_404(id_examen)
+    clase = Clases.query.get(examen.id_clase)
+
+    # Actualizamos los datos
+    examen.titulo = request.form.get('titulo')
+    examen.descripcion = request.form.get('descripcion')
+    examen.modalidad = request.form.get('modalidad')
+    examen.puntos_maximos = request.form.get('puntos_maximos')
+    
+    fecha_str = request.form.get('fecha_limite')
+    if fecha_str:
+        examen.fecha_limite = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M')
+        
+    db.session.commit()
+    return redirect(url_for('gestionar_asignaciones', id_grado=clase.id_grado))
 
 if __name__ == '__main__':
     app.run(debug=True)
