@@ -126,7 +126,7 @@
                 <div class="news-scroll-container">
                     {% for anuncio in anuncios %}
                     <div class="news-item">
-                        <small>{{ anuncio.fecha_publicacion.strftime('%d/%m') }} • {{ anuncio.usuario_autor.nombre }}</small>
+                        <small>{{ anuncio.fecha_publicacion.strftime('%d/%m') }} • {{ anuncio.id_usuario_autor.nombre }}</small>
                         <p><strong>{{ anuncio.titulo }}:</strong> {{ anuncio.contenido }}</p>
                     </div>
                     {% else %}

@@ -119,7 +119,10 @@ class Anuncios(db.Model):
     dirigido_a = db.Column(db.String(20))
     id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'))
     fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+<<<<<<< HEAD
+=======
     usuario_autor = db.relationship('Usuarios', backref='anuncios_creados', lazy=True)
+>>>>>>> f5d5762f4f26fa6e7fb212a2d9c008dfc45af4de
 
 # ==============================================================================
 # ----------------------------- MODELOS DE EXÁMENES ----------------------------
@@ -135,8 +138,6 @@ class Examenes(db.Model):
     archivo_ruta = db.Column(db.String(255), nullable=True)
     fecha_limite = db.Column(db.DateTime, nullable=True)
     puntos_maximos = db.Column(db.Float, default=100.0)
-    
-    # Relación
     clase = db.relationship('Clases', backref=db.backref('examenes', lazy=True))
 
 class PreguntasExamen(db.Model):
@@ -146,8 +147,6 @@ class PreguntasExamen(db.Model):
     texto_pregunta = db.Column(db.Text, nullable=False)
     tipo_pregunta = db.Column(db.String(50), nullable=False) # 'opcion_multiple', 'abierta', 'verdadero_falso'
     puntos = db.Column(db.Float, default=1.0)
-    
-    # Relación
     examen = db.relationship('Examenes', backref=db.backref('preguntas', lazy=True, cascade="all, delete-orphan"))
 
 class OpcionesPregunta(db.Model):
@@ -156,8 +155,6 @@ class OpcionesPregunta(db.Model):
     id_pregunta = db.Column(db.Integer, db.ForeignKey('preguntas_examen.id_pregunta'), nullable=False)
     texto_opcion = db.Column(db.String(255), nullable=False)
     es_correcta = db.Column(db.Boolean, default=False)
-    
-    # Relación
     pregunta = db.relationship('PreguntasExamen', backref=db.backref('opciones', lazy=True, cascade="all, delete-orphan"))
 
 class EntregasExamenes(db.Model):
@@ -167,6 +164,9 @@ class EntregasExamenes(db.Model):
     id_alumno = db.Column(db.Integer, db.ForeignKey('alumnos.id_alumno'), nullable=False)
     archivo_ruta = db.Column(db.String(255), nullable=True)
     respuestas_json = db.Column(db.JSON, nullable=True) 
-    # calificacion = db.Column(db.Float, nullable=True)  <-- ELIMINA O COMENTA ESTA LÍNEA
     estado = db.Column(db.String(50), default='entregado')
+<<<<<<< HEAD
     fecha_entrega = db.Column(db.DateTime, default=db.func.current_timestamp())
+=======
+    fecha_entrega = db.Column(db.DateTime, default=db.func.current_timestamp())
+>>>>>>> f5d5762f4f26fa6e7fb212a2d9c008dfc45af4de
