@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --primary-blue: #3b82f6;
+        --primary-blue-soft: #eff6ff;
+        --danger-main: #ef4444;
+        --danger-soft: #fef2f2;
+        --warning-main: #f59e0b;
+        --warning-soft: #fffbeb;
+        --success-main: #10b981;
+        --dark-text: #0f172a;
+        --muted-text: #64748b;
+        --border-color: #e2e8f0;
+        --bg-soft: #f8fafc;
+        --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+    }
+
+    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--dark-text); }
+    .viewport-container { padding: 40px 20px; max-width: 900px; margin: 0 auto; }
+
+    /* NAVEGACIÓN SUPERIOR */
+    .top-bar { display: flex; align-items: center; gap: 20px; margin-bottom: 35px; }
+    
+    .btn-back-circle {
+        width: 48px; height: 48px; background: white; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--muted-text); text-decoration: none; border: 1px solid var(--border-color);
+        transition: all 0.2s ease; font-size: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .btn-back-circle:hover { background: white; color: var(--dark-text); transform: translateX(-4px); border-color: #cbd5e1; }
+
+    .header-text h1 { font-weight: 800; margin: 0; font-size: 1.8rem; letter-spacing: -0.5px; }
+    .header-text p { color: var(--muted-text); margin: 4px 0 0 0; font-weight: 500; font-size: 0.95rem; }
+
+    /* TARJETA DEL FORMULARIO */
+    .form-card {
+        background: white; border-radius: 24px; box-shadow: var(--card-shadow);
+        padding: 35px; border: 1px solid rgba(255,255,255,0.5); margin-bottom: 40px;
+    }
+
+    .form-group { margin-bottom: 24px; }
+    .form-label { font-weight: 700; color: var(--dark-text); display: block; margin-bottom: 10px; font-size: 0.95rem; }
+    
+    .form-control {
+        width: 100%; padding: 14px 18px; border-radius: 14px; border: 2px solid var(--border-color);
+        background: var(--bg-soft); color: var(--dark-text); font-family: inherit;
+        font-size: 1rem; transition: all 0.2s ease; box-sizing: border-box;
+    }
+    .form-control:focus { border-color: var(--danger-main); background: white; outline: none; box-shadow: 0 0 0 4px var(--danger-soft); }
+    
+    textarea.form-control { resize: vertical; min-height: 140px; line-height: 1.5; }
+
+    /* SELECTOR DE PRIORIDAD */
+    .priority-selector { display: flex; gap: 15px; }
+    .priority-option { flex: 1; position: relative; }
+    .priority-option input { position: absolute; opacity: 0; cursor: pointer; }
+    .priority-label {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 12px; border-radius: 12px; border: 2px solid var(--border-color);
+        background: var(--bg-soft); font-weight: 600; font-size: 0.9rem;
+        cursor: pointer; transition: 0.2s; color: var(--muted-text);
+    }
+    
+    /* Estilos al seleccionar prioridad */
+    .priority-option input:checked + .priority-label.prioridad-normal { background: var(--primary-blue-soft); border-color: var(--primary-blue); color: var(--primary-blue); }
+    .priority-option input:checked + .priority-label.prioridad-importante { background: var(--warning-soft); border-color: var(--warning-main); color: var(--warning-main); }
+    .priority-option input:checked + .priority-label.prioridad-urgente { background: var(--danger-soft); border-color: var(--danger-main); color: var(--danger-main); }
+
+    /* BOTÓN ENVIAR */
+    .btn-submit {
+        background: var(--danger-main); color: white; border: none; width: 100%;
+        padding: 16px; border-radius: 14px; font-weight: 800; font-size: 1.05rem;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        transition: 0.3s; cursor: pointer; margin-top: 10px;
+    }
+    .btn-submit:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25); }
+
+    /* HISTORIAL DE ANUNCIOS */
+    .history-title { font-weight: 800; font-size: 1.3rem; margin-bottom: 20px; color: var(--dark-text); display: flex; align-items: center; gap: 10px; }
+    
+    .announcement-item {
+        background: white; border-radius: 16px; padding: 20px 25px;
+        margin-bottom: 15px; border-left: 5px solid var(--border-color);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    }
+    .announcement-item.urgente { border-left-color: var(--danger-main); }
+    .announcement-item.importante { border-left-color: var(--warning-main); }
+    .announcement-item.normal { border-left-color: var(--primary-blue); }
+
+    .announcement-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .announcement-title { font-weight: 700; margin: 0; color: var(--dark-text); font-size: 1.1rem; }
+    .announcement-date { font-size: 0.85rem; color: var(--muted-text); font-weight: 500; }
+    .announcement-body { color: var(--muted-text); font-size: 0.95rem; line-height: 1.5; margin: 0; }
+</style>
+
+<div class="viewport-container">
+    <div class="top-bar">
+        <a href="javascript:history.back()" class="btn-back-circle" title="Volver">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="header-text">
+            <h1>Panel de <span style="color: var(--danger-main);">Anuncios</span></h1>
+            <p>Enviar comunicado a <strong>{{ grado.nombre_grado }}</strong></p>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <form action="{{ url_for('maestro_anuncios', id_grado=grado.id_grado) }}" method="POST">
+            
+            <div class="form-group">
+                <label class="form-label" for="titulo">Título del Anuncio</label>
+                <input type="text" id="titulo" name="titulo" class="form-control" placeholder="Ej: Recordatorio de examen parcial..." required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Nivel de Prioridad</label>
+                <div class="priority-selector">
+                    <label class="priority-option">
+                        <input type="radio" name="prioridad" value="normal" checked>
+                        <div class="priority-label prioridad-normal">
+                            <i class="bi bi-info-circle"></i> Normal
+                        </div>
+                    </label>
+                    <label class="priority-option">
+                        <input type="radio" name="prioridad" value="importante">
+                        <div class="priority-label prioridad-importante">
+                            <i class="bi bi-star"></i> Importante
+                        </div>
+                    </label>
+                    <label class="priority-option">
+                        <input type="radio" name="prioridad" value="urgente">
+                        <div class="priority-label prioridad-urgente">
+                            <i class="bi bi-exclamation-triangle"></i> Urgente
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="mensaje">Mensaje</label>
+                <textarea id="mensaje" name="mensaje" class="form-control" placeholder="Escribe aquí las instrucciones o el comunicado para los estudiantes..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="bi bi-megaphone-fill"></i> Enviar Anuncio a {{ grado.nombre_grado }}
+            </button>
+        </form>
+    </div>
+
+    <div class="history-section">
+        <h3 class="history-title"><i class="bi bi-clock-history text-muted"></i> Anuncios Recientes</h3>
+        
+        {% if anuncios %}
+            {% for anuncio in anuncios %}
+            <div class="announcement-item {{ anuncio.prioridad }}">
+                <div class="announcement-header">
+                    <h4 class="announcement-title">{{ anuncio.titulo }}</h4>
+                    <span class="announcement-date">{{ anuncio.fecha.strftime('%d de %b, %Y') if anuncio.fecha else 'Reciente' }}</span>
+                </div>
+                <p class="announcement-body">{{ anuncio.mensaje }}</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 40px 20px; background: white; border-radius: 16px; border: 1px dashed var(--border-color);">
+                <i class="bi bi-chat-square-text text-muted" style="font-size: 2.5rem; display: block; margin-bottom: 10px;"></i>
+                <p style="color: var(--muted-text); font-weight: 500; margin: 0;">Aún no has enviado anuncios a este grado.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}
