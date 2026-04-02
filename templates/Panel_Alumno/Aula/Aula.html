@@ -121,10 +121,30 @@
             <section class="side-card announcement-box">
                 <div class="side-card-header">
                     <i class="bi bi-bell-fill"></i>
-                    <h3>Avisos</h3>
+                    <h3>Avisos de la Clase</h3>
                 </div>
                 <div class="announcement-content">
-                    <p class="announcement-text">Recuerden revisar los materiales de apoyo antes del examen.</p>
+                    {% if anuncios %}
+                        {% for anuncio in anuncios %}
+                            <div class="aviso-item" style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                                <strong style="display: block; font-size: 0.9rem; color: var(--text-color, #ffffff);">
+                                    {{ anuncio.titulo }}
+                                </strong>
+                                
+                                <p class="announcement-text" style="margin: 5px 0; font-size: 0.85rem;">
+                                    {{ anuncio.contenido }}
+                                </p>
+                                
+                                <span class="announcement-date" style="font-size: 0.7rem; opacity: 0.7;">
+                                    <i class="bi bi-calendar3"></i> {{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="announcement-text" style="opacity: 0.6; font-style: italic; text-align: center;">
+                            No hay avisos recientes para esta materia.
+                        </p>
+                    {% endif %}
                 </div>
             </section>
 
@@ -268,7 +288,7 @@
 
     .side-card { background: white; padding: 22px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
     .side-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .side-card-header i { color: var(--primary); font-size: 1.2rem; }
+    .side-card-header i { color: var(--materia-color); font-size: 1.2rem; }
     .side-card-header h3 { font-size: 1.05rem; font-weight: 800; margin: 0; }
     
     .announcement-box { background: var(--primary); color: white; border: none; }
@@ -282,7 +302,7 @@
         text-decoration: none; color: var(--dark); font-weight: 700; font-size: 0.85rem;
         border-radius: 10px; transition: 0.2s;
     }
-    .resource-item:hover { background: var(--light-bg); color: var(--primary); }    .badge-status { padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 800; }
+    .resource-item:hover { background: var(--light-bg); color: var(--materia-color); }    .badge-status { padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 800; }
     .badge-status.pending { background: #fee2e2; color: var(--warning); }
     .badge-status.delivered { background: #dcfce7; color: var(--success); }
 

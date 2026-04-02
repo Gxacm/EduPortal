@@ -5,7 +5,7 @@ from config import Config
 from sqlalchemy.orm import joinedload
 import os
 from werkzeug.utils import secure_filename
-from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Tareas, CiclosLectivos, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
+from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
 
 
 app = Flask(__name__)
@@ -655,45 +655,36 @@ def alumno_dashboard():
         return redirect(url_for('login'))
     
     user_id = session.get('user_id')
-    
-    # 1. Obtenemos el perfil del alumno
     alumno = Alumnos.query.filter_by(id_usuario=user_id).first()
     
     if not alumno:
         return "Perfil de alumno no encontrado", 404
 
-    # 2. Obtener Anuncios (Dirigidos a Alumnos o Todos)
-    anuncios = Anuncios.query.filter(Anuncios.dirigido_a.in_(['Todos', 'Alumnos']))\
-                             .order_by(Anuncios.fecha_publicacion.desc()).all()
 
-    # 3. Obtener Clases del Alumno (Basadas en su Grado)
-    # Navegamos: Alumno -> Sección -> Grado -> Clases
+    anuncios_globales = Anuncios.query.filter(
+        (Anuncios.id_clase == None), 
+        (Anuncios.dirigido_a.in_(['Todos', 'Alumnos']))
+    ).order_by(Anuncios.fecha_publicacion.desc()).all()
+
+
     clases_alumno = Clases.query.filter_by(id_grado=alumno.seccion.id_grado).all()
     ids_clases = [c.id_clase for c in clases_alumno]
-
-    # 4. Tareas Pendientes
-    # Usamos datetime.utcnow() para comparar con la fecha de entrega
     tareas_proximas = Tareas.query.filter(
         Tareas.id_clase.in_(ids_clases),
         Tareas.fecha_entrega >= datetime.utcnow()
     ).order_by(Tareas.fecha_entrega.asc()).limit(3).all()
 
-    # 5. Cálculo de Asistencia Real
     asistencias = Asistencias.query.filter_by(id_alumno=alumno.id_alumno).all()
     total_a = len(asistencias)
     presentes = len([a for a in asistencias if a.estado == 'Presente'])
     porcentaje_asistencia = round((presentes / total_a * 100)) if total_a > 0 else 0
 
-    # 6. Rendimiento (Promedio de Notas)
     notas_alumno = Notas.query.filter_by(id_alumno=alumno.id_alumno).all()
-    if notas_alumno:
-        promedio = sum(float(n.calificacion) for n in notas_alumno) / len(notas_alumno)
-    else:
-        promedio = 0
+    promedio = sum(float(n.calificacion) for n in notas_alumno) / len(notas_alumno) if notas_alumno else 0
 
     return render_template('Panel_Alumno/alumno_dash.html', 
                            alumno=alumno,
-                           anuncios=anuncios,
+                           anuncios=anuncios_globales, 
                            tareas=tareas_proximas,
                            asistencia_val=porcentaje_asistencia,
                            promedio_val=round(promedio, 1),
@@ -728,7 +719,7 @@ def obtener_color_materia(alumno, id_clase):
             return colors[index % len(colors)]
     return colors[0]
 
-# --- RUTA 1: VISTA DEL AULA ---
+
 @app.route('/alumno/aula/<int:id_clase>')
 def alumno_aula(id_clase):
     id_usuario_actual = session.get('user_id')
@@ -742,6 +733,11 @@ def alumno_aula(id_clase):
     # Color consistente
     materia_color = obtener_color_materia(alumno, id_clase)
 
+    # --- FILTRO DE ANUNCIOS DE CLASE ---
+    # Solo traemos los anuncios que pertenecen a esta clase específica
+    anuncios_clase = Anuncios.query.filter_by(id_clase=id_clase)\
+                             .order_by(Anuncios.fecha_publicacion.desc()).all()
+
     # Tareas y validación de entregas
     tareas_clase = Tareas.query.filter_by(id_clase=id_clase).order_by(Tareas.fecha_entrega.asc()).all()
     entregas = EntregasTareas.query.filter_by(id_alumno=alumno.id_alumno).all()
@@ -752,7 +748,8 @@ def alumno_aula(id_clase):
                            tareas=tareas_clase, 
                            entregadas_ids=entregadas_ids,
                            alumno=alumno,
-                           materia_color=materia_color)
+                           materia_color=materia_color,
+                           anuncios=anuncios_clase) # Variable para el aula
 
 # --- RUTA 2: DETALLE DE TAREA ---
 @app.route('/alumno/tarea/<int:id_tarea>')
@@ -1035,21 +1032,65 @@ def eliminar_usuario(id_usuario):
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
 def configuracion_academica():
-    if session.get('rol') != 1: return redirect(url_for('login'))
+    if session.get('rol') != 1: 
+        return redirect(url_for('login'))
+    
     if request.method == 'POST':
+        # --- Lógica de Grados ---
         if 'guardar_grado' in request.form:
             db.session.add(Grados(nombre_grado=request.form.get('nombre_grado')))
+        
+        # --- Lógica de Materias ---
         elif 'guardar_clase' in request.form:
-            nueva_clase = Clases(nombre_clase=request.form.get('nombre_clase'), id_maestro=request.form.get('id_maestro') or None, id_ciclo=1, id_grado=request.form.get('id_grado'))
+            nueva_clase = Clases(
+                nombre_clase=request.form.get('nombre_clase'), 
+                id_maestro=request.form.get('id_maestro') or None, 
+                id_ciclo=1, 
+                id_grado=request.form.get('id_grado')
+            )
             db.session.add(nueva_clase)
+        
+        # --- Lógica de Secciones ---
         elif 'guardar_seccion' in request.form:
-            nueva_seccion = Secciones(nombre_seccion=request.form.get('nombre_seccion'), id_grado=request.form.get('id_grado'))
+            nueva_seccion = Secciones(
+                nombre_seccion=request.form.get('nombre_seccion'), 
+                id_grado=request.form.get('id_grado')
+            )
             db.session.add(nueva_seccion)
+
+        # --- NUEVA LÓGICA: Guardar Horario ---
+        elif 'id_clase' in request.form and 'dia_semana' in request.form:
+            try:
+                # Convertimos los strings de la hora a objetos TIME de Python
+                h_inicio = datetime.strptime(request.form.get('hora_inicio'), '%H:%M').time()
+                h_fin = datetime.strptime(request.form.get('hora_fin'), '%H:%M').time()
+
+                nuevo_bloque = Horarios(
+                    id_clase=request.form.get('id_clase'),
+                    dia_semana=request.form.get('dia_semana'),
+                    hora_inicio=h_inicio,
+                    hora_fin=h_fin
+                )
+                db.session.add(nuevo_bloque)
+            except Exception as e:
+                flash(f"Error al procesar el horario: {str(e)}")
+                return redirect(url_for('configuracion_academica'))
+
         db.session.commit()
         flash("Registro guardado correctamente")
         return redirect(url_for('configuracion_academica'))
-    maestros_para_select = Maestros.query.all() 
-    return render_template('Admin_Panel/configuracion_academica.html', grados=Grados.query.all(), clases=Clases.query.all(), secciones=Secciones.query.all(), maestros=maestros_para_select)
+
+    # --- GET: Carga de datos para el template ---
+    maestros_para_select = Maestros.query.all()
+    # Importante: traer los horarios para que se vean en la tabla de la derecha
+    todos_los_horarios = Horarios.query.order_by(Horarios.dia_semana, Horarios.hora_inicio).all()
+    
+    return render_template('Admin_Panel/configuracion_academica.html', 
+                           grados=Grados.query.all(), 
+                           clases=Clases.query.all(), 
+                           secciones=Secciones.query.all(), 
+                           maestros=maestros_para_select,
+                           horarios=todos_los_horarios)
 
 @app.route('/admin/configuracion/eliminar_grado/<int:id_grado>', methods=['POST'])
 def eliminar_grado(id_grado):
@@ -1097,7 +1138,51 @@ def eliminar_seccion(id_seccion):
     
     return redirect(url_for('configuracion_academica'))
 
+@app.route('/admin/horarios/nuevo')
+def nuevo_horario():
+    if session.get('rol') != 1:
+        return redirect(url_for('login'))
+        
+    lista_clases = Clases.query.all() 
+    return render_template('Panel_Admin/crear_horario.html', clases=lista_clases)
 
+@app.route('/admin/guardar-horario', methods=['POST'])
+def guardar_horario():
+    if session.get('rol') != 1:
+        return redirect(url_for('login'))
+
+    id_clase = request.form.get('id_clase')
+    dia = request.form.get('dia_semana')
+    h_inicio_str = request.form.get('hora_inicio')
+    h_fin_str = request.form.get('hora_fin')
+
+    try:
+        # Convertimos los strings del input type="time" a objetos time de Python
+        h_inicio = datetime.strptime(h_inicio_str, '%H:%M').time()
+        h_fin = datetime.strptime(h_fin_str, '%H:%M').time()
+
+        # Validación básica: La hora de fin no puede ser antes que la de inicio
+        if h_fin <= h_inicio:
+            # Aquí podrías usar flash() para enviar un mensaje de error
+            return "Error: La hora de fin debe ser posterior a la de inicio", 400
+
+        nuevo_horario = Horarios(
+            id_clase=id_clase,
+            dia_semana=dia,
+            hora_inicio=h_inicio,
+            hora_fin=h_fin
+        )
+
+        db.session.add(nuevo_horario)
+        db.session.commit()
+        
+        return redirect(url_for('admin_dashboard')) 
+
+    except Exception as e:
+        db.session.rollback()
+        return f"Ocurrió un error al guardar: {str(e)}", 500
+    
+    
 # ==========================================
 # GESTIÓN Y EDICIÓN DE ASIGNACIONES
 # ==========================================

@@ -35,11 +35,13 @@
             <button class="tab-btn" onclick="openTab(event, 'tab-secciones')">
                 <i class="bi bi-grid-3x3-gap-fill"></i> Secciones
             </button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-horarios')">
+                <i class="bi bi-calendar-week-fill"></i> Horarios
+            </button>
         </div>
 
         <div id="tab-grados" class="tab-content active">
             <div class="grid-config">
-                
                 <div class="m-card">
                     <h3 class="m-section-title">Nuevo Grado</h3>
                     <form method="POST">
@@ -48,7 +50,6 @@
                         <button type="submit" name="guardar_grado" class="m-btn-config">Registrar Grado</button>
                     </form>
                 </div>
-
                 <div class="m-card">
                     <h3 class="m-section-title">Grados Registrados</h3>
                     <div class="table-responsive">
@@ -64,36 +65,28 @@
                                 <tr>
                                     <td>{{ g.nombre_grado }}</td>
                                     <td style="text-align: right;">
-                                        <form action="{{ url_for('eliminar_grado', id_grado=g.id_grado) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar este grado?');">
-                                            <button type="button" class="btn-icon delete" 
-                                                onclick="abrirModal('{{ g.id_grado }}', '{{ g.nombre_grado }}', 'grado')">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn-icon delete" onclick="abrirModal('{{ g.id_grado }}', '{{ g.nombre_grado }}', 'grado')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 {% else %}
-                                <tr>
-                                    <td colspan="2" class="text-muted" style="text-align: center; padding: 20px;">No hay grados registrados.</td>
-                                </tr>
+                                <tr><td colspan="2" class="text-muted" style="text-align: center; padding: 20px;">No hay grados.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
 
         <div id="tab-materias" class="tab-content">
             <div class="grid-config">
-                
                 <div class="m-card">
                     <h3 class="m-section-title">Nueva Materia</h3>
                     <form method="POST">
                         <label class="m-label">Nombre de la Materia</label>
                         <input type="text" name="nombre_clase" class="m-input" placeholder="Ej. Matemáticas" required>
-
                         <label class="m-label">Grado Destino</label>
                         <select name="id_grado" class="m-input" required>
                             <option value="" disabled selected>Seleccione un grado...</option>
@@ -101,21 +94,16 @@
                                 <option value="{{ g.id_grado }}">{{ g.nombre_grado }}</option>
                             {% endfor %}
                         </select>
-
                         <label class="m-label">Maestro Encargado</label>
                         <select name="id_maestro" class="m-input">
-                            <option value="">Sin asignar (Pendiente)</option>
+                            <option value="">Sin asignar</option>
                             {% for m in maestros %}
-                                <option value="{{ m.id_maestro }}">
-                                    {{ m.usuario.nombre }} {{ m.usuario.apellido }} - {{ m.especialidad }}
-                                </option>
+                                <option value="{{ m.id_maestro }}">{{ m.usuario.nombre }} {{ m.usuario.apellido }}</option>
                             {% endfor %}
                         </select>
-
-                        <button type="submit" name="guardar_clase" class="m-btn-config" style="margin-top: 15px;">Registrar Materia</button>
+                        <button type="submit" name="guardar_clase" class="m-btn-config">Registrar Materia</button>
                     </form>
                 </div>
-
                 <div class="m-card">
                     <h3 class="m-section-title">Materias Registradas</h3>
                     <div class="table-responsive">
@@ -124,7 +112,6 @@
                                 <tr>
                                     <th>Materia</th>
                                     <th>Grado</th>
-                                    <th>Maestro</th>
                                     <th style="text-align: right;">Acciones</th>
                                 </tr>
                             </thead>
@@ -132,87 +119,58 @@
                                 {% for c in clases %}
                                 <tr>
                                     <td><strong>{{ c.nombre_clase }}</strong></td>
-                                    <td>
-                                        <span class="badge-grado">{{ c.grado.nombre_grado if c.grado else 'No asignado' }}</span>
-                                    </td>
-                                    <td>
-                                        {{ c.maestro_titular.usuario.nombre ~ ' ' ~ c.maestro_titular.usuario.apellido if c.maestro_titular else 'Por asignar' }}
-                                    </td>
+                                    <td><span class="badge-grado">{{ c.grado.nombre_grado }}</span></td>
                                     <td style="text-align: right;">
-                                        <form action="{{ url_for('eliminar_materia', id_clase=c.id_clase) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta materia?');">
-                                            <button type="button" class="btn-icon delete" onclick="abrirModal('{{ c.id_clase }}', '{{ c.nombre_clase }}', 'materia')">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>                                     
+                                        <button type="button" class="btn-icon delete" onclick="abrirModal('{{ c.id_clase }}', '{{ c.nombre_clase }}', 'materia')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="4" class="text-muted" style="text-align: center; padding: 20px;">No hay materias registradas.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
 
         <div id="tab-secciones" class="tab-content">
             <div class="grid-config">
-                
                 <div class="m-card">
                     <h3 class="m-section-title">Nueva Sección</h3>
                     <form method="POST">
                         <label class="m-label">Nombre de la Sección</label>
                         <input type="text" name="nombre_seccion" class="m-input" placeholder="Ej. Sección A" required>
-                        
                         <label class="m-label" style="margin-top: 15px;">Asignar a Grado</label>
                         <select name="id_grado" class="m-input" required>
-                            <option value="" disabled selected>Seleccione un grado...</option>
+                            <option value="" disabled selected>Seleccione...</option>
                             {% for g in grados %}
                             <option value="{{ g.id_grado }}">{{ g.nombre_grado }}</option>
                             {% endfor %}
                         </select>
-
                         <button type="submit" name="guardar_seccion" class="m-btn-config">Registrar Sección</button>
                     </form>
                 </div>
-
-               <div class="m-card">
+                <div class="m-card">
                     <h3 class="m-section-title">Secciones Registradas</h3>
                     <div class="table-responsive">
                         <table class="m-table">
                             <thead>
                                 <tr>
                                     <th>Sección</th>
-                                    <th>Grado Asignado</th>
+                                    <th>Grado</th>
                                     <th style="text-align: right;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for s in secciones %}
                                 <tr>
-                                    <td>
-                                        <span class="badge-count" style="background: #ecfdf5; color: #059669; border: 1px solid #d1fae5;">
-                                            {{ s.nombre_seccion }}
-                                        </span>
-                                    </td>
+                                    <td><span class="badge-count">{{ s.nombre_seccion }}</span></td>
                                     <td>{{ s.grado.nombre_grado }}</td>
                                     <td style="text-align: right;">
-                                        <form action="{{ url_for('eliminar_seccion', id_seccion=s.id_seccion) }}" method="POST" onsubmit="return confirm('¿Eliminar esta sección?');">
-                                            <button type="button" class="btn-icon delete" 
-                                                onclick="abrirModal('{{ s.id_seccion }}', '{{ s.nombre_seccion }}', 'seccion')">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="3" class="text-muted" style="text-align: center; padding: 20px;">
-                                        No hay secciones registradas en la base de datos.
+                                        <button type="button" class="btn-icon delete" onclick="abrirModal('{{ s.id_seccion }}', '{{ s.nombre_seccion }}', 'seccion')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -222,19 +180,94 @@
                 </div>
             </div>
         </div>
+
+        <div id="tab-horarios" class="tab-content">
+            <div class="grid-config">
+                <div class="m-card">
+                    <h3 class="m-section-title">Nuevo Bloque de Horario</h3>
+                    <form action="{{ url_for('guardar_horario') }}" method="POST">
+                        <label class="m-label">Seleccionar Clase</label>
+                        <select name="id_clase" class="m-input" required>
+                            <option value="" disabled selected>Materia - Grado</option>
+                            {% for c in clases %}
+                                <option value="{{ c.id_clase }}">{{ c.nombre_clase }} ({{ c.grado.nombre_grado }})</option>
+                            {% endfor %}
+                        </select>
+
+                        <label class="m-label" style="margin-top: 15px;">Día</label>
+                        <select name="dia_semana" class="m-input" required>
+                            <option value="Lunes">Lunes</option>
+                            <option value="Martes">Martes</option>
+                            <option value="Miercoles">Miércoles</option>
+                            <option value="Jueves">Jueves</option>
+                            <option value="Viernes">Viernes</option>
+                        </select>
+
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <div style="flex: 1;">
+                                <label class="m-label">Inicio</label>
+                                <input type="time" name="hora_inicio" class="m-input" required>
+                            </div>
+                            <div style="flex: 1;">
+                                <label class="m-label">Fin</label>
+                                <input type="time" name="hora_fin" class="m-input" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="m-btn-config">Asignar al Horario</button>
+                    </form>
+                </div>
+
+                <div class="m-card">
+                    <h3 class="m-section-title">Horarios Configurados</h3>
+                    <div class="table-responsive">
+                        <table class="m-table">
+                            <thead>
+                                <tr>
+                                    <th>Día / Clase</th>
+                                    <th>Horario</th>
+                                    <th style="text-align: right;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if horarios %}
+                                    {% for h in horarios %}
+                                    <tr>
+                                        <td>
+                                            <div style="font-size: 0.75rem; color: var(--accent-green); font-weight: 800; text-transform: uppercase;">{{ h.dia_semana }}</div>
+                                            <strong>{{ h.clase.nombre_clase }}</strong>
+                                        </td>
+                                        <td style="font-size: 0.85rem;">{{ h.hora_inicio.strftime('%H:%M') }} - {{ h.hora_fin.strftime('%H:%M') }}</td>
+                                        <td style="text-align: right;">
+                                            <button type="button" class="btn-icon delete" onclick="abrirModal('{{ h.id_horario }}', '{{ h.clase.nombre_clase }} ({{ h.dia_semana }})', 'horario')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr><td colspan="3" class="text-muted" style="text-align: center; padding: 20px;">No hay horarios registrados.</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <div id="modalDelete" class="modal-overlay">
-    <div class="modal-card">
-        <div class="modal-alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        <h3 class="m-section-title">¿Eliminar registro?</h3>
-        <p class="modal-desc">Estás a punto de borrar permanentemente:<br><strong id="delNombre"></strong></p>
-        <form id="formDelete" method="POST" class="modal-form">
-            <button type="button" onclick="cerrarModal()" class="btn-cancel">Cancelar</button>
-            <button type="submit" class="btn-confirm-delete">Eliminar Permanentemente</button>
-        </form>
+        <div class="modal-card">
+            <div class="modal-alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <h3 class="m-section-title">¿Eliminar registro?</h3>
+            <p class="modal-desc">Estás a punto de borrar permanentemente:<br><strong id="delNombre"></strong></p>
+            <form id="formDelete" method="POST" class="modal-form">
+                <button type="button" onclick="cerrarModal()" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-confirm-delete">Eliminar Permanentemente</button>
+            </form>
+        </div>
     </div>
-</div>
 </div>
 
 <style>
@@ -246,12 +279,10 @@
         --accent-green: #059669;
     }
 
-    /* --- Base --- */
     body, html { height: 100%; margin: 0; }
     .viewport-wrapper { min-height: 100vh; background-color: var(--bg); padding: 40px 20px; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; }
     .main-content-box { max-width: 1050px; width: 100%; margin: 0 auto; }
     
-    /* --- Header & Top Bar --- */
     .top-action-bar { display: flex; justify-content: flex-end; margin-bottom: 20px; }
     .chip-back { background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: flex; align-items: center; }
     .chip-back:hover { background: #fee2e2;  color: #ef4444;  transform: translateY(-2px); }
@@ -262,7 +293,6 @@
     .badge-group { display: flex; justify-content: center; }
     .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--accent-green); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
 
-    /* --- Sistema de Pestañas (Tabs) --- */
     .tabs-container { display: flex; gap: 10px; margin-bottom: 2rem; background: white; padding: 10px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
     .tab-btn { flex: 1; padding: 14px; border: none; background: transparent; font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 12px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .tab-btn:hover { background: var(--bg); color: var(--dark); }
@@ -272,12 +302,10 @@
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* --- Grid & Cards --- */
     .grid-config { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
     .m-card { background: white; padding: 2.5rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03); }
     .m-section-title { font-weight: 800; color: var(--dark); margin-bottom: 1.5rem; font-size: 1.2rem; }
 
-    /* --- Formularios --- */
     .m-label { display: block; font-weight: 800; color: var(--dark); margin-bottom: 8px; font-size: 0.9rem; }
     .m-input { width: 100%; padding: 14px 18px; border-radius: 14px; background-color: var(--bg); border: 2px solid transparent; color: var(--dark); font-weight: 600; box-sizing: border-box; transition: 0.3s; font-family: inherit; }
     .m-input:focus { outline: none; border-color: var(--accent-green); background-color: white; }
@@ -285,7 +313,6 @@
     .m-btn-config { background: var(--accent-green); color: white; width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 20px; font-size: 0.95rem; }
     .m-btn-config:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(5, 150, 105, 0.2); }
 
-    /* --- Tablas Modernas --- */
     .table-responsive { overflow-x: auto; }
     .m-table { width: 100%; border-collapse: collapse; }
     .m-table th { text-align: left; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid var(--bg); }
@@ -295,14 +322,6 @@
     .btn-icon:hover { transform: scale(1.05); background: #ef4444; color: white; }
     .text-muted { color: var(--muted); }
 
-    /* --- Responsive --- */
-    @media (max-width: 768px) {
-        .grid-config { grid-template-columns: 1fr; }
-        .tabs-container { flex-direction: column; }
-        .m-card { padding: 1.5rem; }
-    }
-
-    /* Modal Estilo Usuarios */
     .modal-overlay { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
         background: rgba(43, 54, 116, 0.2); backdrop-filter: blur(8px); 
@@ -339,33 +358,32 @@
         evt.currentTarget.classList.add("active");
     }
 
-    // Nueva función dinámica para abrir el modal
     function abrirModal(id, nombre, tipo) {
-    const displayNombre = document.getElementById('delNombre');
-    const form = document.getElementById('formDelete');
-    const modal = document.getElementById('modalDelete');
+        const displayNombre = document.getElementById('delNombre');
+        const form = document.getElementById('formDelete');
+        const modal = document.getElementById('modalDelete');
 
-    displayNombre.innerText = nombre;
-    
-    // Ajustado exactamente a las rutas de tu app.py
-    let url = "";
-    if (tipo === 'grado') {
-        url = "/admin/configuracion/eliminar_grado/" + id;
-    } else if (tipo === 'materia') {
-        url = "/admin/configuracion/eliminar_materia/" + id;
-    } else if (tipo === 'seccion') {
-        url = "/admin/configuracion/eliminar_seccion/" + id;
-    }
-    
-    form.action = url;
-    modal.style.display = 'flex';
+        displayNombre.innerText = nombre;
+        
+        let url = "";
+        if (tipo === 'grado') {
+            url = "/admin/configuracion/eliminar_grado/" + id;
+        } else if (tipo === 'materia') {
+            url = "/admin/configuracion/eliminar_materia/" + id;
+        } else if (tipo === 'seccion') {
+            url = "/admin/configuracion/eliminar_seccion/" + id;
+        } else if (tipo === 'horario') {
+            url = "/admin/horario/eliminar/" + id;
+        }
+        
+        form.action = url;
+        modal.style.display = 'flex';
     }
 
     function cerrarModal() {
         document.getElementById('modalDelete').style.display = 'none';
     }
 
-    // Cerrar modal si hacen clic fuera de la tarjeta blanca
     window.onclick = function(event) {
         let modal = document.getElementById('modalDelete');
         if (event.target == modal) {

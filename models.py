@@ -8,6 +8,7 @@ class Roles(db.Model):
     __tablename__ = 'roles'
     id_rol = db.Column(db.Integer, primary_key=True)
     nombre_rol = db.Column(db.String(20), nullable=False, unique=True)
+    
     usuarios = db.relationship('Usuarios', backref='rol', lazy=True)
 
 class Usuarios(db.Model):
@@ -30,6 +31,7 @@ class CiclosLectivos(db.Model):
     id_ciclo = db.Column(db.Integer, primary_key=True)
     nombre_ciclo = db.Column(db.String(20), nullable=False)
     estado = db.Column(db.Boolean, default=True)
+
     clases = db.relationship('Clases', backref='ciclo', lazy=True)
 
 class Grados(db.Model):
@@ -46,6 +48,16 @@ class Secciones(db.Model):
     nombre_seccion = db.Column(db.String(1), nullable=False)
     id_grado = db.Column(db.Integer, db.ForeignKey('grados.id_grado'))
     alumnos = db.relationship('Alumnos', backref='seccion', lazy=True)
+    
+class Horarios(db.Model):
+    __tablename__ = 'horarios'
+    id_horario = db.Column(db.Integer, primary_key=True)
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=False)
+    dia_semana = db.Column(db.String(15), nullable=False)
+    hora_inicio = db.Column(db.Time, nullable=False)
+    hora_fin = db.Column(db.Time, nullable=False)
+
+    clase = db.relationship('Clases', backref=db.backref('bloques_horario', lazy=True))
 
 # 3. PERFILES
 class Maestros(db.Model):

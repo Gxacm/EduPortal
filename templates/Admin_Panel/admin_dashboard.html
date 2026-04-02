@@ -18,7 +18,7 @@
 
         <div class="kpi-grid">
             <div class="kpi-card purple">
-                <div class="kpi-icon"><i class="bi bi-people"></i></div>
+                <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
                 <div class="kpi-data">
                     <span class="kpi-value counter">{{ total_alumnos|default(0) }}</span>
                     <span class="kpi-label">Alumnos Matriculados</span>
@@ -32,14 +32,14 @@
                 </div>
             </div>
             <div class="kpi-card blue">
-                <div class="kpi-icon"><i class="bi bi-book"></i></div>
+                <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
                 <div class="kpi-data">
                     <span class="kpi-value">{{ porcentaje_asistencia|default(0) }}%</span>
                     <span class="kpi-label">Asistencia Promedio</span>
                 </div>
             </div>
             <div class="kpi-card orange">
-                <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="kpi-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
                 <div class="kpi-data">
                     <span class="kpi-value">{{ alertas_notas|default(0) }}</span>
                     <span class="kpi-label">Alertas de Notas (< 70)</span>
