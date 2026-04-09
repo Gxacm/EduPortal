@@ -6,13 +6,13 @@
         
         <div class="top-action-bar">
             {% set dash_url = 'admin_dashboard' if session.rol == 1 else 'maestro_dashboard' if session.rol == 2 else 'alumno_dashboard' %}
-            <a href="{{ url_for(dash_url) }}" class="chip-back">
-                <i class="bi bi-arrow-left"></i> Volver al Panel
+            <a href="{{ url_for(dash_url) }}" class="btn-return ">
+                <i class="bi bi-arrow-left" style="margin-right: 5px;"></i> Volver al Panel
             </a>
         </div>
 
         <div class="profile-container">
-            <h2 class="page-title">Configuración de Perfil</h2>
+            <h2 class="page-title">Mi Cuenta</h2>
             
             <div class="profile-card">
                 <div class="profile-header">
@@ -47,15 +47,9 @@
                             <p>{{ perfil.carnet }}</p>
                         {% else %}
                             <label>Acceso</label>
-                            <p>Administrador Total</p>
+                            <p>Administrador del Sistema</p>
                         {% endif %}
                     </div>
-                </div>
-
-                <div class="actions-footer">
-                    <button class="btn-edit-profile">
-                        <i class="bi bi-pencil-square"></i> Editar Información
-                    </button>
                 </div>
             </div>
         </div>
@@ -64,10 +58,9 @@
 
 <style>
     .viewport-wrapper { 
-        min-height: 100vh; 
+        min-height: calc(100vh - 75px); 
         background-color: var(--bg); 
         padding: 40px 20px;
-        font-family: 'Plus Jakarta Sans', sans-serif;
         display: flex;
         justify-content: center;
         align-items: flex-start;
@@ -79,85 +72,69 @@
 
     .page-title { color: var(--dark); font-weight: 800; margin-bottom: 25px; font-size: 1.8rem; }
 
-    /* TARJETA CON MÁS AIRE */
+    /* TARJETA DE PERFIL */
     .profile-card { 
         background: white; 
-        padding: 45px; /* Aumentado de 35px */
-        border-radius: 28px; 
-        box-shadow: 0 15px 50px rgba(0,0,0,0.03); 
-        border: 1px solid #f8fafc;
+        padding: 45px; 
+        border-radius: 24px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02); 
+        border: 1px solid #edf2f7;
     }
 
-    .profile-header { display: flex; align-items: center; gap: 25px; margin-bottom: 35px; }
+    .profile-header { display: flex; align-items: center; gap: 25px; margin-bottom: 10px; }
 
     .avatar-circle { 
-        width: 85px; height: 85px; border-radius: 22px; 
-        background: var(--primary); color: white; 
+        width: 90px; height: 90px; border-radius: 20px; 
+        background: var(--brand-color); /* COLOR DINÁMICO */
+        color: white; 
         display: flex; align-items: center; justify-content: center; 
-        font-size: 2rem; font-weight: 800;
-        box-shadow: 0 10px 20px rgba(67, 97, 238, 0.15);
+        font-size: 2.2rem; font-weight: 800;
+        box-shadow: 0 10px 25px var(--brand-light); /* SOMBRA DINÁMICA */
+        transition: transform 0.3s ease;
     }
 
-    .user-info-text h3 { margin: 0; color: #1e293b; font-size: 1.6rem; font-weight: 700; }
-    .badge-role { color: var(--primary); font-weight: 700; font-size: 0.95rem; opacity: 0.9; }
+    .user-info-text h3 { margin: 0; color: var(--dark); font-size: 1.6rem; font-weight: 800; }
+    .badge-role { 
+        color: var(--brand-color); /* COLOR DINÁMICO */
+        font-weight: 700; 
+        font-size: 0.95rem; 
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 
     .separator { border: 0; border-top: 1px solid #f1f5f9; margin: 35px 0; }
 
-    /* DISTRIBUCIÓN EN 3 COLUMNAS */
+    /* GRID DE INFORMACIÓN */
     .info-grid { 
         display: grid; 
-        grid-template-columns: 1.2fr 1fr 1fr; /* Le da un poco más de espacio al correo */
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 30px; 
-        margin-bottom: 10px;
     }
 
     .info-group label { 
         display: block; 
-        font-size: 0.75rem; 
-        color: #94a3b8; /* Gris más suave para no saturar */
-        font-weight: 700; 
+        font-size: 0.7rem; 
+        color: var(--muted); 
+        font-weight: 800; 
         text-transform: uppercase; 
-        letter-spacing: 0.8px;
-        margin-bottom: 10px;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
     }
 
     .info-group p { 
         font-weight: 600; 
-        color: #334155; 
+        color: var(--dark); 
         margin: 0; 
         font-size: 1.05rem;
-        word-break: break-all; /* Evita que correos largos rompan el diseño */
     }
 
-    .actions-footer { margin-top: 45px; }
+    /* CHIP VOLVER DINÁMICO */
+    .btn-return { background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: flex; align-items: center; }
+    .btn-return:hover{ background: #fee2e2;  color: #ef4444;  transform: translateY(-2px); }
 
-    .btn-edit-profile { 
-        background: #f8fafc; 
-        color: #475569; 
-        border: 1px solid #e2e8f0; 
-        padding: 12px 24px; 
-        border-radius: 14px; 
-        font-weight: 700; 
-        cursor: pointer; 
-        transition: 0.3s;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+    @media (max-width: 768px) {
+        .info-grid { grid-template-columns: 1fr; }
+        .profile-header { flex-direction: column; text-align: center; }
     }
-
-    .btn-edit-profile:hover { 
-        background: var(--primary); 
-        color: white; 
-        border-color: var(--primary);
-        transform: translateY(-2px);
-    }
-
-    .chip-back { 
-        background: white; padding: 10px 22px; border-radius: 14px; 
-        font-size: 0.85rem; font-weight: 700; color: #64748b; 
-        text-decoration: none; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
-        display: flex; align-items: center; gap: 8px;
-    }
-    .chip-back:hover { background: #fee2e2;  color: #ef4444;  transform: translateY(-2px); }    
 </style>
 {% endblock %}

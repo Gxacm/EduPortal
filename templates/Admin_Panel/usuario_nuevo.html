@@ -38,35 +38,58 @@
             <div class="m-card" style="max-width: 750px; margin: 0 auto;">
                 <div class="m-card-body">
                     <form action="{{ url_for('crear_usuario_logica') }}" method="POST">
-                        <input type="hidden" name="id_rol" value="3"> <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <input type="hidden" name="id_rol" value="3"> 
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                             <div>
                                 <label class="m-label">Nombre</label>
-                                <input type="text" name="nombre" class="m-input" required placeholder="Ej. Juan">
+                                <input type="text" id="input-nombre" name="nombre" class="m-input" required placeholder="Ej. Juan">
                             </div>
                             <div>
                                 <label class="m-label">Apellido</label>
-                                <input type="text" name="apellido" class="m-input" required placeholder="Ej. Pérez">
+                                <input type="text" id="input-apellido" name="apellido" class="m-input" required placeholder="Ej. Pérez">
                             </div>
                         </div>
                         
                         <div style="margin-bottom: 1.5rem;">
-                            <label class="m-label">Correo Electrónico</label>
-                            <input type="email" name="correo" class="m-input" required placeholder="juan@ejemplo.com">
-                        </div>
-                        <div style="margin-bottom: 1.5rem;">
-                            <label class="m-label">Grado y Sección de Matrícula</label>
-                            <select name="id_seccion" class="m-input" required style="cursor: pointer;">
-                                <option value="" disabled selected>Seleccione el grado y sección</option>
-                                {% for sec in secciones %}
-                                    <option value="{{ sec.id_seccion }}">
-                                        {{ sec.grado.nombre_grado }} - Sección "{{ sec.nombre_seccion }}"
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            <label class="m-label">Correo Electrónico Institucional</label>
+                            
+                            <input type="email" id="input-correo-visual" class="m-input" required readonly 
+                                style="background-color: #f8faff; color: var(--primary); cursor: default;" 
+                                placeholder="Se generará automáticamente...">
+                                
+                            <input type="hidden" id="input-correo" name="correo">
+                            
                             <p style="margin-top: 8px; font-size: 0.75rem; color: var(--muted); font-weight: 600;">
-                                <i class="bi bi-info-circle"></i> Esto asignará al alumno a sus clases correspondientes automáticamente.
+                                <i class="bi bi-info-circle"></i> Generado automáticamente a partir del nombre y apellido.
                             </p>
                         </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label class="m-label">Grado de Matrícula</label>
+                                <select id="select-grado" class="m-input" required style="cursor: pointer;">
+                                    <option value="" disabled selected>Seleccione el grado</option>
+                                    {% set grados_unicos = [] %}
+                                    {% for sec in secciones %}
+                                        {% if sec.grado.id_grado not in grados_unicos %}
+                                            <option value="{{ sec.grado.id_grado }}">{{ sec.grado.nombre_grado }}</option>
+                                            {% set _ = grados_unicos.append(sec.grado.id_grado) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="m-label">Sección</label>
+                                <select id="select-seccion" name="id_seccion" class="m-input" required style="cursor: pointer;" disabled>
+                                    <option value="" disabled selected>Primero elige un grado</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <p style="margin-top: -0.5rem; margin-bottom: 1.5rem; font-size: 0.75rem; color: var(--muted); font-weight: 600;">
+                            <i class="bi bi-info-circle"></i> Esto asignará al alumno al <strong>{{ ciclo_actual_global }}</strong> automáticamente.
+                        </p>
                         
                         <div style="margin-bottom: 2rem;">
                             <label class="m-label">Contraseña Temporal</label>
@@ -100,17 +123,26 @@
                         <input type="hidden" name="id_rol" value="2"> <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                             <div>
                                 <label class="m-label">Nombre</label>
-                                <input type="text" name="nombre" class="m-input" required placeholder="Ej. María">
+                                <input type="text" id="input-nombre-maestro" name="nombre" class="m-input" required placeholder="Ej. Abigail">
                             </div>
                             <div>
                                 <label class="m-label">Apellido</label>
-                                <input type="text" name="apellido" class="m-input" required placeholder="Ej. Gómez">
+                                <input type="text" id="input-apellido-maestro" name="apellido" class="m-input" required placeholder="Ej. Gómez">
                             </div>
                         </div>
                         
                         <div style="margin-bottom: 1.5rem;">
-                            <label class="m-label">Correo Electrónico</label>
-                            <input type="email" name="correo" class="m-input" required placeholder="maria@ejemplo.com">
+                            <label class="m-label">Correo Electrónico Institucional</label>
+                            
+                            <input type="email" id="input-correo-maestro-visual" class="m-input" required readonly 
+                                style="background-color: #f8faff; color: var(--primary); cursor: default;" 
+                                placeholder="Se generará automáticamente...">
+                                
+                            <input type="hidden" id="input-correo-maestro" name="correo">
+                            
+                            <p style="margin-top: 8px; font-size: 0.75rem; color: var(--muted); font-weight: 600;">
+                                <i class="bi bi-info-circle"></i> Generado automáticamente a partir del nombre y apellido.
+                            </p>
                         </div>
                         
                         <div style="margin-bottom: 2rem;">
@@ -176,8 +208,8 @@
     .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
 
     /* CSS de las Pestañas (Igual que en Gestión de Usuarios) */
-    .tab-content { display: none !important; }
-    .tab-content.active { display: block !important; animation: fadeIn 0.4s ease; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
     .tabs-container { display: flex; gap: 10px; background: #eef2f8; padding: 8px; border-radius: 20px; }
     .tab-btn { flex: 1; padding: 14px; border: none; background: transparent; font-family: inherit; font-size: 1rem; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 15px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
@@ -226,6 +258,19 @@
 </style>
 
 <script>
+    window.onload = function() {
+        const tabActivaDesdeFlask = "{{ active_tab }}";
+        
+        // Si Python nos dice que la pestaña activa debe ser 'maestro'
+        if (tabActivaDesdeFlask === 'maestro') {
+            const botonMaestro = document.querySelector('button[onclick*="tab-maestro"]');
+            if (botonMaestro) {
+                // Forzamos el clic en el botón de maestro
+                openTab({ currentTarget: botonMaestro }, 'tab-maestro');
+            }
+        }
+    };
+
     // Script para manejar el cambio de pestañas
     function openTab(evt, tabName) {
         const contents = document.getElementsByClassName("tab-content");
@@ -239,6 +284,107 @@
         document.getElementById(tabName).classList.add("active");
         evt.currentTarget.classList.add("active");
     }
+
+    const mapaSecciones = {
+        {% for sec in secciones %}
+            "{{ sec.id_seccion }}": {
+                idGrado: "{{ sec.grado.id_grado }}",
+                nombreSeccion: "{{ sec.nombre_seccion }}"
+            },
+        {% endfor %}
+    };
+
+    const selectGrado = document.getElementById('select-grado');
+    const selectSeccion = document.getElementById('select-seccion');
+
+    selectGrado.addEventListener('change', function() {
+        const gradoSeleccionado = this.value;
+        
+        // Vaciamos el menú de secciones y lo habilitamos
+        selectSeccion.innerHTML = '<option value="" disabled selected>Seleccione la sección</option>';
+        selectSeccion.disabled = false;
+        
+        // Filtramos y llenamos solo con las secciones del grado elegido
+        let haySecciones = false;
+        for (const idSeccion in mapaSecciones) {
+            if (mapaSecciones[idSeccion].idGrado === gradoSeleccionado) {
+                const option = document.createElement('option');
+                option.value = idSeccion;
+                option.textContent = `Sección "${mapaSecciones[idSeccion].nombreSeccion}"`;
+                selectSeccion.appendChild(option);
+                haySecciones = true;
+            }
+        }
+        
+        // Si por algún motivo ese grado no tiene secciones creadas
+        if (!haySecciones) {
+            selectSeccion.innerHTML = '<option value="" disabled selected>No hay secciones en este grado</option>';
+            selectSeccion.disabled = true;
+        }
+    });
+
+    const inputNombre = document.getElementById('input-nombre');
+    const inputApellido = document.getElementById('input-apellido');
+    const inputCorreo = document.getElementById('input-correo');
+
+    // Función para quitar acentos y caracteres especiales
+    function limpiarTexto(texto) {
+        return texto
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Quita tildes
+            .replace(/[^a-z0-9]/g, "");     // Quita espacios o caracteres raros
+    }
+
+    function generarCorreo() {
+        const primerNombre = inputNombre.value.trim().split(' ')[0];
+        const primerApellido = inputApellido.value.trim().split(' ')[0];
+
+        if (primerNombre && primerApellido) {
+            const nombreLimpio = limpiarTexto(primerNombre);
+            const apellidoLimpio = limpiarTexto(primerApellido);
+            const correoGenerado = `${nombreLimpio}.${apellidoLimpio}@eduportal.edu`;
+            
+            // Llenamos el visual y el oculto
+            document.getElementById('input-correo-visual').value = correoGenerado;
+            inputCorreo.value = correoGenerado; 
+        } else {
+            document.getElementById('input-correo-visual').value = '';
+            inputCorreo.value = '';
+        }
+    }
+
+    inputNombre.addEventListener('input', generarCorreo);
+    inputApellido.addEventListener('input', generarCorreo);
+
+
+    const inputNombreMaestro = document.getElementById('input-nombre-maestro');
+    const inputApellidoMaestro = document.getElementById('input-apellido-maestro');
+    const inputCorreoMaestroVisual = document.getElementById('input-correo-maestro-visual');
+    const inputCorreoMaestroHidden = document.getElementById('input-correo-maestro');
+
+    function generarCorreoMaestro() {
+        // Usamos split(' ')[0] para tomar solo el primer nombre y primer apellido
+        const primerNombre = inputNombreMaestro.value.trim().split(' ')[0];
+        const primerApellido = inputApellidoMaestro.value.trim().split(' ')[0];
+
+        if (primerNombre && primerApellido) {
+            const nombreLimpio = limpiarTexto(primerNombre);
+            const apellidoLimpio = limpiarTexto(primerApellido);
+            const correoGenerado = `${nombreLimpio}.${apellidoLimpio}@eduportal.edu`;
+            
+            // Llenamos la caja que se ve y la que se envía
+            inputCorreoMaestroVisual.value = correoGenerado;
+            inputCorreoMaestroHidden.value = correoGenerado;
+        } else {
+            inputCorreoMaestroVisual.value = '';
+            inputCorreoMaestroHidden.value = '';
+        }
+    }
+
+    // Escuchamos cuando el usuario escribe en Nombre o Apellido del maestro
+    inputNombreMaestro.addEventListener('input', generarCorreoMaestro);
+    inputApellidoMaestro.addEventListener('input', generarCorreoMaestro);
 </script>
 
 {% endblock %}

@@ -3,220 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduControl</title>
+    <title>EduPortal</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='imagenes/uni.png') }}">
     
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
     <style>
-        :root {
-            --primary: #4318ff;
-            --dark: #2b3674;
-            --muted: #a3aed0;
-            --bg: #f4f7fe;
-            --danger: #ef4444;
-        }
+    :root {
+        /* 1. COLORES POR ROL (DINÁMICOS) */
+        {% if session.rol == 1 %}
+            --brand-color: #ef4444; 
+            --brand-color-rgb: 239, 68, 68;
+        {% elif session.rol == 2 %}
+            --brand-color: #22c55e; 
+            --brand-color-rgb: 34, 197, 94;
+        {% elif session.rol == 3 %}
+            --brand-color: #4318ff; 
+            --brand-color-rgb: 67, 24, 255;
+        {% else %}
+            --brand-color: #64748b;
+            --brand-color-rgb: 100, 116, 139;
+        {% endif %}
 
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg);
-        }
+        /* 2. VARIABLES MODO CLARO */
+        --bg-body: #f4f7fe;
+        --bg-card: #ffffff;
+        --bg-sidebar: #ffffff;
+        --bg-input: #f4f7fe;
+        --text-main: #1b2559;
+        --text-muted: #a3aed0;
+        --border-color: #edf2f7;
+        --hover-neutral: #f1f5f9;
+        --shadow: rgba(0, 0, 0, 0.05);
+        
+        --white: #ffffff;
+        --danger: #ff4757;
+        --accent-fun: #ff9922;
+    }
 
-        /* --- TOP NAVBAR --- */
-        .top-navbar {
-            height: 75px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 1000;
-        }
+    /* 3. MODO OSCURO (OVERRIDE) */
+    .dark-mode {
+        --bg-body: #0b1437;
+        --bg-card: #111c44;
+        --bg-sidebar: #1b254b;
+        --bg-input: #0b1437;
+        --text-main: #ffffff;
+        --text-muted: #8f9bba;
+        --border-color: #1b254b;
+        --hover-neutral: #1b2559;
+        --shadow: rgba(0, 0, 0, 0.3);
+    }
 
-        .navbar-left, .navbar-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+    body {
+        margin: 0; padding: 0;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        transition: background 0.3s ease, color 0.3s ease;
+    }
 
-        .brand-text {
-            font-weight: 800; 
-            color: var(--dark); 
-            margin-right: 15px; 
-            letter-spacing: -0.5px;
-            text-decoration: none;
-        }
+    /* NAVBAR CORREGIDA PARA MODO OSCURO */
+    .top-navbar {
+        height: 75px;
+        background: var(--bg-card);
+        border-bottom: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 1000;
+        transition: 0.3s;
+    }
 
-        .search-bar-container {
-            background: var(--bg);
-            padding: 10px 15px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 250px;
-            transition: 0.3s;
-        }
-        .search-bar-container input {
-            border: none; background: transparent; outline: none;
-            width: 100%; font-weight: 600; color: var(--dark);
-        }
+    .brand-text { font-family: 'Fredoka', sans-serif; font-size: 1.8rem; display: flex; align-items: center; }
+    .text-edu { color: var(--text-main); font-weight: 700; }
+    .text-portal { color: var(--brand-color); font-weight: 500; }
+    
+    /* EFECTO HOVER PARA EL LOGO */
+    .brand-link:hover .o-graduation {
+        transform: rotate(-12deg) scale(1.1); /* Inclinación juguetona */
+    }
 
-        /* Botón de Gestión (Corregido con vista) */
-        .nav-link-admin {
-            text-decoration: none;
-            color: var(--dark);
-            font-weight: 700;
-            font-size: 0.85rem;
-            padding: 10px 18px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.3s;
-            background: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-        }
-        .nav-link-admin:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-        }
+    .brand-link:hover .o-tassel {
+        transform: rotate(20deg);
+        transition: 0.3s;
+    }
+    /* Asegúrate de que la transición esté en la clase base para que sea suave */
+    .o-graduation { 
+        width: 26px; 
+        height: 26px; 
+        margin: 0 2px; 
+        position: relative; 
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center; 
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Efecto rebote */
+    }
 
-        .status-badge {
-            background: white; padding: 8px 15px; border-radius: 12px;
-            font-size: 0.8rem; font-weight: 700; color: var(--primary);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-        }
+    /* COMPONENTES DINÁMICOS */
+    .ciclo-label {
+        background: var(--bg-input);
+        padding: 6px 14px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+    }
 
-        .profile-trigger {
-            display: flex; align-items: center; gap: 10px;
-            cursor: pointer; padding: 5px 10px; border-radius: 15px;
-            transition: 0.2s;
-        }
-        .profile-trigger:hover { background: rgba(255,255,255,0.5); }
+    .search-input {
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        padding: 10px 15px 10px 40px;
+        border-radius: 12px;
+        width: 200px;
+        color: var(--text-main);
+        outline: none;
+    }
 
-        .avatar-img {
-            width: 40px; height: 40px; border-radius: 12px;
-            background: var(--primary); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 0.9rem;
-        }
+    .avatar {
+        width: 40px; height: 40px;
+        border-radius: 10px;
+        background: var(--brand-color);
+        color: white;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800;
+        box-shadow: 0 4px 10px var(--shadow);
+    }
 
-        .dropdown-menu {
-            position: absolute; top: 80px; right: 30px;
-            background: white; width: 220px; border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            display: none; flex-direction: column; padding: 10px;
-            animation: slideDown 0.3s ease-out;
-            border: 1px solid #f1f5f9;
-        }
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .dropdown-item {
-            padding: 12px 15px; text-decoration: none; color: var(--dark);
-            font-size: 0.85rem; font-weight: 600; border-radius: 12px;
-            display: flex; align-items: center; gap: 10px;
-            transition: 0.2s;
-        }
-        .dropdown-item:hover { background: var(--bg); color: var(--primary); }
-        .dropdown-item.danger { color: var(--danger); }
+    .menu-dropdown {
+        position: absolute; 
+        top: 85px; 
+        right: 40px;
+        background: var(--bg-card); 
+        width: 210px;
+        border-radius: 18px; 
+        border: 1px solid var(--border-color);
+        box-shadow: 0 15px 35px var(--shadow);
+        padding: 10px;
+        display: flex; 
+        flex-direction: column;        
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px) scale(0.95); 
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+        pointer-events: none; 
+        z-index: 1100;
+    }
 
-        .content-wrapper {
-            margin-top: 75px;
-            padding: 20px;
-        }
+    /* CLASE PARA MOSTRARLO */
+    .menu-dropdown.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1); 
+        pointer-events: auto;
+    }
+
+    .menu-item {
+        padding: 12px 15px; text-decoration: none; color: var(--text-main);
+        font-weight: 600; font-size: 0.85rem; border-radius: 10px;
+        display: flex; align-items: center; gap: 10px;
+    }
+
+    .menu-item:hover { background: var(--hover-neutral); }
+    .logout-item { color: var(--danger) !important; }
+    .logout-item:hover { background: #fee2e2;  color: #ef4444;}
+
+    .main-content { margin-top: 75px; padding: 30px; min-height: calc(100vh - 75px); }
+
+    /* Clases de apoyo */
+    .navbar-left, .navbar-right { display: flex; align-items: center; gap: 25px; }
+    .profile-trigger { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 5px 10px; border-radius: 12px; transition: 0.2s; }
+    .profile-trigger:hover { background: var(--hover-neutral); }
+    .user-info { text-align: right; line-height: 1.2; }
+    .user-name { display: block; font-weight: 800; font-size: 0.85rem; color: var(--text-main); }
+    .user-role-badge { font-size: 0.65rem; font-weight: 700; color: var(--brand-color); text-transform: uppercase; }
+    
+    /* LOGO ICON */
+    .o-graduation { width: 26px; height: 26px; margin: 0 2px; position: relative; display: inline-flex; align-items: center; justify-content: center; transition: 0.3s; }
+    .o-shape { width: 100%; height: 100%; background: var(--brand-color); clip-path: polygon(50% 0%, 100% 30%, 100% 45%, 85% 45%, 85% 85%, 15% 85%, 15% 45%, 0% 45%, 0% 30%); border-radius: 0 0 50% 50%; }
+    .o-inner { position: absolute; width: 10px; height: 8px; background: rgba(255,255,255,0.8); bottom: 5px; border-radius: 50%; }
+    .o-tassel { position: absolute; right: -2px; top: 30%; width: 3px; height: 11px; background: var(--accent-fun); border-radius: 2px; }
     </style>
 </head>
 <body>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('edu-theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
 
     <nav class="top-navbar">
         <div class="navbar-left">
-            <a href="{% if session.rol == 1 %}
-                {{ url_for('admin_dashboard') }}
-                {% elif session.rol == 2 %}
-                {{ url_for('maestro_dashboard') }}
-                {% elif session.rol == 3 %}
-                {{ url_for('alumno_dashboard') }}
-                {% else %}
-                {{ url_for('login') }}
-                {% endif %}" 
-            class="brand-text">EDU CONTROL
+            <a href="{% if session.rol == 1 %}{{ url_for('admin_dashboard') }}
+                     {% elif session.rol == 2 %}{{ url_for('maestro_dashboard') }}
+                     {% elif session.rol == 3 %}{{ url_for('alumno_dashboard') }}{% endif %}" 
+               class="brand-link" style="text-decoration: none;">
+                <div class="brand-text">
+                    <span class="text-edu">EDU</span>
+                    <span class="text-portal">
+                        p<div class="o-graduation"><div class="o-shape"></div><div class="o-inner"></div><div class="o-tassel"></div></div>rtal
+                    </span>
+                </div>
             </a>
-            
-            <div class="search-bar-container">
-                <i class="bi bi-search" style="color: var(--muted);"></i>
-                <input type="text" placeholder="Búsqueda global...">
+
+            <div class="ciclo-label">
+                <i class="bi bi-calendar-event" style="margin-right: 5px;"></i> {{ ciclo_actual_global }}
             </div>
         </div>
 
         <div class="navbar-right">
-            <div class="status-badge">
-                <i class="bi bi-calendar-check" style="margin-right: 5px;"></i> 
-                Ciclo <span id="year-automatico"></span>
+            <div class="search-container" style="position: relative;">
+                <i class="bi bi-search" style="position: absolute; left: 15px; top: 12px; color: var(--text-muted);"></i>
+                <input type="text" class="search-input" placeholder="Buscar...">
             </div>
 
             <div class="profile-trigger" id="profileBtn">
-                <div style="text-align: right; line-height: 1;">
-                    <div style="font-weight: 800; color: var(--dark); font-size: 0.85rem;">
-                        {{ session.nombre }}
-                    </div>
-                    <small style="color: var(--muted); font-size: 0.7rem; font-weight: 600;">
-                        {{ session.rol_nombre }}
-                    </small>
+                <div class="user-info">
+                    <span class="user-name">{{ session.nombre }}</span>
+                    <span class="user-role-badge">{{ session.rol_nombre }}</span>
                 </div>
-                <div class="avatar-img">{{ session.iniciales }}</div>
+                <div class="avatar">{{ session.iniciales }}</div>
             </div>
 
-            <div class="dropdown-menu" id="profileMenu">
-                <div style="padding: 10px 15px; border-bottom: 1px solid #f1f5f9; margin-bottom: 5px;">
-                    <p style="margin:0; font-size: 0.65rem; font-weight: 800; color: var(--muted); text-transform: uppercase;">Mi Cuenta</p>
-                </div>
-                <a href="{{ url_for('mi_cuenta') }}" class="dropdown-item">
-                    <i class="bi bi-person-circle"></i> Mi Perfil
-                </a>
-                <a href="{{ url_for('ajustes') }}" class="dropdown-item">
+            <div class="menu-dropdown" id="profileMenu">
+                {% if session.rol in [2, 3] %}
+                    <a href="{{ url_for('mi_cuenta') }}" class="menu-item">
+                        <i class="bi bi-person-circle"></i> Mi Perfil
+                    </a>
+                {% endif %}
+
+                <a href="{{ url_for('ajustes') }}" class="menu-item">
                     <i class="bi bi-gear-fill"></i> Ajustes
                 </a>
-                <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 8px 0;">
-                <a href="{{ url_for('logout') }}" class="dropdown-item danger">
+                
+                <hr style="margin: 5px 0; border: 0; border-top: 1px solid var(--border-color);">
+                
+                <a href="{{ url_for('logout') }}" class="menu-item logout-item">
                     <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
                 </a>
             </div>
         </div>
     </nav>
 
-    <div class="content-wrapper">
+    <div class="main-content">
         {% block content %}{% endblock %}
     </div>
 
     <script>
-        document.getElementById('year-automatico').innerText = new Date().getFullYear();
+    const profileBtn = document.getElementById('profileBtn');
+    const profileMenu = document.getElementById('profileMenu');
 
-        const profileBtn = document.getElementById('profileBtn');
-        const profileMenu = document.getElementById('profileMenu');
+    // Función centralizada para cerrar
+    const closeMenu = () => {
+        profileMenu.classList.remove('show');
+    };
 
-        profileBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            profileMenu.style.display = profileMenu.style.display === 'flex' ? 'none' : 'flex';
-        });
+    // Toggle con stopPropagation para que el clic en el botón no sea detectado por el document
+    profileBtn.onclick = (e) => {
+        e.stopPropagation();
+        profileMenu.classList.toggle('show');
+    };
 
-        document.addEventListener('click', () => {
-            profileMenu.style.display = 'none';
-        });
+    // Cerrar al hacer clic en cualquier parte (document)
+    document.addEventListener('click', closeMenu);
 
-        profileMenu.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    </script>
+    // Evitar que clics dentro del menú lo cierren (a menos que sea en un link)
+    profileMenu.onclick = (e) => e.stopPropagation();
+
+    // Cerrar al elegir una opción para que no esté abierto al regresar
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', closeMenu);
+    });
+
+    // Asegurar que esté cerrado al cargar la página (botón atrás)
+    window.onpageshow = (event) => {
+        closeMenu();
+    };
+</script>
 </body>
 </html>

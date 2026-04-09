@@ -25,43 +25,51 @@
 
     <div class="capsulas-grid">
         {% for clase in clases %}
-        {% set colors = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c', '#00bcd4'] %}
-        {% set current_color = colors[loop.index0 % colors|length] %}
+            {% set colors = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c', '#00bcd4'] %}
+            {% set current_color = colors[loop.index0 % colors|length] %}
 
-        <div class="capsula-clase" style="--materia-color: {{ current_color }};">
-            <div class="capsula-header">
-                <div class="header-overlay-pattern"></div>
-                <div class="header-top">
-                    <div class="icon-circle">
-                        <i class="bi bi-journal-code"></i>
-                    </div>
-                    <span class="ciclo-pill">{{ clase.ciclo.nombre_ciclo }}</span>
-                </div>
-            </div>
-            
-            <div class="capsula-body">
-                <div class="info-float-card">
-                    <h3>{{ clase.nombre_clase }}</h3>
-                    
-                    <div class="profesor-mention">
-                        <div class="avatar-frame">
-                            {{ clase.maestro_titular.usuario.nombre[0] }}{{ clase.maestro_titular.usuario.apellido[0] }}
+            <div class="capsula-clase" style="--materia-color: {{ current_color }};">
+                <div class="capsula-header">
+                    <div class="header-overlay-pattern"></div>
+                    <div class="header-top">
+                        <div class="icon-circle">
+                            <i class="bi bi-journal-code"></i>
                         </div>
-                        <div class="prof-text">
-                            <small>Docente</small>
-                            <strong>{{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}</strong>
-                        </div>
+                        <span class="ciclo-pill">{{ clase.ciclo.nombre_ciclo }}</span>
                     </div>
                 </div>
+                
+                <div class="capsula-body">
+                    <div class="info-float-card">
+                        <h3>{{ clase.nombre_clase }}</h3>
+                        
+                        <div class="profesor-mention">
+                            <div class="avatar-frame">
+                                {{ clase.maestro_titular.usuario.nombre[0] }}{{ clase.maestro_titular.usuario.apellido[0] }}
+                            </div>
+                            <div class="prof-text">
+                                <small>Docente</small>
+                                <strong>{{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}</strong>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="capsula-footer">
-                    <a href="{{ url_for('alumno_aula', id_clase=clase.id_clase) }}" class="btn-action-primary">
-                        <span>Ver Aula</span>
-                        <i class="bi bi-arrow-right"></i>
-                    </a>
+                    <div class="capsula-footer">
+                        <a href="{{ url_for('alumno_aula', id_clase=clase.id_clase) }}" class="btn-action-primary">
+                            <span>Ver Aula</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
+        {% else %}
+            <div class="empty-state-card">
+                <div class="empty-icon-wrapper">
+                    <i class="bi bi-stars"></i>
+                </div>
+                <h3>¡Todo listo para empezar!</h3>
+                <p>Aún no tienes materias asignadas en este ciclo lectivo. Pronto aparecerán aquí tus aulas virtuales.</p>
+            </div>
         {% endfor %}
     </div>
 </div>
@@ -235,6 +243,47 @@
         background: var(--materia-color);
         color: white;
         transform: scale(1.05);
+    }
+    .empty-state-card {
+        grid-column: 1 / -1; /* Hace que ocupe todo el ancho de la rejilla */
+        background: white;
+        padding: 3rem 2rem;
+        border-radius: 24px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        border: 2px dashed #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .empty-icon-wrapper {
+        width: 60px;
+        height: 60px;
+        background-color: #f4f7fe;
+        color: #4318ff; /* El color primario que usas */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+
+    .empty-state-card h3 {
+        font-weight: 800;
+        color: #2b3674; /* Tu color dark */
+        margin: 0;
+    }
+
+    .empty-state-card p {
+        color: #a3aed0; /* Tu color muted */
+        font-weight: 600;
+        font-size: 0.95rem;
+        max-width: 400px;
+        margin: 0;
     }
 
     @keyframes blink {

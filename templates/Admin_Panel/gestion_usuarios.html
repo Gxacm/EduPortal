@@ -45,60 +45,151 @@
         <div id="tab-alumnos" class="tab-content active">
             <div class="m-card">
                 <div class="card-header-flex">
-                    <h3 class="m-section-title">Listado de Estudiantes</h3>
-                    <a href="{{ url_for('vista_nuevo_alumno') }}" class="m-btn-add student-color">
+                    <h3 class="m-section-title">Expedientes de Estudiantes</h3>
+                    <a href="{{ url_for('vista_nuevo_alumno') }}#tab-alumnos" class="m-btn-add student-color">
                         <i class="bi bi-plus-lg"></i> Nuevo Alumno
                     </a>
                 </div>
-                <div class="table-responsive">
-                    <table class="m-table">
-    <thead>
-        <tr>
-            <th>Carnet</th>
-            <th>Nombre Completo</th>
-            <th>Grado y Sección</th> <th>Correo</th>
-            <th style="text-align: right;">Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in alumnos %}
-        <tr class="row-hover">
-            <td class="id-text">{{ a.carnet }}</td>
-            {# Agregamos validación básica para el nombre #}
-            <td class="name-text">
-                {% if a.usuario %}{{ a.usuario.nombre }} {{ a.usuario.apellido }}{% else %}<span class="text-danger">Sin Usuario</span>{% endif %}
-            </td>
-            <td>
-                {% if a.seccion %}
-                    <span class="badge-count" style="background: #f0fdf4; color: #16a34a;">
-                        {{ a.seccion.grado.nombre_grado }} - "{{ a.seccion.nombre_seccion }}"
-                    </span>
-                {% else %}
-                    <span class="text-muted" style="font-size: 0.7rem;">No asignado</span>
-                {% endif %}
-            </td>
-            <td class="email-text">{% if a.usuario %}{{ a.usuario.correo }}{% else %}-{% endif %}</td>
-            <td style="text-align: right;">
-                <div class="action-btns">
-                    {# --- PROTECCIÓN PASO 3 --- #}
-                    {% if a.usuario and a.id_usuario %}
-                        <a href="{{ url_for('editar_usuario', id_usuario=a.id_usuario) }}" class="btn-icon edit">
-                            <i class="bi bi-pencil-fill"></i>
-                        </a>
-                        <button class="btn-icon delete" onclick="abrirModal('{{ a.id_usuario }}', '{{ a.usuario.nombre }}')">
-                            <i class="bi bi-trash3-fill"></i>
-                        </button>
-                    {% else %}
-                        <span class="badge" style="background: #fee2e2; color: #ef4444; font-size: 0.7rem; padding: 5px 10px; border-radius: 8px;">
-                            <i class="bi bi-exclamation-triangle"></i> Huérfano
-                        </span>
+
+                <div class="folder-system" id="contenedorCarpetas">
+                    
+                    {# Agrupamos las secciones por el nombre del grado #}
+                    {% set grados = [] %}
+                    {% for a in alumnos if a.seccion %}
+                        {% if a.seccion.grado.nombre_grado not in grados %}
+                            {% set _ = grados.append(a.seccion.grado.nombre_grado) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {# 1. Carpeta de Nivel: Grado #}
+                    {% for grado in grados|sort %}
+                    <div class="folder-wrapper" data-tipo="grado">
+                        <div class="folder-header" onclick="toggleCarpeta(this)">
+                            <i class="bi bi-folder-fill folder-icon"></i>
+                            <span class="folder-name">{{ grado }}</span>
+                            <span class="chip-glass ms-auto" style="font-size: 0.75rem;">Grado</span>
+                        </div>
+                        
+                        <div class="folder-content">
+                            
+                            {# Buscamos las secciones que pertenecen a este grado #}
+                            {% set secciones_del_grado = [] %}
+                            {% for a in alumnos if a.seccion and a.seccion.grado.nombre_grado == grado %}
+                                {% if a.seccion.nombre_seccion not in secciones_del_grado %}
+                                    {% set _ = secciones_del_grado.append(a.seccion.nombre_seccion) %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {# 2. Subcarpeta de Nivel: Sección #}
+                            {% for seccion in secciones_del_grado|sort %}
+                            <div class="folder-wrapper" data-tipo="seccion">
+                                <div class="folder-header subfolder" onclick="toggleCarpeta(this)">
+                                    <i class="bi bi-folder2-open folder-icon text-warning"></i>
+                                    <span class="folder-name">Sección "{{ seccion }}"</span>
+                                </div>
+                                
+                                <div class="folder-content">
+                                    
+                                    <div class="table-responsive" style="padding: 10px;">
+                                        <table class="m-table table-alumnos-folder">
+                                            <thead>
+                                                <tr>
+                                                    <th>Carnet</th>
+                                                    <th>Nombre Completo</th>
+                                                    <th>Correo</th>
+                                                    <th style="text-align: right;">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for a in alumnos if a.seccion and a.seccion.grado.nombre_grado == grado and a.seccion.nombre_seccion == seccion %}
+                                                <tr class="row-hover target-alumno">
+                                                    <td class="id-text">{{ a.carnet }}</td>
+                                                    <td class="name-text">
+                                                        {% if a.usuario %}{{ a.usuario.nombre }} {{ a.usuario.apellido }}{% else %}<span class="text-danger">Sin Usuario</span>{% endif %}
+                                                    </td>
+                                                    <td class="email-text">{% if a.usuario %}{{ a.usuario.correo }}{% else %}-{% endif %}</td>
+                                                    <td style="text-align: right;">
+                                                        <div class="action-btns">
+                                                            {% if a.usuario and a.id_usuario %}
+                                                                <a href="{{ url_for('editar_usuario', id_usuario=a.id_usuario) }}" class="btn-icon edit">
+                                                                    <i class="bi bi-pencil-fill"></i>
+                                                                </a>
+                                                                <button class="btn-icon delete" onclick="abrirModal('{{ a.id_usuario }}', '{{ a.usuario.nombre }}')">
+                                                                    <i class="bi bi-trash3-fill"></i>
+                                                                </button>
+                                                            {% else %}
+                                                                <span class="badge" style="background: #fee2e2; color: #ef4444; font-size: 0.7rem; padding: 5px 10px; border-radius: 8px;">
+                                                                    <i class="bi bi-exclamation-triangle"></i> Huérfano
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {# 3. Carpeta para alumnos que no tienen sección asignada #}
+                    {% set huérfanos = [] %}
+                    {% for a in alumnos if not a.seccion %}
+                        {% set _ = huérfanos.append(a) %}
+                    {% endfor %}
+                    
+                    {% if huérfanos|length > 0 %}
+                    <div class="folder-wrapper" data-tipo="grado">
+                        <div class="folder-header" style="background: #fff1f2;" onclick="toggleCarpeta(this)">
+                            <i class="bi bi-folder-x folder-icon" style="color: var(--danger);"></i>
+                            <span class="folder-name" style="color: var(--danger);">Alumnos sin Asignar</span>
+                        </div>
+                        <div class="folder-content">
+                            <div class="table-responsive" style="padding: 10px;">
+                                <table class="m-table table-alumnos-folder">
+                                    <thead>
+                                        <tr>
+                                            <th>Carnet</th>
+                                            <th>Nombre Completo</th>
+                                            <th>Correo</th>
+                                            <th style="text-align: right;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for a in huérfanos %}
+                                        <tr class="row-hover target-alumno">
+                                            <td class="id-text">{{ a.carnet }}</td>
+                                            <td class="name-text">
+                                                {% if a.usuario %}{{ a.usuario.nombre }} {{ a.usuario.apellido }}{% else %}<span class="text-danger">Sin Usuario</span>{% endif %}
+                                            </td>
+                                            <td class="email-text">{% if a.usuario %}{{ a.usuario.correo }}{% else %}-{% endif %}</td>
+                                            <td style="text-align: right;">
+                                                <div class="action-btns">
+                                                    {% if a.usuario and a.id_usuario %}
+                                                        <a href="{{ url_for('editar_usuario', id_usuario=a.id_usuario) }}" class="btn-icon edit">
+                                                            <i class="bi bi-pencil-fill"></i>
+                                                        </a>
+                                                        <button class="btn-icon delete" onclick="abrirModal('{{ a.id_usuario }}', '{{ a.usuario.nombre }}')">
+                                                            <i class="bi bi-trash3-fill"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                     {% endif %}
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+
                 </div>
             </div>
         </div>
@@ -107,7 +198,7 @@
             <div class="m-card">
                 <div class="card-header-flex">
                     <h3 class="m-section-title">Cuerpo Docente</h3>
-                    <a href="{{ url_for('vista_nuevo_maestro') }}" class="m-btn-add teacher-color">
+                    <a href="{{ url_for('vista_nuevo_maestro') }}#tab-maestros" class="m-btn-add teacher-color">
                         <i class="bi bi-plus-lg"></i> Nuevo Maestro
                     </a>
                 </div>
@@ -246,6 +337,24 @@
     }
     .chip-logout:hover { background: #fee2e2; color: #ef4444; transform: translateY(-2px); }
 
+    /* Estilos para el sistema de carpetas */
+    .folder-wrapper { margin-bottom: 8px; border-radius: 12px; overflow: hidden; background: #f8fafc; }
+    .folder-header { 
+        display: flex; align-items: center; padding: 14px 20px; 
+        background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+        cursor: pointer; transition: 0.2s; font-weight: 700; color: var(--dark);
+    }
+    .folder-header:hover { background: #f1f5f9; transform: translateX(3px); }
+    .folder-icon { font-size: 1.3rem; color: var(--primary); margin-right: 12px; }
+    
+    .folder-header.subfolder { background: #fafafa; padding-left: 35px; border-color: #f1f5f9; }
+    .folder-header.subfolder:hover { background: #f8fafc; }
+    
+    .folder-content { display: none; padding: 5px 0 10px 15px; }
+    .folder-content.open { display: block; animation: fadeIn 0.3s ease; }
+    
+    .ms-auto { margin-left: auto; }
+
     /* Modal */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 54, 116, 0.2); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }
     .modal-card { background: white; padding: 2.5rem; border-radius: 30px; width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
@@ -258,39 +367,38 @@
 </style>
 
 <script>
+    // Función para manejar el cambio de pestañas
     function openTab(evt, tabName) {
-        // 1. Ocultar todos los contenidos
         const contents = document.getElementsByClassName("tab-content");
         for (let i = 0; i < contents.length; i++) {
             contents[i].classList.remove("active");
         }
-
-        // 2. Desactivar todos los botones
         const buttons = document.getElementsByClassName("tab-btn");
         for (let i = 0; i < buttons.length; i++) {
             buttons[i].classList.remove("active");
         }
-
-        // 3. Mostrar el seleccionado y activar su botón
         document.getElementById(tabName).classList.add("active");
-        evt.currentTarget.classList.add("active");
         
-        // Limpiar buscador al cambiar
-        document.getElementById("buscadorUniversal").value = "";
-        filtrarTablas();
-    }
-
-    function filtrarTablas() {
-        const input = document.getElementById("buscadorUniversal").value.toUpperCase();
-        const activeTab = document.querySelector(".tab-content.active");
-        const table = activeTab.querySelector(".m-table");
-        const tr = table.getElementsByTagName("tr");
-
-        for (let i = 1; i < tr.length; i++) {
-            const text = tr[i].innerText.toUpperCase();
-            tr[i].style.display = text.includes(input) ? "" : "none";
+        if (evt) {
+            evt.currentTarget.classList.add("active");
         }
     }
+
+    window.onload = function() {
+        const hash = window.location.hash;
+        if (hash) {
+            const tabId = hash.replace('#', '');
+            const botones = document.getElementsByClassName('tab-btn');
+            for (let btn of botones) {
+                if (btn.getAttribute('onclick').includes(tabId)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+            openTab(null, tabId);
+        }
+    };
 
     function abrirModal(id, nombre) {
         document.getElementById('delNombre').innerText = nombre;
@@ -300,6 +408,78 @@
     
     function cerrarModal() {
         document.getElementById('modalDelete').style.display = 'none';
+    }
+
+    function toggleCarpeta(elementoHeader) {
+        const content = elementoHeader.nextElementSibling;
+        content.classList.toggle('open');
+        
+        const icon = elementoHeader.querySelector('.folder-icon');
+        if (elementoHeader.classList.contains('subfolder')) {
+            if (content.classList.contains('open')) {
+                icon.className = "bi bi-folder2-open folder-icon text-warning";
+            } else {
+                icon.className = "bi bi-folder2 folder-icon text-warning";
+            }
+        }
+    }
+
+    // 🚀 BUSCADOR UNIFICADO Y CORREGIDO
+    function filtrarTablas() {
+        const input = document.getElementById("buscadorUniversal").value.toUpperCase();
+        const activeTab = document.querySelector(".tab-content.active");
+        
+        // --- CASO 1: PESTAÑA DE MAESTROS ---
+        if (activeTab.id === "tab-maestros") {
+            const table = activeTab.querySelector(".m-table");
+            const tr = table.getElementsByTagName("tr");
+            for (let i = 1; i < tr.length; i++) {
+                const text = tr[i].innerText.toUpperCase();
+                tr[i].style.display = text.includes(input) ? "" : "none";
+            }
+            return;
+        }
+
+        // --- CASO 2: PESTAÑA DE ALUMNOS (CARPETAS) ---
+        const alumnosRows = activeTab.querySelectorAll(".target-alumno");
+        const carpetasWrapper = activeTab.querySelectorAll(".folder-wrapper");
+
+        // Si el buscador está vacío, restauramos el estado inicial de TODO
+        if (input === "") {
+            carpetasWrapper.forEach(cw => {
+                cw.style.display = ""; // 🛠️ CORRECCIÓN: Hace visibles TODAS las carpetas (grados y secciones)
+                cw.querySelector('.folder-content').classList.remove('open'); // Las cierra todas
+            });
+            alumnosRows.forEach(row => row.style.display = ""); // Hace visibles a todos los alumnos
+            return;
+        }
+
+        // Si hay texto en el buscador, primero ocultamos y cerramos todo
+        carpetasWrapper.forEach(cw => {
+            cw.querySelector('.folder-content').classList.remove('open');
+            cw.style.display = "none";
+        });
+
+        // Buscamos coincidencia en los alumnos
+        alumnosRows.forEach(row => {
+            const text = row.innerText.toUpperCase();
+            if (text.includes(input)) {
+                row.style.display = ""; // Muestra al alumno
+                
+                // Mapeo hacia arriba: Abre y muestra las carpetas contenedoras
+                let parentContent = row.closest('.folder-content');
+                while (parentContent) {
+                    parentContent.classList.add('open');
+                    const parentWrapper = parentContent.parentElement;
+                    if (parentWrapper) parentWrapper.style.display = "";
+                    
+                    // Seguimos subiendo en el DOM por si hay más niveles
+                    parentContent = parentWrapper.parentElement.closest('.folder-content');
+                }
+            } else {
+                row.style.display = "none"; // Oculta si no coincide
+            }
+        });
     }
 </script>
 

@@ -8,7 +8,7 @@
     <div class="container main-content-box" style="max-width: 700px;">
         
         <div class="top-action-bar">
-            <a href="{{ url_for('gestion_usuarios') }}" class="chip-back">
+            <a href="{{ url_for('gestion_usuarios', tab='maestros' if usuario.id_rol == 2 else 'alumnos') }}" class="chip-back">
                 <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Cancelar y Volver
             </a>
         </div>
@@ -34,28 +34,36 @@
                 <div class="grid-inputs">
                     <div class="input-group">
                         <label class="m-label">Nombre(s)</label>
-                        <input type="text" name="nombre" class="m-input" value="{{ usuario.nombre }}" required>
+                        <input type="text" id="input-nombre" name="nombre" class="m-input" value="{{ usuario.nombre }}" required>
                     </div>
                     
                     <div class="input-group">
                         <label class="m-label">Apellido(s)</label>
-                        <input type="text" name="apellido" class="m-input" value="{{ usuario.apellido }}" required>
+                        <input type="text" id="input-apellido" name="apellido" class="m-input" value="{{ usuario.apellido }}" required>
                     </div>
                 </div>
 
                 <div class="input-group" style="margin-top: 1.5rem;">
-                    <label class="m-label">Correo Electrónico</label>
+                    <label class="m-label">Correo Electrónico Institucional</label>
                     <div class="input-with-icon">
                         <i class="bi bi-envelope"></i>
-                        <input type="email" name="correo" class="m-input" value="{{ usuario.correo }}" required>
+                        
+                        <input type="email" id="input-correo-visual" class="m-input" value="{{ usuario.correo }}" readonly 
+                               style="background-color: #f8faff; color: var(--primary); cursor: default;">
+                               
+                        <input type="hidden" id="input-correo" name="correo" value="{{ usuario.correo }}">
                     </div>
+                    <p style="margin-top: 8px; font-size: 0.75rem; color: var(--muted); font-weight: 600;">
+                        <i class="bi bi-info-circle"></i> Se actualiza automáticamente al modificar el nombre o apellido.
+                    </p>
                 </div>
 
                 <hr class="form-divider">
 
                 <div class="form-section-title">Datos Específicos del Rol</div>
 
-                {% if usuario.id_rol == 2 %} <div class="input-group">
+                {% if usuario.id_rol == 2 %} 
+                <div class="input-group">
                     <label class="m-label">Especialidad Docente</label>
                     <div class="input-with-icon">
                         <i class="bi bi-bookmark-star"></i>
@@ -63,7 +71,34 @@
                                value="{{ usuario.maestro_perfil.especialidad if usuario.maestro_perfil else '' }}" required>
                     </div>
                 </div>
-                {% elif usuario.id_rol == 3 %} <div class="input-group">
+                {% elif usuario.id_rol == 3 %} 
+                <div class="grid-inputs" style="margin-bottom: 1.5rem;">
+                    <div class="input-group">
+                        <label class="m-label">Grado de Matrícula</label>
+                        <select id="select-grado" class="m-input" style="cursor: pointer;" required>
+                            <option value="" disabled>Seleccione el grado</option>
+                            {% set grados_unicos = [] %}
+                            {% for sec in secciones %}
+                                {% if sec.grado.id_grado not in grados_unicos %}
+                                    <option value="{{ sec.grado.id_grado }}" 
+                                        {{ 'selected' if usuario.alumno_perfil and usuario.alumno_perfil.id_seccion and sec.id_seccion == usuario.alumno_perfil.id_seccion else '' }}>
+                                        {{ sec.grado.nombre_grado }}
+                                    </option>
+                                    {% set _ = grados_unicos.append(sec.grado.id_grado) %}
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="m-label">Sección</label>
+                        <select id="select-seccion" name="id_seccion" class="m-input" style="cursor: pointer;" required>
+                            <option value="" disabled selected>Primero elige un grado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
                     <label class="m-label">Número de Carnet</label>
                     <div class="input-with-icon">
                         <i class="bi bi-card-text"></i>
@@ -119,12 +154,21 @@
     .input-group { display: flex; flex-direction: column; gap: 8px; }
     .m-label { font-weight: 700; color: var(--dark); font-size: 0.85rem; margin-left: 5px; }
     
-    .m-input { width: 100%; padding: 14px 18px; border-radius: 16px; background-color: var(--bg); border: 2px solid transparent; color: var(--dark); font-weight: 600; font-family: inherit; transition: 0.3s; box-sizing: border-box; }
+    .m-input { width: 100%; padding: 14px 18px; border-radius: 16px; background-color: var(--bg); border: 2px solid transparent; color: var(--dark); font-weight: 600; font-family: inherit; transition: 0.3s; box-sizing: border-box; font-size: 0.95rem; }
     .m-input:focus { outline: none; border-color: var(--primary); background-color: white; box-shadow: 0 10px 20px rgba(67, 24, 255, 0.05); }
 
     .input-with-icon { position: relative; }
     .input-with-icon i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.1rem; }
     .input-with-icon .m-input { padding-left: 50px; }
+
+    select.m-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a3aed0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 16px 12px;
+        padding-right: 2.5rem;
+    }
 
     /* Botón Guardar */
     .actions-container { margin-top: 3rem; }
@@ -138,5 +182,96 @@
         .m-card { padding: 2rem; }
     }
 </style>
+
+<script>
+    const inputNombre = document.getElementById('input-nombre');
+    const inputApellido = document.getElementById('input-apellido');
+    const inputCorreoVisual = document.getElementById('input-correo-visual');
+    const inputCorreoHidden = document.getElementById('input-correo');
+
+    function limpiarTexto(texto) {
+        return texto
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, "");
+    }
+
+    function generarCorreo() {
+        const primerNombre = inputNombre.value.trim().split(' ')[0];
+        const primerApellido = inputApellido.value.trim().split(' ')[0];
+
+        if (primerNombre && primerApellido) {
+            const nombreLimpio = limpiarTexto(primerNombre);
+            const apellidoLimpio = limpiarTexto(primerApellido);
+            const correoGenerado = `${nombreLimpio}.${apellidoLimpio}@eduportal.edu`;
+            
+            inputCorreoVisual.value = correoGenerado;
+            inputCorreoHidden.value = correoGenerado;
+        } else {
+            inputCorreoVisual.value = '';
+            inputCorreoHidden.value = '';
+        }
+    }
+
+    inputNombre.addEventListener('input', generarCorreo);
+    inputApellido.addEventListener('input', generarCorreo);
+
+    // --- 🚀 LÓGICA DINÁMICA DE GRADOS Y SECCIONES ---
+    const mapaSecciones = {
+        {% for sec in secciones %}
+            "{{ sec.id_seccion }}": {
+                idGrado: "{{ sec.grado.id_grado }}",
+                nombreSeccion: "{{ sec.nombre_seccion }}"
+            },
+        {% endfor %}
+    };
+
+    const selectGrado = document.getElementById('select-grado');
+    const selectSeccion = document.getElementById('select-seccion');
+    
+    // Guardamos la sección que el alumno tiene actualmente asignada (si existe)
+    const seccionActualAlumno = "{{ usuario.alumno_perfil.id_seccion if usuario.alumno_perfil else '' }}";
+
+    function cargarSecciones(gradoSeleccionado, seccionParaSeleccionar = '') {
+        selectSeccion.innerHTML = '<option value="" disabled selected>Seleccione la sección</option>';
+        selectSeccion.disabled = false;
+        
+        let haySecciones = false;
+        for (const idSeccion in mapaSecciones) {
+            if (mapaSecciones[idSeccion].idGrado === gradoSeleccionado) {
+                const option = document.createElement('option');
+                option.value = idSeccion;
+                option.textContent = `Sección "${mapaSecciones[idSeccion].nombreSeccion}"`;
+                
+                // Si coincide con la sección que queremos preseleccionar
+                if (idSeccion === seccionParaSeleccionar) {
+                    option.selected = true;
+                }
+                
+                selectSeccion.appendChild(option);
+                haySecciones = true;
+            }
+        }
+        
+        if (!haySecciones) {
+            selectSeccion.innerHTML = '<option value="" disabled selected>No hay secciones en este grado</option>';
+            selectSeccion.disabled = true;
+        }
+    }
+
+    // Escuchamos cuando el admin cambia de grado de forma manual
+    if (selectGrado) {
+        selectGrado.addEventListener('change', function() {
+            cargarSecciones(this.value);
+        });
+
+        // 💡 Al cargar la página por primera vez, autolanzar la carga de secciones
+        // basándonos en el grado que ya tiene seleccionado el alumno.
+        if (selectGrado.value) {
+            cargarSecciones(selectGrado.value, seccionActualAlumno);
+        }
+    }
+</script>
 
 {% endblock %}

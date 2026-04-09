@@ -38,13 +38,16 @@
             <button class="tab-btn" onclick="openTab(event, 'tab-horarios')">
                 <i class="bi bi-calendar-week-fill"></i> Horarios
             </button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-ciclos')">
+                <i class="bi bi-calendar-check-fill"></i> Ciclos
+            </button>
         </div>
 
         <div id="tab-grados" class="tab-content active">
             <div class="grid-config">
                 <div class="m-card">
                     <h3 class="m-section-title">Nuevo Grado</h3>
-                    <form method="POST">
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-grados" method="POST">
                         <label class="m-label">Nombre del Grado</label>
                         <input type="text" name="nombre_grado" class="m-input" placeholder="Ej. Séptimo Grado" required>
                         <button type="submit" name="guardar_grado" class="m-btn-config">Registrar Grado</button>
@@ -84,7 +87,7 @@
             <div class="grid-config">
                 <div class="m-card">
                     <h3 class="m-section-title">Nueva Materia</h3>
-                    <form method="POST">
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-materias" method="POST">
                         <label class="m-label">Nombre de la Materia</label>
                         <input type="text" name="nombre_clase" class="m-input" placeholder="Ej. Matemáticas" required>
                         <label class="m-label">Grado Destino</label>
@@ -138,7 +141,7 @@
             <div class="grid-config">
                 <div class="m-card">
                     <h3 class="m-section-title">Nueva Sección</h3>
-                    <form method="POST">
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-secciones" method="POST">
                         <label class="m-label">Nombre de la Sección</label>
                         <input type="text" name="nombre_seccion" class="m-input" placeholder="Ej. Sección A" required>
                         <label class="m-label" style="margin-top: 15px;">Asignar a Grado</label>
@@ -183,78 +186,209 @@
 
         <div id="tab-horarios" class="tab-content">
             <div class="grid-config">
-                <div class="m-card">
-                    <h3 class="m-section-title">Nuevo Bloque de Horario</h3>
-                    <form action="{{ url_for('guardar_horario') }}" method="POST">
-                        <label class="m-label">Seleccionar Clase</label>
-                        <select name="id_clase" class="m-input" required>
-                            <option value="" disabled selected>Materia - Grado</option>
-                            {% for c in clases %}
-                                <option value="{{ c.id_clase }}">{{ c.nombre_clase }} ({{ c.grado.nombre_grado }})</option>
-                            {% endfor %}
-                        </select>
+                
+                <div>
+                    <div class="m-card">
+                        <h3 class="m-section-title"><i class="bi bi-clock"style="margin-right: 5px;"></i> Crear Horario Manual</h3>
+                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST">
+                            <input type="hidden" name="guardar_horario_manual" value="true">
 
-                        <label class="m-label" style="margin-top: 15px;">Día</label>
-                        <select name="dia_semana" class="m-input" required>
-                            <option value="Lunes">Lunes</option>
-                            <option value="Martes">Martes</option>
-                            <option value="Miercoles">Miércoles</option>
-                            <option value="Jueves">Jueves</option>
-                            <option value="Viernes">Viernes</option>
-                        </select>
+                            <label class="m-label">Seleccionar Sección</label>
+                            <select id="select-seccion" name="id_seccion" class="m-input" required onchange="filtrarMaterias()">
+                                <option value="" disabled selected>Selecciona la sección...</option>
+                                {% for s in secciones %}
+                                    <option value="{{ s.id_seccion }}" data-grado="{{ s.id_grado }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
+                                @@@{% endfor %}
+                            </select>
 
-                        <div style="display: flex; gap: 10px; margin-top: 15px;">
-                            <div style="flex: 1;">
-                                <label class="m-label">Inicio</label>
-                                <input type="time" name="hora_inicio" class="m-input" required>
+                            <label class="m-label" style="margin-top: 15px;">Seleccionar Clase</label>
+                            <select id="select-clase" name="id_clase" class="m-input" required disabled>
+                                <option value="" disabled selected>Primero selecciona una sección...</option>
+                                {% for c in clases %}
+                                    <option value="{{ c.id_clase }}" data-grado="{{ c.id_grado }}">{{ c.nombre_clase }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label class="m-label" style="margin-top: 15px;">Días de la Semana</label>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; background: var(--bg); padding: 15px; border-radius: 14px;">
+                                {% for dia in ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'] %}
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: var(--dark);">
+                                    <input type="checkbox" name="dias_seleccionados" value="{{ dia }}" style="accent-color: var(--accent-green);"> {{ dia }}
+                                </label>
+                                {% endfor %}
                             </div>
-                            <div style="flex: 1;">
-                                <label class="m-label">Fin</label>
-                                <input type="time" name="hora_fin" class="m-input" required>
+
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                <div style="flex: 1;">
+                                    <label class="m-label">Inicio</label>
+                                    <input type="time" name="hora_inicio" class="m-input" required>
+                                </div>
+                                <div style="flex: 1;">
+                                    <label class="m-label">Fin</label>
+                                    <input type="time" name="hora_fin" class="m-input" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="m-btn-config">Asignar al Horario</button>
+                        </form>
+                    </div>
+
+                    <div class="m-card" style="margin-top: 20px;">
+                        <h3 class="m-section-title"><i class="bi bi-magic"style="margin-right: 5px;"></i> Generador Inteligente</h3>
+                        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Toma las clases de una sección y distribúyelas aleatoriamente en otra sin chocar maestros.</p>
+                        
+                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST">
+                            
+                            <input type="hidden" name="generar_aleatorio" value="true">
+
+                            <label class="m-label">Sección Base (Origen con horario ya hecho)</label>
+                            <select name="id_seccion_origen" class="m-input" required>
+                                <option value="" disabled selected>Selecciona la sección base...</option>
+                                {% for s in secciones %}
+                                    <option value="{{ s.id_seccion }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label class="m-label" style="margin-top: 15px;">Sección Destino (A rellenar)</label>
+                            <select name="id_seccion_destino" class="m-input" required>
+                                <option value="" disabled selected>Selecciona la sección a rellenar...</option>
+                                {% for s in secciones %}
+                                    <option value="{{ s.id_seccion }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <button type="submit" class="m-btn-config" style="background: var(--dark); margin-top: 20px;">
+                                <i class="bi bi-shuffle"></i> Generar Horario Aleatorio
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="m-card">
+                    <h3 class="m-section-title"><i class="bi bi-folder2-open" style="margin-right: 5px;"></i> Visor de Horarios</h3>
+                    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Haz clic en un grado y luego selecciona la sección para ver su horario.</p>
+                    
+                    <div class="archivador-grados">
+                        {% for g in grados %}
+                        <div class="grado-folder">
+                            <div class="grado-folder-header" onclick="toggleAcordeon('grado-{{ g.id_grado }}')">
+                                <span><i class="bi bi-layers"style="margin-right: 5px;"></i> {{ g.nombre_grado }}</span>
+                                <i class="bi bi-chevron-down arrow-icon"></i>
+                            </div>
+                            
+                            <div id="grado-{{ g.id_grado }}" class="grado-folder-body">
+                                <div class="secciones-grid">
+                                    {% set ns = namespace(encontrada=false) %}
+                                    {% for s in secciones %}
+                                        {% if s.id_grado == g.id_grado %}
+                                            {% set ns.encontrada = true %}
+                                            <button class="btn-seccion" onclick="abrirVisorHorario('{{ s.id_seccion }}', '{{ s.nombre_seccion }}', '{{ g.nombre_grado }}')">
+                                                <i class="bi bi-grid-3x3-gap"></i> {{ s.nombre_seccion }}
+                                            </button>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if not ns.encontrada %}
+                                        <p class="text-muted" style="font-size: 0.8rem; padding: 10px;">No hay secciones.</p>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
+                        {% endfor %}
+                    </div>
+                </div>
 
-                        <button type="submit" class="m-btn-config">Asignar al Horario</button>
+            </div>
+        </div>
+
+        <div id="tab-ciclos" class="tab-content">
+            <div class="grid-config">
+                
+                <div class="m-card">
+                    <h3 class="m-section-title">Nuevo Ciclo Lectivo</h3>
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST">
+                        <input type="hidden" name="guardar_ciclo" value="true">
+                        
+                        <label class="m-label">Año del Ciclo</label>
+                        
+                        <div style="display: flex; align-items: stretch; border-radius: 14px; overflow: hidden; border: 2px solid transparent; background-color: var(--bg); transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+                            
+                            <span style="background: #e2e8f0; color: #475569; padding: 14px 25px; font-weight: 700; font-size: 0.9rem; white-space: nowrap; display: flex; align-items: center; border-right: 1px solid #cbd5e1;">
+                                Ciclo Lectivo
+                            </span>
+                            
+                            <input type="number" 
+                                   name="anio_ciclo" 
+                                   style="flex: 1; padding: 14px 18px; border: none; background: transparent; color: var(--dark); font-weight: 600; font-size: 0.95rem; font-family: inherit; outline: none;" 
+                                   placeholder="Ej. 2026" 
+                                   min="2026" 
+                                   max="2099" 
+                                   value="2026"
+                                   required>
+                        </div>
+                        
+                        <button type="submit" class="m-btn-config" style="margin-top: 20px;">
+                            Registrar Ciclo
+                        </button>
                     </form>
                 </div>
 
                 <div class="m-card">
-                    <h3 class="m-section-title">Horarios Configurados</h3>
+                    <h3 class="m-section-title">Ciclos Registrados</h3>
                     <div class="table-responsive">
                         <table class="m-table">
                             <thead>
                                 <tr>
-                                    <th>Día / Clase</th>
-                                    <th>Horario</th>
+                                    <th>Ciclo</th>
+                                    <th>Estado</th>
                                     <th style="text-align: right;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% if horarios %}
-                                    {% for h in horarios %}
-                                    <tr>
-                                        <td>
-                                            <div style="font-size: 0.75rem; color: var(--accent-green); font-weight: 800; text-transform: uppercase;">{{ h.dia_semana }}</div>
-                                            <strong>{{ h.clase.nombre_clase }}</strong>
-                                        </td>
-                                        <td style="font-size: 0.85rem;">{{ h.hora_inicio.strftime('%H:%M') }} - {{ h.hora_fin.strftime('%H:%M') }}</td>
-                                        <td style="text-align: right;">
-                                            <button type="button" class="btn-icon delete" onclick="abrirModal('{{ h.id_horario }}', '{{ h.clase.nombre_clase }} ({{ h.dia_semana }})', 'horario')">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
+                                {% for ciclo in ciclos %}
+                                <tr>
+                                    <td><strong>{{ ciclo.nombre_ciclo }}</strong></td>
+                                    <td>
+                                        {% if ciclo.estado == 'ACTIVO' %}
+                                            <span class="chip-glass" style="color: var(--accent-green); background: #dcfce7;">Activo</span>
+                                        {% elif ciclo.estado == 'FINALIZADO' %}
+                                            <span class="chip-glass" style="color: #64748b; background: #f1f5f9;">Finalizado</span>
+                                        {% else %}
+                                            <span class="chip-glass" style="color: #b45309; background: #fef3c7;">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="text-align: right;">
+                                        {% if ciclo.estado == 'INACTIVO' %}
+                                            <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" style="display:inline;">
+                                                <input type="hidden" name="activar_ciclo" value="true">
+                                                <input type="hidden" name="id_ciclo_a_activar" value="{{ ciclo.id_cycle }}">
+                                                <button type="submit" class="chip-glass" style="border: none; cursor: pointer; background: var(--accent-green); color: white;">
+                                                    <i class="bi bi-play-fill"></i> Iniciar Ciclo
+                                                </button>
+                                            </form>
+                                        {% elif ciclo.estado == 'ACTIVO' %}
+                                            <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" style="display:inline;">
+                                                <input type="hidden" name="finalizar_ciclo" value="true">
+                                                <input type="hidden" name="id_ciclo_a_finalizar" value="{{ ciclo.id_cycle }}">
+                                                <button type="submit" class="chip-glass" style="border: none; cursor: pointer; background: var(--danger); color: white;">
+                                                    <i class="bi bi-stop-fill"></i> Finalizar Ciclo
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-muted" style="font-size: 0.85rem;">Sin acciones</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                                 {% else %}
-                                    <tr><td colspan="3" class="text-muted" style="text-align: center; padding: 20px;">No hay horarios registrados.</td></tr>
-                                {% endif %}
+                                <tr><td colspan="3" class="text-muted" style="text-align: center; padding: 20px;">No hay ciclos registrados.</td></tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
-
     </div>
     
     <div id="modalDelete" class="modal-overlay">
@@ -266,6 +400,38 @@
                 <button type="button" onclick="cerrarModal()" class="btn-cancel">Cancelar</button>
                 <button type="submit" class="btn-confirm-delete">Eliminar Permanentemente</button>
             </form>
+        </div>
+    </div>
+
+    <div id="modalVisor" class="modal-overlay">
+        <div class="modal-card" style="width: 550px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h3 class="m-section-title" style="margin-bottom: 5px;" id="visorTitulo">Horario</h3>
+                    <span class="chip-glass" id="visorSubtitulo" style="font-size: 0.85rem;"></span>
+                </div>
+                <button type="button" onclick="cerrarVisor()" class="btn-icon" style="background: var(--bg); color: var(--dark);">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="m-table">
+                    <thead>
+                        <tr>
+                            <th>Día / Clase</th>
+                            <th>Horario</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaVisorContenido">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="button" onclick="cerrarVisor()" class="btn-cancel" style="width: auto; padding: 10px 20px;">Cerrar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -302,7 +468,7 @@
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    .grid-config { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+    .grid-config { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
     .m-card { background: white; padding: 2.5rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03); }
     .m-section-title { font-weight: 800; color: var(--dark); margin-bottom: 1.5rem; font-size: 1.2rem; }
 
@@ -321,6 +487,9 @@
     .btn-icon { border: none; background: #fee2e2; color: #ef4444; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 1rem; }
     .btn-icon:hover { transform: scale(1.05); background: #ef4444; color: white; }
     .text-muted { color: var(--muted); }
+
+    .badge-grado { background: var(--bg); color: var(--dark); padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; }
+    .badge-count { background: #e0e7ff; color: #4318ff; padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; }
 
     .modal-overlay { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -342,6 +511,26 @@
         flex: 1; padding: 14px; border-radius: 12px; border: none; 
         background: #ef4444; color: white; font-weight: 700; cursor: pointer; 
     }
+
+    /* ESTILOS NUEVOS: ARCHIVADOR DE HORARIOS */
+    .archivador-grados { display: flex; flex-direction: column; gap: 10px; }
+    .grado-folder { background: var(--bg); border-radius: 12px; overflow: hidden; }
+    .grado-folder-header { 
+        padding: 15px 20px; background: white; border: 1px solid rgba(0,0,0,0.05);
+        display: flex; justify-content: space-between; align-items: center;
+        cursor: pointer; font-weight: 700; color: var(--dark); transition: 0.3s;
+    }
+    .grado-folder-header:hover { background: #fdfdfd; color: var(--accent-green); }
+    .grado-folder-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: var(--bg); }
+    .grado-folder-body.open { max-height: 200px; transition: max-height 0.3s ease-in; }
+    
+    .secciones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; padding: 15px; }
+    .btn-seccion { 
+        background: white; border: 1px solid rgba(0,0,0,0.05); padding: 12px; 
+        border-radius: 10px; font-weight: 700; color: var(--dark); cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;
+    }
+    .btn-seccion:hover { background: var(--dark); color: white; transform: translateY(-2px); }
 </style>
 
 <script>
@@ -356,6 +545,8 @@
         }
         document.getElementById(tabName).classList.add("active");
         evt.currentTarget.classList.add("active");
+
+        window.history.replaceState(null, '', '?tab=' + tabName);
     }
 
     function abrirModal(id, nombre, tipo) {
@@ -366,17 +557,25 @@
         displayNombre.innerText = nombre;
         
         let url = "";
+        let tab = "tab-grados"; // Pestaña por defecto
+
+        // Asignamos la ruta y también la pestaña destino para el backend
         if (tipo === 'grado') {
             url = "/admin/configuracion/eliminar_grado/" + id;
+            tab = "tab-grados";
         } else if (tipo === 'materia') {
             url = "/admin/configuracion/eliminar_materia/" + id;
+            tab = "tab-materias";
         } else if (tipo === 'seccion') {
             url = "/admin/configuracion/eliminar_seccion/" + id;
+            tab = "tab-secciones";
         } else if (tipo === 'horario') {
             url = "/admin/horario/eliminar/" + id;
+            tab = "tab-horarios";
         }
         
-        form.action = url;
+        // Inyectamos la URL final con el parámetro ?tab= para que Flask sepa a dónde volver
+        form.action = url + "?tab=" + tab;
         modal.style.display = 'flex';
     }
 
@@ -385,11 +584,119 @@
     }
 
     window.onclick = function(event) {
-        let modal = document.getElementById('modalDelete');
-        if (event.target == modal) {
+        let modalDelete = document.getElementById('modalDelete');
+        let modalVisor = document.getElementById('modalVisor');
+        if (event.target == modalDelete) {
             cerrarModal();
         }
+        if (event.target == modalVisor) {
+            cerrarVisor();
+        }
     }
+
+    function filtrarMaterias() {
+        const selectSeccion = document.getElementById('select-seccion');
+        const selectClase = document.getElementById('select-clase');
+        
+        const optionSeleccionada = selectSeccion.options[selectSeccion.selectedIndex];
+        const idGradoObjetivo = optionSeleccionada.getAttribute('data-grado');
+
+        selectClase.disabled = false;
+        selectClase.value = ""; 
+
+        const opcionesClase = selectClase.querySelectorAll('option');
+        
+        opcionesClase.forEach(option => {
+            const gradoClase = option.getAttribute('data-grado');
+
+            if (!gradoClase) {
+                option.style.display = 'block';
+                return;
+            }
+
+            if (gradoClase === idGradoObjetivo) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none'; 
+            }
+        });
+    }
+
+    // --- NUEVAS FUNCIONES PARA EL VISOR DE HORARIOS ---
+
+    function toggleAcordeon(id) {
+        const body = document.getElementById(id);
+        body.classList.toggle('open');
+    }
+
+    function abrirVisorHorario(idSeccion, nombreSeccion, nombreGrado) {
+        document.getElementById('visorTitulo').innerText = "Horario de " + nombreSeccion;
+        document.getElementById('visorSubtitulo').innerText = nombreGrado;
+
+        const tablaContenido = document.getElementById('tablaVisorContenido');
+        tablaContenido.innerHTML = ""; 
+
+        const todosLosHorarios = [
+            {% for h in horarios %}
+            {
+                id: '{{ h.id_horario }}',
+                id_seccion: '{{ h.id_seccion }}',
+                dia: '{{ h.dia_semana }}',
+                materia: '{{ h.clase.nombre_clase }}',
+                inicio: '{{ h.hora_inicio.strftime("%H:%M") }}',
+                fin: '{{ h.hora_fin.strftime("%H:%M") }}'
+            },
+            {% endfor %}
+        ];
+
+        const horariosFiltrados = todosLosHorarios.filter(h => h.id_seccion === idSeccion);
+
+        if (horariosFiltrados.length === 0) {
+            tablaContenido.innerHTML = `<tr><td colspan="3" class="text-muted" style="text-align: center; padding: 20px;">No hay materias asignadas.</td></tr>`;
+        } else {
+            horariosFiltrados.forEach(h => {
+                const fila = `
+                    <tr>
+                        <td>
+                            <div style="font-size: 0.75rem; color: var(--accent-green); font-weight: 800; text-transform: uppercase;">${h.dia}</div>
+                            <strong>${h.materia}</strong>
+                        </td>
+                        <td style="font-size: 0.85rem;">${h.inicio} - ${h.fin}</td>
+                        <td style="text-align: right;">
+                            <button type="button" class="btn-icon delete" onclick="cerrarVisor(); abrirModal('${h.id}', '${h.materia} (${h.dia})', 'horario')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tablaContenido.innerHTML += fila;
+            });
+        }
+
+        document.getElementById('modalVisor').style.display = 'flex';
+    }
+
+    function cerrarVisor() {
+        document.getElementById('modalVisor').style.display = 'none';
+    }
+
+    // ==========================================
+    // AGREGADO: AUTO-ACTIVAR LA PESTAÑA AL CARGAR
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", function() {
+        // Recogemos la pestaña enviada por Flask
+        const tabPorDefecto = "{{ tab_activa|default('tab-grados') }}";
+        
+        // Buscamos el botón que tenga el onclick apuntando a ese nombre de pestaña
+        const botonTab = Array.from(document.querySelectorAll('.tab-btn')).find(btn => {
+            return btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabPorDefecto);
+        });
+        
+        // Simulamos un clic en el botón para que ejecute 'openTab'
+        if (botonTab) {
+            botonTab.click();
+        }
+    });
 </script>
 
 {% endblock %}

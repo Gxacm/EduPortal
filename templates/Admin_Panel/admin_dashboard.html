@@ -51,7 +51,7 @@
             <div class="m-card chart-container">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="card-title">Distribución de Alumnos</h3>
-                    <select id="selectorNivel" class="form-select form-select-sm" style="width: 150px; border-radius: 10px; border: 1px solid #e0e5f2;">
+                    <select id="selectorNivel" class="form-select form-select-sm" style="width: 180px;">
                         <option value="todos">Todos los Grados</option>
                         <option value="kinder">Kinder</option>
                         <option value="primaria">Primaria</option>
@@ -160,6 +160,53 @@
     .btn-warning-custom i {color: var(--warning);}
     .btn-warning-custom:hover {background: var(--warning) !important; color: white !important; transform: translateY(-5px);}
     .btn-warning-custom:hover i {color: white !important;}
+
+    /* --- 🚀 ESTILIZACIÓN DEL SELECTOR DE GRADOS --- */
+    #selectorNivel {
+        appearance: none; /* Quita el diseño por defecto del navegador */
+        background-color: var(--bg);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%234318ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 14px 10px;
+        
+        color: var(--dark);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 700;
+        font-size: 0.85rem;
+        
+        padding: 10px 2.5rem 10px 15px !important; /* Espacio para la flecha a la derecha */
+        border-radius: 12px !important;
+        border: 2px solid transparent !important;
+        
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.01);
+    }
+
+    /* Efecto al pasar el mouse */
+    #selectorNivel:hover {
+        background-color: white;
+        border-color: #e0e5f2 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Efecto al hacer click/foco */
+    #selectorNivel:focus {
+        outline: none;
+        background-color: white;
+        border-color: var(--primary) !important;
+        box-shadow: 0 10px 20px rgba(67, 24, 255, 0.05);
+    }
+
+    /* Estilo para las opciones dentro de la lista */
+    #selectorNivel option {
+        background-color: white;
+        color: var(--dark);
+        font-weight: 600;
+        padding: 10px;
+    }
 </style>
 
 <script>
@@ -180,30 +227,80 @@
         setSaludo();
         
         const ctx = document.getElementById('gradosChart').getContext('2d');
-        
         const datosBase = JSON.parse('{{ mapa_grados|tojson|safe }}');
 
-        const niveles = {
-            kinder: ['Nursery', 'Pre-Kinder', 'Kinder'],
-            primaria: ['1ro', '2do', '3ro', '4to', '5to', '6to'],
-            secundaria: ['7mo', '8vo', '9no', '10mo', '11mo']
+        // 1. Diccionario de traducción: Nombre en BD -> Alias Numérico
+        const aliasGrados = {
+            'Nursery': 'Nursery',
+            'Pre-Kinder': 'Pre-K',
+            'Kinder': 'Kinder',
+            'Primer Grado': '1ro',
+            'Segundo Grado': '2do',
+            'Tercer Grado': '3ro',
+            'Cuarto Grado': '4to',
+            'Quinto Grado': '5to',
+            'Sexto Grado': '6to',
+            'Séptimo Grado': '7mo',
+            'Octavo Grado': '8vo',
+            'Noveno Grado': '9no',
+            'Décimo Grado': '10mo',
+            'Undécimo Grado': '11mo'
         };
 
+        // 2. Definimos las listas usando el nombre real de tu Base de Datos
+        const niveles = {
+            kinder: ['Nursery', 'Pre-Kinder', 'Kinder'],
+            primaria: ['Primer Grado', 'Segundo Grado', 'Tercer Grado', 'Cuarto Grado', 'Quinto Grado', 'Sexto Grado'],
+            secundaria: ['Séptimo Grado', 'Octavo Grado', 'Noveno Grado', 'Décimo Grado', 'Undécimo Grado']
+        };
+
+        // Paleta de colores combinable con tu Dashboard
+        const colores = {
+            kinder: '#ffb800',     // Amarillo/Naranja (Tu color --warning)
+            primaria: '#059669',   // Verde (Tu color --success)
+            secundaria: '#3b82f6', // Azul brillante
+            defecto: '#4318ff'     // El morado/azul principal (Tu color --primary)
+        };
+
+        const todosLosGradosOrdenados = [
+            ...niveles.kinder,
+            ...niveles.primaria,
+            ...niveles.secundaria
+        ];
+
+        // 3. Función para procesar etiquetas, valores y COLORES
         function filtrarDatos(filtro) {
-            let labels = [];
-            let valores = [];
+            let nombresReales = [];
+            let coloresBarras = [];
 
             if (filtro === 'todos') {
-                labels = Object.keys(datosBase);
-                valores = Object.values(datosBase);
+                nombresReales = todosLosGradosOrdenados;
+                
+                // Si muestra todos, pintamos cada barra según su nivel real
+                coloresBarras = nombresReales.map(nombre => {
+                    if (niveles.kinder.includes(nombre)) return colores.kinder;
+                    if (niveles.primaria.includes(nombre)) return colores.primaria;
+                    if (niveles.secundaria.includes(nombre)) return colores.secundaria;
+                    return colores.defecto;
+                });
             } else {
-                labels = niveles[filtro];
-                valores = labels.map(grado => datosBase[grado] || 0);
+                nombresReales = niveles[filtro];
+                
+                // Si filtramos por categoría, todas las barras de esa categoría usan su color
+                coloresBarras = nombresReales.map(() => colores[filtro] || colores.defecto);
             }
-            return { labels, valores };
+
+            // Mapeamos los nombres reales a sus alias numéricos para la gráfica
+            const labels = nombresReales.map(nombre => aliasGrados[nombre] || nombre);
+            
+            // Extraemos los valores usando el nombre real de la base de datos
+            const valores = nombresReales.map(nombre => datosBase[nombre] || 0);
+
+            return { labels, valores, coloresBarras };
         }
 
         const initialData = filtrarDatos('todos');
+        
         let chart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -211,26 +308,41 @@
                 datasets: [{
                     label: 'Alumnos',
                     data: initialData.valores,
-                    backgroundColor: '#4318ff',
+                    backgroundColor: initialData.coloresBarras, 
                     borderRadius: 8,
-                    barThickness: 25
+                    barThickness: 'flex',
+                    maxBarThickness: 30
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: { 
+                    legend: { display: false } 
+                },
                 scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                    x: { grid: { display: false } }
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 1 } 
+                    },
+                    x: { 
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 0, 
+                            autoSkip: false 
+                        }
+                    }
                 }
             }
         });
 
         document.getElementById('selectorNivel').addEventListener('change', function() {
             const nuevosDatos = filtrarDatos(this.value);
+            
             chart.data.labels = nuevosDatos.labels;
             chart.data.datasets[0].data = nuevosDatos.valores;
+            chart.data.datasets[0].backgroundColor = nuevosDatos.coloresBarras; 
+            
             chart.update(); 
         });
     });

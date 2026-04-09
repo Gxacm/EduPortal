@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash
+from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime
+import random
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from sqlalchemy.orm import joinedload
 import os
 from werkzeug.utils import secure_filename
-from models import db, Usuarios, Maestros, Alumnos, Clases, Notas, Asistencias, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
+from models import db, Usuarios, Maestros, CiclosLectivos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
 
 
 app = Flask(__name__)
@@ -41,6 +43,14 @@ def fecha_en_espanol(fecha):
     return f"{dia} de {mes}, {año}"
 app.jinja_env.filters['fecha_es'] = fecha_en_espanol
 
+@app.context_processor
+def inject_ciclo_activo():
+    ciclo_activo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
+    
+    if ciclo_activo:
+        return dict(ciclo_actual_global=ciclo_activo.nombre_ciclo)
+        
+    return dict(ciclo_actual_global="Sin Ciclo Activo")
 
 # ==============================================================================
 # ----------------------------- RUTA RAÍZ Y LOGIN ------------------------------
@@ -86,11 +96,26 @@ def logout():
 
 @app.route('/mi-cuenta')
 def mi_cuenta():
-    if not session.get('user_id'): return redirect(url_for('login'))
+    # 1. Verificación de sesión
+    if not session.get('user_id'): 
+        return redirect(url_for('login'))
+    
     user_id = session.get('user_id')
     usuario = Usuarios.query.get(user_id)
-    perfil = Maestros.query.filter_by(id_usuario=user_id).first() if usuario.id_rol == 2 else Alumnos.query.filter_by(id_usuario=user_id).first()
+
+    if usuario.id_rol == 1:
+        return redirect(url_for('admin_dashboard'))
+
+    if usuario.id_rol == 2:
+        perfil = Maestros.query.filter_by(id_usuario=user_id).first()
+    elif usuario.id_rol == 3:
+        perfil = Alumnos.query.filter_by(id_usuario=user_id).first()
+    else:
+        perfil = None 
+
     return render_template('mi_cuenta.html', usuario=usuario, perfil=perfil)
+
+
 
 @app.route('/ajustes', methods=['GET', 'POST'])
 def ajustes():
@@ -99,55 +124,43 @@ def ajustes():
     
     user_id = session.get('user_id')
     rol = session.get('rol')
+    # Usamos .get() para asegurar que el objeto esté vinculado a la sesión actual
     usuario = Usuarios.query.get(user_id)
-
-    # Cargar perfil específico según el rol para que sea funcional
-    perfil = None
-    if rol == 2: # Maestro
-        perfil = Maestros.query.filter_by(id_usuario=user_id).first()
-    elif rol == 3: # Alumno
-        perfil = Alumnos.query.filter_by(id_usuario=user_id).first()
 
     if request.method == 'POST':
         accion = request.form.get('accion')
 
-        # --- ACCIÓN 1: CAMBIO DE CONTRASEÑA ---
+        # --- CAMBIO DE CONTRASEÑA (CORREGIDO) ---
         if accion == 'cambiar_pass':
             pass_actual = request.form.get('pass_actual')
             pass_nueva = request.form.get('pass_nueva')
             confirm_pass = request.form.get('confirm_pass')
 
             if not check_password_hash(usuario.contrasena, pass_actual):
-                flash("La contraseña actual es incorrecta.", "error")
+                flash("La contraseña actual no es correcta.", "error")
             elif pass_nueva != confirm_pass:
-                flash("Las contraseñas no coinciden.", "error")
+                flash("Las contraseñas nuevas no coinciden.", "error")
             elif len(pass_nueva) < 8:
-                flash("Debe tener al menos 8 caracteres.", "error")
+                flash("La contraseña debe tener al menos 8 caracteres.", "error")
             else:
-                usuario.contrasena = generate_password_hash(pass_nueva)
-                db.session.commit()
-                flash("Contraseña actualizada con éxito.", "success")
+                try:
+                    usuario.contrasena = generate_password_hash(pass_nueva)
+                    flag_modified(usuario, "contrasena")
+                    db.session.add(usuario) # Re-vincular objeto
+                    db.session.commit()
+                    flash("¡Contraseña actualizada con éxito!", "success")
+                except Exception as e:
+                    db.session.rollback()
+                    flash("Error al actualizar la base de datos.", "error")
 
-        # --- ACCIÓN 2: ACTUALIZAR DATOS DE PERFIL (PERSONALIDAD) ---
-        elif accion == 'actualizar_perfil':
-            usuario.correo = request.form.get('correo')
-            
-            # Si es maestro, permitir cambiar especialidad
-            if rol == 2 and perfil:
-                perfil.especialidad = request.form.get('especialidad')
-            
-            db.session.commit()
-            flash("Información de perfil actualizada.", "success")
+        # --- NOTIFICACIONES Y OTROS ---
+        elif accion == 'actualizar_notificaciones':
+            # Aquí procesarías los checkboxes si decides guardarlos en DB
+            flash("Preferencias de notificación actualizadas.", "success")
 
-        # --- ACCIÓN 3: PREFERENCIAS DE INTERFAZ ---
-        elif accion == 'guardar_interfaz':
-            # Aquí podrías guardar el modo oscuro en la BD si añades la columna a Usuarios
-            flash("Preferencias visuales aplicadas.", "success")
-            
         return redirect(url_for('ajustes'))
 
-    return render_template('ajustes.html', usuario=usuario, perfil=perfil, rol=rol)
-
+    return render_template('ajustes.html', usuario=usuario, rol=rol)
 
 # ==============================================================================
 # ------------------------------ PANEL DEL MAESTRO -----------------------------
@@ -893,6 +906,36 @@ def admin_dashboard():
                            mapa_grados=mapa_grados, ultimos_usuarios=ultimos_usuarios,
                            fecha_actual=datetime.now().strftime("%d/%m/%Y"))
 
+def generar_nuevo_carnet():
+    """Genera un carnet con formato AAAA-001 basado en el ciclo lectivo activo"""
+    ciclo_activo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
+    
+    if ciclo_activo:
+        import re
+        coincidencia = re.search(r'\d{4}', ciclo_activo.nombre_ciclo)
+        prefijo_ano = coincidencia.group() if coincidencia else str(datetime.now().year)
+    else:
+        prefijo_ano = str(datetime.now().year)
+        
+    prefijo = f"{prefijo_ano}-"
+    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%"))\
+                             .order_by(Alumnos.carnet.desc()).first()
+    if ultimo_alumno:
+        try:
+            ultimo_numero = int(ultimo_alumno.carnet.split('-')[1])
+            nuevo_numero = ultimo_numero + 1
+        except (IndexError, ValueError):
+            nuevo_numero = 1
+    else:
+        nuevo_numero = 1
+        
+    return f"{prefijo}{nuevo_numero:03d}"
+
+def obtener_id_ciclo_activo():
+    """Busca el ID del ciclo que el administrador dejó como ACTIVO"""
+    ciclo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
+    return ciclo.id_cycle if ciclo else 1
+
 @app.route('/admin/anuncios')
 def vista_anuncios():
     if session.get('rol') != 1:
@@ -954,147 +997,350 @@ def vista_nuevo_alumno():
                            active_tab='alumno', 
                            carnet=carnet_sugerido,
                            secciones=secciones)
-def generar_nuevo_carnet():
-    """Genera un carnet con formato AAAA-001 basado en el año actual"""
-    año_actual = datetime.now().year
-    prefijo = f"{año_actual}-"
-    
-    # Buscamos el último carnet registrado con el prefijo del año actual
-    ultimo_alumno = Alumnos.query.filter(Alumnos.carnet.like(f"{prefijo}%"))\
-                             .order_by(Alumnos.carnet.desc()).first()
-    
-    if ultimo_alumno:
-        try:
-            # Extraemos el número correlativo y sumamos 1
-            ultimo_numero = int(ultimo_alumno.carnet.split('-')[1])
-            nuevo_numero = ultimo_numero + 1
-        except (IndexError, ValueError):
-            nuevo_numero = 1
-    else:
-        nuevo_numero = 1
-        
-    return f"{prefijo}{nuevo_numero:03d}"
-
 
 @app.route('/admin/usuario/guardar', methods=['POST'])
 def crear_usuario_logica():
     if session.get('rol') != 1: return redirect(url_for('login'))
-    nuevo = Usuarios(nombre=request.form.get('nombre'), apellido=request.form.get('apellido'), correo=request.form.get('correo'), contrasena=generate_password_hash(request.form.get('password')), id_rol=int(request.form.get('id_rol')))
-    db.session.add(nuevo)
-    db.session.commit()
+    
+    # Creamos el usuario base
+    nuevo = Usuarios(
+        nombre=request.form.get('nombre'), 
+        apellido=request.form.get('apellido'), 
+        correo=request.form.get('correo'), 
+        contrasena=generate_password_hash(request.form.get('password')), 
+        id_rol=int(request.form.get('id_rol'))
+    )
+    db.session.add(nuevo)    
+    db.session.flush()
 
-    if nuevo.id_rol == 2: db.session.add(Maestros(id_usuario=nuevo.id_usuario, especialidad=request.form.get('especialidad')))
-    elif nuevo.id_rol == 3: db.session.add(Alumnos(id_usuario=nuevo.id_usuario, carnet=request.form.get('carnet')))
+    # Si es Maestro (Rol 2)
+    if nuevo.id_rol == 2: 
+        db.session.add(Maestros(
+            id_usuario=nuevo.id_usuario, 
+            especialidad=request.form.get('especialidad')
+        ))
+        
+    elif nuevo.id_rol == 3: 
+        db.session.add(Alumnos(
+            id_usuario=nuevo.id_usuario, 
+            carnet=request.form.get('carnet'),
+            id_seccion=request.form.get('id_seccion')
+        ))
         
     db.session.commit()
     flash("Usuario registrado correctamente")
-    return redirect(url_for('admin_dashboard'))
+    
+    if nuevo.id_rol == 2:
+        return redirect(url_for('gestion_usuarios') + '#tab-maestros')
+    
+    return redirect(url_for('gestion_usuarios') + '#tab-alumnos')
 
 @app.route('/admin/gestion_usuarios')
 def gestion_usuarios():
-    alumnos = Alumnos.query.options(joinedload(Alumnos.usuario), joinedload(Alumnos.seccion).joinedload(Secciones.grado)).all()
-    maestros = Maestros.query.options(joinedload(Maestros.usuario), joinedload(Maestros.clases)).all()
-    return render_template('Admin_Panel/gestion_usuarios.html', alumnos=alumnos, maestros=maestros, vista_activa='alumnos')
+    tab_solicitada = request.args.get('tab', 'alumnos')
+    
+    alumnos = Alumnos.query.options(
+        joinedload(Alumnos.usuario), 
+        joinedload(Alumnos.seccion).joinedload(Secciones.grado)
+    ).all()
+    
+    maestros = Maestros.query.options(
+        joinedload(Maestros.usuario), 
+        joinedload(Maestros.clases)
+    ).all()
+    
+    return render_template(
+        'Admin_Panel/gestion_usuarios.html', 
+        alumnos=alumnos, 
+        maestros=maestros, 
+        vista_activa=tab_solicitada
+    )
 
 @app.route('/admin/editar_usuario/<int:id_usuario>', methods=['GET', 'POST'])
 def editar_usuario(id_usuario):
     usuario = Usuarios.query.get_or_404(id_usuario)
+    
     if request.method == 'POST':
         usuario.nombre = request.form.get('nombre')
         usuario.apellido = request.form.get('apellido')
         usuario.correo = request.form.get('correo')
+        
         if usuario.id_rol == 2 and usuario.maestro_perfil:
             usuario.maestro_perfil.especialidad = request.form.get('especialidad')
+            
         elif usuario.id_rol == 3 and usuario.alumno_perfil:
             usuario.alumno_perfil.carnet = request.form.get('carnet')
+            usuario.alumno_perfil.id_seccion = request.form.get('id_seccion')
+            
         db.session.commit()
         flash('Usuario actualizado', 'success')
-        return redirect(url_for('gestion_usuarios'))
-    return render_template('Admin_Panel/editar_usuario.html', usuario=usuario)
+        
+        # --- 🚀 CAMBIO AQUÍ: Redirección usando el parámetro 'tab' ---
+        if usuario.id_rol == 2:
+            return redirect(url_for('gestion_usuarios', tab='maestros'))
+            
+        return redirect(url_for('gestion_usuarios', tab='alumnos'))
+        
+    secciones = Secciones.query.all() 
+        
+    return render_template('Admin_Panel/editar_usuario.html', usuario=usuario, secciones=secciones)
 
 @app.route('/admin/eliminar_usuario/<int:id_usuario>', methods=['POST'])
 def eliminar_usuario(id_usuario):
     if session.get('rol') != 1: return redirect(url_for('login'))
     usuario = Usuarios.query.get_or_404(id_usuario)
+    
+    # 💡 Guardamos el rol antes de borrar al usuario para saber a qué pestaña volver
+    rol_eliminado = usuario.id_rol
+    
     try:
+        # Primero borramos las tablas hijas para no romper la integridad referencial
         if usuario.id_rol == 2 and usuario.maestro_perfil:
             db.session.delete(usuario.maestro_perfil)
         elif usuario.id_rol == 3 and usuario.alumno_perfil:
             db.session.delete(usuario.alumno_perfil)
+            
+        # Ahora sí, borramos al usuario base
         db.session.delete(usuario)
         db.session.commit()
         flash('Registro eliminado permanentemente', 'success')
     except Exception as e:
         db.session.rollback()
         flash('No se pudo eliminar el registro porque tiene datos vinculados', 'error')
-    return redirect(url_for('gestion_usuarios'))
-
+        
+    # 🚀 REDIRECCIÓN INTELIGENTE USANDO EL ROL GUARDADO
+    if rol_eliminado == 2:
+        return redirect(url_for('gestion_usuarios') + '#tab-maestros')
+        
+    return redirect(url_for('gestion_usuarios') + '#tab-alumnos')
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
 def configuracion_academica():
     if session.get('rol') != 1: 
         return redirect(url_for('login'))
     
+    # Capturamos la pestaña que se está visualizando (por defecto 'tab-grados')
+    tab_actual = request.args.get('tab', 'tab-grados')
+    
     if request.method == 'POST':
         # --- Lógica de Grados ---
         if 'guardar_grado' in request.form:
+            tab_actual = 'tab-grados'
             db.session.add(Grados(nombre_grado=request.form.get('nombre_grado')))
         
         # --- Lógica de Materias ---
         elif 'guardar_clase' in request.form:
+            tab_actual = 'tab-materias'
+            id_ciclo_actual = obtener_id_ciclo_activo()
+            
             nueva_clase = Clases(
                 nombre_clase=request.form.get('nombre_clase'), 
                 id_maestro=request.form.get('id_maestro') or None, 
-                id_ciclo=1, 
+                id_ciclo=id_ciclo_actual, # 👈 Ya no es estático
                 id_grado=request.form.get('id_grado')
             )
             db.session.add(nueva_clase)
         
         # --- Lógica de Secciones ---
         elif 'guardar_seccion' in request.form:
+            tab_actual = 'tab-secciones'
             nueva_seccion = Secciones(
                 nombre_seccion=request.form.get('nombre_seccion'), 
                 id_grado=request.form.get('id_grado')
             )
             db.session.add(nueva_seccion)
 
-        # --- NUEVA LÓGICA: Guardar Horario ---
-        elif 'id_clase' in request.form and 'dia_semana' in request.form:
+        # --- Lógica de Ciclos Lectivos ---
+        elif 'guardar_ciclo' in request.form:
+            tab_actual = 'tab-ciclos'
+            anio = request.form.get('anio_ciclo')
+            nombre_completo = f"Ciclo Lectivo {anio}"
+            
+            nuevo_ciclo = CiclosLectivos(
+                nombre_ciclo=nombre_completo,
+                fecha_inicio=None,  
+                fecha_fin=None,     
+                estado='INACTIVO'
+            )
+            db.session.add(nuevo_ciclo)
+            db.session.commit()
+            
+            flash(f"El {nombre_completo} ha sido registrado como Inactivo.", "success")
+            return redirect(url_for('configuracion_academica', tab=tab_actual))
+            
+        elif 'activar_ciclo' in request.form:
+            tab_actual = 'tab-ciclos'
+            id_ciclo = request.form.get('id_ciclo_a_activar')
+            hoy = datetime.now().date()
+            
+            # 1. Buscamos si hay un ciclo ACTIVO actualmente
+            ciclo_anterior = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
+            
+            # Si hay uno, lo finalizamos y le ponemos la fecha de hoy como fin
+            if ciclo_anterior:
+                ciclo_anterior.estado = 'FINALIZADO'
+                ciclo_anterior.fecha_fin = hoy
+            
+            # 2. Buscamos el nuevo ciclo que queremos activar
+            ciclo = CiclosLectivos.query.get(id_ciclo)
+            
+            if ciclo:
+                ciclo.estado = 'ACTIVO'
+                ciclo.fecha_inicio = hoy # Se estampa la fecha de inicio automáticamente
+                
+                db.session.commit()
+                flash(f"¡El {ciclo.nombre_ciclo} ahora es el ciclo en curso!", "success")
+            else:
+                flash("Error: No se pudo encontrar el ciclo para activar.", "danger")
+                
+            return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+        # 🔥 AGREGADO: FINALIZAR CICLO MANUALMENTE SIN ABRIR OTRO
+        elif 'finalizar_ciclo' in request.form:
+            tab_actual = 'tab-ciclos'
+            id_ciclo = request.form.get('id_ciclo_a_finalizar')
+        
+            hoy = datetime.now().date()
+            
+            ciclo = CiclosLectivos.query.get(id_ciclo)
+            
+            if ciclo:
+                ciclo.estado = 'FINALIZADO'
+                ciclo.fecha_fin = hoy 
+                
+                db.session.commit()
+                flash(f"El {ciclo.nombre_ciclo} ha sido finalizado con éxito.", "success")
+            else:
+                flash("Error: No se pudo encontrar el ciclo para finalizar.", "danger")
+                
+            return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+        # --- Lógica: Guardar Horario Manual ---
+        elif 'id_clase' in request.form and 'id_seccion' in request.form and 'guardar_horario_manual' in request.form:
+            tab_actual = 'tab-horarios'
             try:
-                # Convertimos los strings de la hora a objetos TIME de Python
+                dias_seleccionados = request.form.getlist('dias_seleccionados')
+                if not dias_seleccionados:
+                    flash("⚠️ Debes seleccionar al menos un día de la semana.")
+                    return redirect(url_for('configuracion_academica', tab=tab_actual))
+
                 h_inicio = datetime.strptime(request.form.get('hora_inicio'), '%H:%M').time()
                 h_fin = datetime.strptime(request.form.get('hora_fin'), '%H:%M').time()
 
-                nuevo_bloque = Horarios(
-                    id_clase=request.form.get('id_clase'),
-                    dia_semana=request.form.get('dia_semana'),
-                    hora_inicio=h_inicio,
-                    hora_fin=h_fin
-                )
-                db.session.add(nuevo_bloque)
+                if h_fin <= h_inicio:
+                    flash("⚠️ La hora de fin debe ser posterior a la hora de inicio.")
+                    return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+                for dia in dias_seleccionados:
+                    nuevo_bloque = Horarios(
+                        id_clase=request.form.get('id_clase'),
+                        id_seccion=request.form.get('id_seccion'),
+                        dia_semana=dia,
+                        hora_inicio=h_inicio,
+                        hora_fin=h_fin
+                    )
+                    db.session.add(nuevo_bloque)
+
+                flash("¡Horarios guardados correctamente!")
+
             except Exception as e:
+                db.session.rollback()
                 flash(f"Error al procesar el horario: {str(e)}")
-                return redirect(url_for('configuracion_academica'))
+                return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+        # --- LÓGICA: GENERADOR AUTOMÁTICO ALEATORIO ---
+        elif 'generar_aleatorio' in request.form:
+            tab_actual = 'tab-horarios'
+            try:
+                id_origen = request.form.get('id_seccion_origen')
+                id_destino = request.form.get('id_seccion_destino')
+
+                horarios_origen = Horarios.query.filter_by(id_seccion=id_origen).all()
+
+                if not horarios_origen:
+                    flash("⚠️ La sección de origen no tiene un horario creado todavía.")
+                    return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+                bloques_del_dia = [
+                    ("07:00", "08:00"), ("08:00", "09:00"), ("09:00", "10:00"),
+                    ("10:30", "11:30"), ("11:30", "12:30")
+                ]
+                dias_semana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]
+
+                espacios_libres = []
+                for dia in dias_semana:
+                    for inicio, fin in bloques_del_dia:
+                        espacios_libres.append({
+                            "dia": dia,
+                            "inicio": datetime.strptime(inicio, "%H:%M").time(),
+                            "fin": datetime.strptime(fin, "%H:%M").time()
+                        })
+
+                random.shuffle(espacios_libres)
+
+                for hor_orig in horarios_origen:
+                    asignado = False
+                    
+                    for i, espacio in enumerate(espacios_libres):
+                        materia = Clases.query.get(hor_orig.id_clase)
+                        
+                        choque = db.session.query(Horarios).join(Clases).filter(
+                            Clases.id_maestro == materia.id_maestro,
+                            Horarios.dia_semana == espacio["dia"],
+                            Horarios.hora_inicio < espacio["fin"],
+                            Horarios.hora_fin > espacio["inicio"]
+                        ).first()
+
+                        if not choque:
+                            nuevo_horario = Horarios(
+                                id_clase=hor_orig.id_clase,
+                                id_seccion=id_destino,
+                                dia_semana=espacio["dia"],
+                                hora_inicio=espacio["inicio"],
+                                hora_fin=espacio["fin"]
+                            )
+                            db.session.add(nuevo_horario)
+                            
+                            espacios_libres.pop(i)
+                            asignado = True
+                            break
+                    
+                    if not asignado:
+                        db.session.rollback()
+                        flash("⚠️ No se encontraron suficientes espacios sin choques de maestros para completar el horario.")
+                        return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+                flash("¡Horario automático para la sección destino generado con éxito!")
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error en la generación automática: {str(e)}")
+                return redirect(url_for('configuracion_academica', tab=tab_actual))
 
         db.session.commit()
-        flash("Registro guardado correctamente")
-        return redirect(url_for('configuracion_academica'))
+        # Redirige conservando la pestaña tras un POST exitoso
+        return redirect(url_for('configuracion_academica', tab=tab_actual))
 
-    # --- GET: Carga de datos para el template ---
+    # --- LÓGICA PARA PETICIONES GET ---
     maestros_para_select = Maestros.query.all()
-    # Importante: traer los horarios para que se vean en la tabla de la derecha
     todos_los_horarios = Horarios.query.order_by(Horarios.dia_semana, Horarios.hora_inicio).all()
     
+    # Aquí pasamos la variable 'tab_activa' al HTML
     return render_template('Admin_Panel/configuracion_academica.html', 
                            grados=Grados.query.all(), 
                            clases=Clases.query.all(), 
                            secciones=Secciones.query.all(), 
                            maestros=maestros_para_select,
-                           horarios=todos_los_horarios)
+                           horarios=todos_los_horarios,
+                           ciclos=CiclosLectivos.query.all(),
+                           tab_activa=tab_actual)
 
+#----------------------- LOGICA DE ELIMINACION -----------------------
 @app.route('/admin/configuracion/eliminar_grado/<int:id_grado>', methods=['POST'])
 def eliminar_grado(id_grado):
-    if session.get('rol') != 1: return redirect(url_for('login'))
+    if session.get('rol') != 1: return redirect(url_for('login'))    
+    tab_actual = request.args.get('tab', 'tab-grados')
+    
     grado = Grados.query.get_or_404(id_grado)
     try:
         db.session.delete(grado)
@@ -1103,12 +1349,14 @@ def eliminar_grado(id_grado):
     except Exception as e:
         db.session.rollback()
         flash("No se puede eliminar: Registro en uso.", "error")
-    return redirect(url_for('configuracion_academica'))
+        
+    return redirect(url_for('configuracion_academica', tab=tab_actual))
+
 
 @app.route('/admin/configuracion/eliminar_materia/<int:id_clase>', methods=['POST'])
 def eliminar_materia(id_clase):
-    if session.get('rol') != 1: 
-        return redirect(url_for('login'))
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    tab_actual = request.args.get('tab', 'tab-materias')
     
     materia = Clases.query.get_or_404(id_clase)
     try:
@@ -1117,15 +1365,15 @@ def eliminar_materia(id_clase):
         flash("Materia eliminada correctamente.", "success")
     except Exception as e:
         db.session.rollback()
-        # Esto sucede si la materia ya tiene notas o tareas vinculadas
         flash("No se puede eliminar la materia: tiene registros vinculados (notas o tareas).", "error")
     
-    return redirect(url_for('configuracion_academica'))
+    return redirect(url_for('configuracion_academica', tab=tab_actual))
+
 
 @app.route('/admin/configuracion/eliminar_seccion/<int:id_seccion>', methods=['POST'])
 def eliminar_seccion(id_seccion):
-    if session.get('rol') != 1: 
-        return redirect(url_for('login'))
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    tab_actual = request.args.get('tab', 'tab-secciones')
     
     seccion = Secciones.query.get_or_404(id_seccion)
     try:
@@ -1136,52 +1384,24 @@ def eliminar_seccion(id_seccion):
         db.session.rollback()
         flash("No se puede eliminar la sección: tiene alumnos vinculados.", "error")
     
-    return redirect(url_for('configuracion_academica'))
+    return redirect(url_for('configuracion_academica', tab=tab_actual))
 
-@app.route('/admin/horarios/nuevo')
-def nuevo_horario():
-    if session.get('rol') != 1:
-        return redirect(url_for('login'))
-        
-    lista_clases = Clases.query.all() 
-    return render_template('Panel_Admin/crear_horario.html', clases=lista_clases)
 
-@app.route('/admin/guardar-horario', methods=['POST'])
-def guardar_horario():
-    if session.get('rol') != 1:
-        return redirect(url_for('login'))
-
-    id_clase = request.form.get('id_clase')
-    dia = request.form.get('dia_semana')
-    h_inicio_str = request.form.get('hora_inicio')
-    h_fin_str = request.form.get('hora_fin')
-
+@app.route('/admin/horario/eliminar/<int:id>', methods=['POST'])
+def eliminar_horario(id):
+    if session.get('rol') != 1: return redirect(url_for('login'))
+    tab_actual = request.args.get('tab', 'tab-horarios')
+    
+    horario = Horarios.query.get_or_404(id)
     try:
-        # Convertimos los strings del input type="time" a objetos time de Python
-        h_inicio = datetime.strptime(h_inicio_str, '%H:%M').time()
-        h_fin = datetime.strptime(h_fin_str, '%H:%M').time()
-
-        # Validación básica: La hora de fin no puede ser antes que la de inicio
-        if h_fin <= h_inicio:
-            # Aquí podrías usar flash() para enviar un mensaje de error
-            return "Error: La hora de fin debe ser posterior a la de inicio", 400
-
-        nuevo_horario = Horarios(
-            id_clase=id_clase,
-            dia_semana=dia,
-            hora_inicio=h_inicio,
-            hora_fin=h_fin
-        )
-
-        db.session.add(nuevo_horario)
+        db.session.delete(horario)
         db.session.commit()
-        
-        return redirect(url_for('admin_dashboard')) 
-
+        flash('Registro de horario eliminado exitosamente.', 'success')
     except Exception as e:
         db.session.rollback()
-        return f"Ocurrió un error al guardar: {str(e)}", 500
-    
+        flash('Ocurrió un error al intentar eliminar el horario.', 'danger')
+        
+    return redirect(url_for('configuracion_academica', tab=tab_actual))
     
 # ==========================================
 # GESTIÓN Y EDICIÓN DE ASIGNACIONES
