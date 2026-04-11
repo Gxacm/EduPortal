@@ -36,6 +36,13 @@ class CiclosLectivos(db.Model):
     estado = db.Column(db.String(15), default='INACTIVO') 
 
     clases = db.relationship('Clases', backref='ciclo', lazy=True)
+    periodos = db.relationship('Periodos', backref='ciclo_periodo', lazy=True)
+
+class Periodos(db.Model):
+    __tablename__ = 'periodos'
+    id_periodo = db.Column(db.Integer, primary_key=True)
+    nombre_periodo = db.Column(db.String(50), nullable=False)
+    id_cycle = db.Column(db.Integer, db.ForeignKey('ciclos_lectivos.id_cycle'), nullable=False)
 
 class Periodos(db.Model):
     __tablename__ = 'periodos'
@@ -114,14 +121,23 @@ class Tareas(db.Model):
     id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'))
     titulo = db.Column(db.String(150), nullable=False)
     descripcion = db.Column(db.Text)
+<<<<<<< HEAD
     id_periodo = db.Column(db.Integer, db.ForeignKey('periodos.id_periodo', ondelete='SET NULL'), nullable=True)
+=======
+    periodo = db.Column(db.String(50), nullable=True)
+    puntos = db.Column(db.Float, default=100.0)
+>>>>>>> a80425f25ca95bb9823ec4a24d380c8e58761f22
     fecha_publicacion = db.Column(db.DateTime, default=db.func.current_timestamp())
     fecha_entrega = db.Column(db.DateTime, nullable=False)
     
     # Si borras la tarea, se borran sus entregas y sus notas
     entregas = db.relationship('EntregasTareas', backref='tarea', lazy=True, cascade="all, delete-orphan")
+<<<<<<< HEAD
     notas_tarea = db.relationship('Notas', backref='tarea_rel', lazy=True, cascade="all, delete-orphan")
     
+=======
+    notas_tarea = db.relationship('Notas', back_populates='tarea', lazy=True, cascade="all, delete-orphan")
+>>>>>>> a80425f25ca95bb9823ec4a24d380c8e58761f22
 
 class EntregasTareas(db.Model):
     __tablename__ = 'entregas_tareas'
@@ -142,8 +158,8 @@ class Notas(db.Model):
     fecha_modificacion = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Opcional: Relaciones para acceder fácil desde el objeto
-    tarea = db.relationship('Tareas', backref='notas_asociadas')
-    examen = db.relationship('Examenes', backref='notas_asociadas')
+    tarea = db.relationship('Tareas', back_populates='notas_tarea')
+    examen = db.relationship('Examenes', back_populates='notas_examen')
 
 class Asistencias(db.Model):
     __tablename__ = 'asistencias'
@@ -170,8 +186,13 @@ class Examenes(db.Model):
     id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=False)
     titulo = db.Column(db.String(200), nullable=False)
     descripcion = db.Column(db.Text, nullable=True)
+<<<<<<< HEAD
     modalidad = db.Column(db.String(50), nullable=False)
     id_periodo = db.Column(db.Integer, db.ForeignKey('periodos.id_periodo', ondelete='SET NULL'), nullable=True)
+=======
+    periodo = db.Column(db.String(50), nullable=True)
+    modalidad = db.Column(db.String(50), nullable=False) # 'archivo', 'instrucciones', 'formulario'
+>>>>>>> a80425f25ca95bb9823ec4a24d380c8e58761f22
     archivo_ruta = db.Column(db.String(255), nullable=True)
     fecha_limite = db.Column(db.DateTime, nullable=True)
     puntos_maximos = db.Column(db.Float, default=100.0)
@@ -179,8 +200,12 @@ class Examenes(db.Model):
     clase = db.relationship('Clases', backref=db.backref('examenes_rel', lazy=True))
     preguntas = db.relationship('PreguntasExamen', backref='examen_rel', lazy=True, cascade="all, delete-orphan")
     entregas = db.relationship('EntregasExamenes', backref='examen_rel', lazy=True, cascade="all, delete-orphan")
+<<<<<<< HEAD
     notas_examen = db.relationship('Notas', backref='examen_rel', lazy=True, cascade="all, delete-orphan")
     
+=======
+    notas_examen = db.relationship('Notas', back_populates='examen', lazy=True, cascade="all, delete-orphan")
+>>>>>>> a80425f25ca95bb9823ec4a24d380c8e58761f22
 
 class PreguntasExamen(db.Model):
     __tablename__ = 'preguntas_examen'

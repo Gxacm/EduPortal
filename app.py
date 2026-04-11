@@ -1,18 +1,42 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime
+from sqlalchemy import inspect, text
 import random
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from sqlalchemy.orm import joinedload
 import os
 from werkzeug.utils import secure_filename
+<<<<<<< HEAD
 from models import db, Usuarios, Maestros, CiclosLectivos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes, Periodos
+=======
+from models import db, Usuarios, Maestros, CiclosLectivos, Periodos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
+>>>>>>> a80425f25ca95bb9823ec4a24d380c8e58761f22
 
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+
+
+def asegurar_columnas_panel_maestro():
+    inspector = inspect(db.engine)
+
+    columnas_tareas = {col['name'] for col in inspector.get_columns('tareas')}
+    columnas_examenes = {col['name'] for col in inspector.get_columns('examenes')}
+
+    with db.engine.begin() as conn:
+        if 'periodo' not in columnas_tareas:
+            conn.execute(text("ALTER TABLE tareas ADD COLUMN IF NOT EXISTS periodo VARCHAR(50)"))
+        if 'puntos' not in columnas_tareas:
+            conn.execute(text("ALTER TABLE tareas ADD COLUMN IF NOT EXISTS puntos DOUBLE PRECISION DEFAULT 100"))
+        if 'periodo' not in columnas_examenes:
+            conn.execute(text("ALTER TABLE examenes ADD COLUMN IF NOT EXISTS periodo VARCHAR(50)"))
+
+
+with app.app_context():
+    asegurar_columnas_panel_maestro()
 
 # ==============================================================================
 # ----------------------------- Configuracion Idioma ---------------------------
@@ -175,7 +199,11 @@ def maestro_dashboard():
     perfil = Maestros.query.filter_by(id_usuario=user_id).first()
     
     clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all() if perfil else []
-    anuncios = Anuncios.query.filter(Anuncios.dirigido_a.in_(['Todos', 'Maestros'])).all()
+    ids_grados_maestro = list({clase.id_grado for clase in clases})
+    anuncios = Anuncios.query.filter(
+        (Anuncios.dirigido_a.in_(['Todos', 'Maestros'])) |
+        (Anuncios.dirigido_a.in_([f'Grado_{id_grado}' for id_grado in ids_grados_maestro]))
+    ).order_by(Anuncios.fecha_publicacion.desc()).limit(5).all()
     
     grados_data = []
     ids_grados_vistos = set()
@@ -196,6 +224,8 @@ def historial_tareas(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     
     grado = Grados.query.get_or_404(id_grado)
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all() if perfil else []
     clases_grado = Clases.query.filter_by(id_grado=id_grado).all()
     ids_clases = [c.id_clase for c in clases_grado]
     
@@ -214,17 +244,29 @@ def vista_nueva_tarea(id_grado):
     # Solo mostramos las materias de este maestro en este grado específico
     clases = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all() if perfil else []
     
-    return render_template('Panel_Maestro/tareas_nuevas.html', clases=clases, id_grado=id_grado, grado=grado)
+    return render_template(
+        'Panel_Maestro/tareas_nuevas.html',
+        clases=clases,
+        id_grado=id_grado,
+        grado=grado,
+        periodos=obtener_periodos_disponibles()
+    )
 
 @app.route('/maestro/tareas/nueva/<int:id_grado>', methods=['POST'])
 def crear_tarea(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     
     try:
+        puntos = float(request.form.get('puntos', 100))
+        if puntos <= 0:
+            raise ValueError("Puntaje invalido")
+
         nueva_tarea = Tareas(
             id_clase=request.form.get('id_clase'),
             titulo=request.form.get('titulo'),
             descripcion=request.form.get('descripcion'),
+            periodo=request.form.get('periodo'),
+            puntos=puntos,
             fecha_entrega=datetime.strptime(request.form.get('fecha_entrega'), '%Y-%m-%dT%H:%M')
         )
         db.session.add(nueva_tarea)
@@ -252,23 +294,43 @@ def registrar_notas(id_grado):
         id_tarea = request.args.get('id_tarea')
         
         if id_tarea:
+            tarea_obj = Tareas.query.join(Clases, Clases.id_clase == Tareas.id_clase).filter(
+                Tareas.id_tarea == id_tarea,
+                Clases.id_maestro == perfil.id_maestro
+            ).first()
+
+            if not tarea_obj:
+                flash("La tarea seleccionada no pertenece a este maestro.", "danger")
+                return redirect(url_for('registrar_notas', id_grado=id_grado))
+
+            puntaje_maximo = float(tarea_obj.puntos or 0)
+
             for key, value in request.form.items():
                 if key.startswith('nota_') and value.strip() != '':
                     user_id_alumno = int(key.split('_')[1])
                     alumno_db = Alumnos.query.filter_by(id_usuario=user_id_alumno).first()
                     
                     if alumno_db:
+                        try:
+                            calificacion = float(value)
+                        except ValueError:
+                            continue
+
+                        if calificacion < 0 or calificacion > puntaje_maximo:
+                            flash(f"La nota ingresada supera el puntaje maximo de la tarea ({puntaje_maximo} pts).", "warning")
+                            return redirect(url_for('registrar_notas', id_grado=id_grado))
+
                         nota_existente = Notas.query.filter_by(id_alumno=alumno_db.id_alumno, id_tarea=id_tarea).first()
                         
                         if nota_existente:
-                            nota_existente.calificacion = float(value)
+                            nota_existente.calificacion = calificacion
                             nota_existente.id_maestro_autor = perfil.id_maestro
                             nota_existente.fecha_modificacion = datetime.utcnow()
                         else:
                             nueva_nota = Notas(
                                 id_tarea=id_tarea,
                                 id_alumno=alumno_db.id_alumno,
-                                calificacion=float(value),
+                                calificacion=calificacion,
                                 id_maestro_autor=perfil.id_maestro
                             ) 
                             db.session.add(nueva_nota)
@@ -315,6 +377,8 @@ def registrar_notas(id_grado):
             'id_tarea': tarea.id_tarea,
             'titulo': tarea.titulo,
             'descripcion': tarea.descripcion, 
+            'periodo': tarea.periodo or 'Sin periodo',
+            'puntos': float(tarea.puntos or 0),
             'fecha_entrega': tarea.fecha_entrega.strftime('%d/%m/%Y %H:%M') if tarea.fecha_entrega else 'Sin fecha',
             'entregas': entregas
         })
@@ -339,43 +403,27 @@ def gestionar_grado(id_grado):
 
 @app.route('/maestro/anuncios/<int:id_grado>', methods=['GET', 'POST'])
 def maestro_anuncios(id_grado):
-    # Validamos que sea un maestro
     if session.get('rol') != 2:
         return redirect(url_for('login'))
 
     grado = Grados.query.get_or_404(id_grado)
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).all() if perfil else []
 
-    # Si se envía el formulario
     if request.method == 'POST':
-        # Recibimos los datos del HTML
-        titulo_form = request.form.get('titulo')
-        mensaje_form = request.form.get('mensaje')
-        
-        # Obtenemos el ID del maestro logueado desde la sesión
-        # OJO: Cambia 'id_usuario' por el nombre real de tu variable de sesión si es diferente
-        autor_id = session.get('id_usuario') 
-
-        # Creamos el anuncio usando EXACTAMENTE las columnas de tu imagen
         nuevo_anuncio = Anuncios(
-            titulo=titulo_form,
-            contenido=mensaje_form,              # Tu tabla lo llama 'contenido'
-            dirigido_a=f'Grado_{id_grado}',      # Guardamos a qué grado va dirigido
-            id_usuario_autor=autor_id            # Guardamos quién lo escribió
-            # Nota: No enviamos 'prioridad' porque tu tabla no tiene esa columna
+            titulo=request.form.get('titulo'),
+            contenido=request.form.get('mensaje'),
+            dirigido_a=f'Grado_{id_grado}',
+            id_usuario_autor=session.get('user_id'),
+            id_clase=request.form.get('id_clase') or None
         )
-        
         db.session.add(nuevo_anuncio)
         db.session.commit()
-        
-        # Recargamos la página para ver el anuncio nuevo
+        flash('Anuncio publicado correctamente.', 'success')
         return redirect(url_for('maestro_anuncios', id_grado=id_grado))
 
-    # Mostrar la página con el historial de anuncios
-    anuncios = Anuncios.query.filter(
-        Anuncios.dirigido_a.in_(['Todos', f'Grado_{id_grado}'])
-    ).order_by(Anuncios.fecha_publicacion.desc()).all()
-
-    return render_template('Panel_Maestro/anuncios.html', anuncios=anuncios, grado=grado)
+    return render_template('Panel_Maestro/anuncios.html', grado=grado, clases=clases)
 
 @app.route('/maestro/examenes/revision/<int:id_grado>', methods=['GET', 'POST'])
 def revisar_examenes(id_grado):
@@ -391,6 +439,17 @@ def revisar_examenes(id_grado):
         id_ex_form = request.args.get('id_examen')
         
         if id_ex_form:
+            examen_obj = Examenes.query.join(Clases, Clases.id_clase == Examenes.id_clase).filter(
+                Examenes.id_examen == id_ex_form,
+                Clases.id_maestro == perfil.id_maestro
+            ).first()
+
+            if not examen_obj:
+                flash("El examen seleccionado no pertenece a este maestro.", "danger")
+                return redirect(url_for('revisar_examenes', id_grado=id_grado))
+
+            puntaje_maximo = float(examen_obj.puntos_maximos or 0)
+
             for key, value in request.form.items():
                 if key.startswith('nota_') and value.strip() != '':
                     id_al_entregue = int(key.split('_')[1])
@@ -403,8 +462,14 @@ def revisar_examenes(id_grado):
                     
                     try:
                         val_nota = float(value)
+                        if val_nota < 0 or val_nota > puntaje_maximo:
+                            flash(f"La nota ingresada supera el puntaje maximo del examen ({puntaje_maximo} pts).", "warning")
+                            return redirect(url_for('revisar_examenes', id_grado=id_grado))
+
                         if nota_existente:
                             nota_existente.calificacion = val_nota
+                            nota_existente.id_maestro_autor = perfil.id_maestro
+                            nota_existente.fecha_modificacion = datetime.utcnow()
                         else:
                             nueva_nota = Notas(
                                 id_examen=id_ex_form,
@@ -479,7 +544,7 @@ def revisar_examenes(id_grado):
 def vista_nuevo_examen(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
     grado = Grados.query.get_or_404(id_grado)
-    return render_template('Panel_Maestro/nuevo_examen.html', id_grado=id_grado, grado=grado)
+    return render_template('Panel_Maestro/nuevo_examen.html', id_grado=id_grado, grado=grado, periodos=obtener_periodos_disponibles())
 
 # 2. Interfaz: Subir Archivo
 @app.route('/maestro/grado/<int:id_grado>/nuevo_examen/archivo', methods=['GET', 'POST'])
@@ -506,6 +571,7 @@ def examen_archivo(id_grado):
                 id_clase=request.form.get('id_clase'),
                 titulo=request.form.get('titulo'),
                 descripcion=request.form.get('descripcion'),
+                periodo=request.form.get('periodo'),
                 modalidad='archivo',
                 archivo_ruta=archivo_ruta,
                 fecha_limite=datetime.strptime(request.form.get('fecha_limite'), '%Y-%m-%dT%H:%M') if request.form.get('fecha_limite') else None,
@@ -520,7 +586,7 @@ def examen_archivo(id_grado):
             print(f"Error guardando examen de archivo: {e}")
             flash("Error al crear el examen. Revisa los datos.", "danger")
 
-    return render_template('Panel_Maestro/examen_archivo.html', id_grado=id_grado, grado=grado, clases=clases)
+    return render_template('Panel_Maestro/examen_archivo.html', id_grado=id_grado, grado=grado, clases=clases, periodos=obtener_periodos_disponibles())
 
 # 3. Interfaz: Solo Instrucciones
 @app.route('/maestro/grado/<int:id_grado>/nuevo_examen/instrucciones', methods=['GET', 'POST'])
@@ -537,6 +603,7 @@ def examen_instrucciones(id_grado):
                 id_clase=request.form.get('id_clase'),
                 titulo=request.form.get('titulo'),
                 descripcion=request.form.get('descripcion'),
+                periodo=request.form.get('periodo'),
                 modalidad='instrucciones',
                 fecha_limite=datetime.strptime(request.form.get('fecha_limite'), '%Y-%m-%dT%H:%M') if request.form.get('fecha_limite') else None,
                 puntos_maximos=float(request.form.get('puntos_maximos', 100))
@@ -550,7 +617,7 @@ def examen_instrucciones(id_grado):
             print(f"Error guardando examen de instrucciones: {e}")
             flash("Error al crear el examen.", "danger")
 
-    return render_template('Panel_Maestro/examen_instrucciones.html', id_grado=id_grado, grado=grado, clases=clases)
+    return render_template('Panel_Maestro/examen_instrucciones.html', id_grado=id_grado, grado=grado, clases=clases, periodos=obtener_periodos_disponibles())
 
 # 4. Interfaz: Formulario/Cuestionario manual (CORREGIDO Y COMPLETO)
 @app.route('/maestro/grado/<int:id_grado>/nuevo_examen/formulario', methods=['GET', 'POST'])
@@ -568,6 +635,7 @@ def examen_formulario(id_grado):
                 id_clase=request.form.get('id_clase'),
                 titulo=request.form.get('titulo'),
                 descripcion=request.form.get('descripcion'),
+                periodo=request.form.get('periodo'),
                 modalidad='formulario',
                 fecha_limite=datetime.strptime(request.form.get('fecha_limite'), '%Y-%m-%dT%H:%M') if request.form.get('fecha_limite') else None,
                 puntos_maximos=float(request.form.get('puntos_maximos', 100))
@@ -619,7 +687,7 @@ def examen_formulario(id_grado):
             print(f"Error guardando cuestionario: {e}")
             flash("Error al crear el cuestionario.", "danger")
 
-    return render_template('Panel_Maestro/examen_formulario.html', id_grado=id_grado, grado=grado, clases=clases)
+    return render_template('Panel_Maestro/examen_formulario.html', id_grado=id_grado, grado=grado, clases=clases, periodos=obtener_periodos_disponibles())
 # ----------------------------------------
 
 @app.route('/maestro/reportes/enviar/<int:id_grado>')
@@ -758,8 +826,11 @@ def alumno_dashboard():
 
 
     anuncios_globales = Anuncios.query.filter(
-        (Anuncios.id_clase == None), 
-        (Anuncios.dirigido_a.in_(['Todos', 'Alumnos']))
+        (Anuncios.id_clase == None),
+        (
+            Anuncios.dirigido_a.in_(['Todos', 'Alumnos']) |
+            (Anuncios.dirigido_a == f'Grado_{alumno.seccion.id_grado}')
+        )
     ).order_by(Anuncios.fecha_publicacion.desc()).all()
 
 
@@ -1304,6 +1375,17 @@ def obtener_id_ciclo_activo():
     ciclo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
     return ciclo.id_cycle if ciclo else 1
 
+def obtener_periodos_disponibles():
+    periodos = Periodos.query.filter_by(id_cycle=obtener_id_ciclo_activo()).order_by(Periodos.id_periodo.asc()).all()
+    if periodos:
+        return periodos
+
+    ultimo_ciclo_con_periodos = db.session.query(Periodos.id_cycle).order_by(Periodos.id_cycle.desc()).first()
+    if ultimo_ciclo_con_periodos:
+        return Periodos.query.filter_by(id_cycle=ultimo_ciclo_con_periodos[0]).order_by(Periodos.id_periodo.asc()).all()
+
+    return []
+
 @app.route('/admin/anuncios')
 def vista_anuncios():
     if session.get('rol') != 1:
@@ -1783,9 +1865,8 @@ def gestionar_asignaciones(id_grado):
 
     grado = Grados.query.get_or_404(id_grado)
 
-    # 2. Obtener todas las clases (materias) que pertenecen a este grado
-    # Nota: Asegúrate de que tu modelo Clases tenga la columna id_grado
-    clases_del_grado = Clases.query.filter_by(id_grado=id_grado).all()
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    clases_del_grado = Clases.query.filter_by(id_grado=id_grado, id_maestro=perfil.id_maestro).all() if perfil else []
     
     # Extraemos solo los IDs de esas clases (ej: [1, 2, 5])
     ids_clases = [clase.id_clase for clase in clases_del_grado]
@@ -1802,7 +1883,8 @@ def gestionar_asignaciones(id_grado):
     return render_template('Panel_Maestro/gestionar_asignaciones.html', 
                            grado=grado, 
                            tareas=tareas, 
-                           examenes=examenes)
+                           examenes=examenes,
+                           periodos=obtener_periodos_disponibles())
 
 
 @app.route('/maestro/tarea/borrar/<int:id_tarea>', methods=['POST'])
@@ -1811,14 +1893,20 @@ def borrar_tarea(id_tarea):
         return redirect(url_for('login'))
 
     id_grado = request.form.get('id_grado')
-    tarea = Tareas.query.get_or_404(id_tarea)
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    tarea = Tareas.query.join(Clases, Clases.id_clase == Tareas.id_clase).filter(
+        Tareas.id_tarea == id_tarea,
+        Clases.id_maestro == perfil.id_maestro
+    ).first_or_404()
 
     try:
         db.session.delete(tarea)
         db.session.commit()
+        flash("Tarea eliminada correctamente.", "success")
     except Exception as e:
         db.session.rollback()
         print(f"Error al borrar tarea: {e}")
+        flash("No se pudo eliminar la tarea.", "danger")
 
     return redirect(url_for('gestionar_asignaciones', id_grado=id_grado))
 
@@ -1829,14 +1917,20 @@ def borrar_examen(id_examen):
         return redirect(url_for('login'))
 
     id_grado = request.form.get('id_grado')
-    examen = Examenes.query.get_or_404(id_examen)
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    examen = Examenes.query.join(Clases, Clases.id_clase == Examenes.id_clase).filter(
+        Examenes.id_examen == id_examen,
+        Clases.id_maestro == perfil.id_maestro
+    ).first_or_404()
 
     try:
         db.session.delete(examen)
         db.session.commit()
+        flash("Examen eliminado correctamente.", "success")
     except Exception as e:
         db.session.rollback()
         print(f"Error al borrar examen: {e}")
+        flash("No se pudo eliminar el examen.", "danger")
 
     return redirect(url_for('gestionar_asignaciones', id_grado=id_grado))
 
@@ -1849,12 +1943,18 @@ def editar_tarea(id_tarea):
     if session.get('rol') != 2:
         return redirect(url_for('login'))
 
-    tarea = Tareas.query.get_or_404(id_tarea)
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    tarea = Tareas.query.join(Clases, Clases.id_clase == Tareas.id_clase).filter(
+        Tareas.id_tarea == id_tarea,
+        Clases.id_maestro == perfil.id_maestro
+    ).first_or_404()
     clase = Clases.query.get(tarea.id_clase) # Para saber a qué grado regresar
 
     # Actualizamos los datos con lo que venga del modal
     tarea.titulo = request.form.get('titulo')
     tarea.descripcion = request.form.get('descripcion')
+    tarea.periodo = request.form.get('periodo')
+    tarea.puntos = float(request.form.get('puntos', tarea.puntos or 100))
     
     fecha_str = request.form.get('fecha_entrega')
     if fecha_str:
@@ -1862,6 +1962,7 @@ def editar_tarea(id_tarea):
         tarea.fecha_entrega = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M')
     
     db.session.commit()
+    flash("Tarea actualizada correctamente.", "success")
     return redirect(url_for('gestionar_asignaciones', id_grado=clase.id_grado))
 
 
@@ -1870,20 +1971,26 @@ def editar_examen(id_examen):
     if session.get('rol') != 2:
         return redirect(url_for('login'))
 
-    examen = Examenes.query.get_or_404(id_examen)
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    examen = Examenes.query.join(Clases, Clases.id_clase == Examenes.id_clase).filter(
+        Examenes.id_examen == id_examen,
+        Clases.id_maestro == perfil.id_maestro
+    ).first_or_404()
     clase = Clases.query.get(examen.id_clase)
 
     # Actualizamos los datos
     examen.titulo = request.form.get('titulo')
     examen.descripcion = request.form.get('descripcion')
     examen.modalidad = request.form.get('modalidad')
-    examen.puntos_maximos = request.form.get('puntos_maximos')
+    examen.periodo = request.form.get('periodo')
+    examen.puntos_maximos = float(request.form.get('puntos_maximos', examen.puntos_maximos or 100))
     
     fecha_str = request.form.get('fecha_limite')
     if fecha_str:
         examen.fecha_limite = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M')
         
     db.session.commit()
+    flash("Examen actualizado correctamente.", "success")
     return redirect(url_for('gestionar_asignaciones', id_grado=clase.id_grado))
 
 if __name__ == '__main__':

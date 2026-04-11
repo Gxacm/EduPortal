@@ -42,6 +42,19 @@
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
         gap: 15px; 
     }
+    .announcements-panel {
+        margin-top: 24px; background: white; border-radius: 20px; padding: 1.4rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #e2e8f0;
+    }
+    .announcements-panel h3 { margin: 0 0 14px 0; font-size: 1.05rem; font-weight: 800; color: var(--dark-text); }
+    .announcement-row {
+        padding: 12px 0; border-top: 1px solid #eef2f7;
+        display: flex; justify-content: space-between; gap: 16px;
+    }
+    .announcement-row:first-of-type { border-top: 0; padding-top: 0; }
+    .announcement-row strong { display: block; color: var(--dark-text); }
+    .announcement-row p { margin: 4px 0 0 0; color: var(--muted-text); font-size: 0.92rem; }
+    .announcement-meta { color: var(--muted-text); font-size: 0.8rem; white-space: nowrap; }
 
     .m-card {
         padding: 1.2rem; border-radius: 20px;
@@ -89,7 +102,6 @@
         <nav class="top-nav-custom">
             <div class="user-profile-badge">
                 <div class="user-avatar">{{ maestro.nombre[0] }}</div>
-                <span class="fw-800 text-dark small">Prof. {{ maestro.nombre }}</span>
             </div>
         </nav>
 
@@ -127,6 +139,21 @@
             </div>
             {% endfor %}
         </div>
+
+        <section class="announcements-panel">
+            <h3>Anuncios Recientes</h3>
+            {% for anuncio in anuncios %}
+            <div class="announcement-row">
+                <div>
+                    <strong>{{ anuncio.titulo }}</strong>
+                    <p>{{ anuncio.contenido }}</p>
+                </div>
+                <span class="announcement-meta">{{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') if anuncio.fecha_publicacion else 'Reciente' }}</span>
+            </div>
+            {% else %}
+            <p class="text-muted m-0">No hay anuncios recientes para tus grados.</p>
+            {% endfor %}
+        </section>
     </div>
 </div>
 
