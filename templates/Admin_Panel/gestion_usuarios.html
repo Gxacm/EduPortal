@@ -35,9 +35,9 @@
         </div>
 
         <div class="search-section">
-            <div class="search-box">
-                <i class="bi bi-search search-icon"></i>
-                <input type="text" id="buscadorUniversal" onkeyup="filtrarTablas()" class="m-input search-input" 
+            <div class="gestion-search-box">
+                <i class="bi bi-search gestion-search-icon"></i>
+                <input type="text" id="buscadorUniversal" onkeyup="filtrarTablas()" class="m-input gestion-search-input" 
                        placeholder="Buscar por nombre, correo, carnet o especialidad...">
             </div>
         </div>
@@ -53,16 +53,17 @@
 
                 <div class="folder-system" id="contenedorCarpetas">
                     
-                    {# Agrupamos las secciones por el nombre del grado #}
-                    {% set grados = [] %}
+                    {# Agrupamos por grado usando id para respetar el orden jerárquico #}
+                    {% set grados_vistos = {} %}
                     {% for a in alumnos if a.seccion %}
-                        {% if a.seccion.grado.nombre_grado not in grados %}
-                            {% set _ = grados.append(a.seccion.grado.nombre_grado) %}
+                        {% if a.seccion.id_grado not in grados_vistos %}
+                            {% set _ = grados_vistos.update({a.seccion.id_grado: a.seccion.grado.nombre_grado}) %}
                         {% endif %}
                     {% endfor %}
+                    {% set grados = grados_vistos.items() | sort(attribute='0') %}
 
                     {# 1. Carpeta de Nivel: Grado #}
-                    {% for grado in grados|sort %}
+                    {% for id_grado, grado in grados %}
                     <div class="folder-wrapper" data-tipo="grado">
                         <div class="folder-header" onclick="toggleCarpeta(this)">
                             <i class="bi bi-folder-fill folder-icon"></i>
@@ -74,14 +75,14 @@
                             
                             {# Buscamos las secciones que pertenecen a este grado #}
                             {% set secciones_del_grado = [] %}
-                            {% for a in alumnos if a.seccion and a.seccion.grado.nombre_grado == grado %}
+                            {% for a in alumnos if a.seccion and a.seccion.id_grado == id_grado %}
                                 {% if a.seccion.nombre_seccion not in secciones_del_grado %}
                                     {% set _ = secciones_del_grado.append(a.seccion.nombre_seccion) %}
                                 {% endif %}
                             {% endfor %}
 
                             {# 2. Subcarpeta de Nivel: Sección #}
-                            {% for seccion in secciones_del_grado|sort %}
+                            {% for seccion in secciones_del_grado %}
                             <div class="folder-wrapper" data-tipo="seccion">
                                 <div class="folder-header subfolder" onclick="toggleCarpeta(this)">
                                     <i class="bi bi-folder2-open folder-icon text-warning"></i>
@@ -101,7 +102,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for a in alumnos if a.seccion and a.seccion.grado.nombre_grado == grado and a.seccion.nombre_seccion == seccion %}
+                                                {% for a in alumnos if a.seccion and a.seccion.id_grado == id_grado and a.seccion.nombre_seccion == seccion %}
                                                 <tr class="row-hover target-alumno">
                                                     <td class="id-text">{{ a.carnet }}</td>
                                                     <td class="name-text">
@@ -296,10 +297,10 @@
     .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
     /* Buscador */
     .search-section { margin-bottom: 1.5rem; }
-    .search-box { position: relative; width: 100%; }
-    .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--muted); }
-    .search-input { width: 100%; padding: 16px 16px 16px 50px; background: white; border: 1px solid #e2e8f0; border-radius: 18px; font-size: 0.95rem; box-sizing: border-box; transition: 0.3s; }
-    .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(67, 24, 255, 0.1); }
+    .gestion-search-box { position: relative; width: 100%; }
+    .gestion-search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .gestion-search-input { width: 100%; padding: 16px 16px 16px 50px; background: white; border: 1px solid #e2e8f0; border-radius: 18px; font-size: 0.95rem; box-sizing: border-box; transition: 0.3s; }
+    .gestion-search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(67, 24, 255, 0.1); }
 
     /* Cards y Tablas */
     .m-card { background: white; padding: 2.5rem; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.02); margin-bottom: 20px; }

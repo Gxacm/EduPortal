@@ -1,0 +1,565 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+{% set labels_periodos = periodos_data if periodos_data else [
+    {'id_periodo': 1, 'nombre': 'Parcial 1'},
+    {'id_periodo': 2, 'nombre': 'Parcial 2'},
+    {'id_periodo': 3, 'nombre': 'Parcial 3'},
+    {'id_periodo': 4, 'nombre': 'Parcial 4'}
+] %}
+
+<div class="viewport-wrapper">
+    <div class="container main-content-box">
+        <div class="top-action-bar">
+            <a href="{{ url_for('admin_dashboard') }}" class="chip-logout">
+                <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Volver al Panel
+            </a>
+        </div>
+
+        <header class="header-minimal">
+            <div class="logo-container">
+                <i class="bi bi-journal-richtext" style="font-size: 2.2rem; color: var(--primary);"></i>
+            </div>
+            <h1 class="main-title">Reporte de Notas</h1>
+            <div class="hero-average-pill">
+                <span class="hero-average-label">Promedio General</span>
+                <strong>{{ resumen.promedio_general }}</strong>
+                <small>{{ resumen.alumnos }} alumnos evaluados · {{ resumen.alertas }} alertas</small>
+            </div>
+        </header>
+
+        <div class="m-card">
+            <div class="card-header-flex">
+                <h3 class="m-section-title">Desglose por Grado y Sección</h3>
+                <div class="info-popover-wrapper">
+                    <button type="button" class="info-button" onclick="toggleInfoPopup(event)">
+                        <i class="bi bi-info-circle"></i>
+                        Guía de colores
+                    </button>
+                    <div class="info-popup" id="gradeInfoPopup">
+                        <h4>Interpretación visual</h4>
+                        <div class="info-popup-item">
+                            <span class="legend-dot legend-blue"></span>
+                            <span>Azul: nota registrada por período.</span>
+                        </div>
+                        <div class="info-popup-item">
+                            <span class="legend-dot legend-green"></span>
+                            <span>Verde: excelente, de 89 a 94.</span>
+                        </div>
+                        <div class="info-popup-item">
+                            <span class="legend-dot legend-orange"></span>
+                            <span>Naranja: regular, de 70 a 80.</span>
+                        </div>
+                        <div class="info-popup-item">
+                            <span class="legend-dot legend-red"></span>
+                            <span>Rojo: reprobado, menor a 70.</span>
+                        </div>
+                        <div class="info-popup-item">
+                            <span class="legend-dot legend-black"></span>
+                            <span>Negro: satisfactorio, de 81 a 88.</span>
+                        </div>
+                        <div class="info-popup-item">
+                            <span class="legend-dot legend-gold"></span>
+                            <span>Amarillo: sobresaliente, de 95 a 100.</span>
+                        </div>
+                        <div class="info-popup-item">
+                            <span class="legend-dot legend-gray"></span>
+                            <span>Gris: el alumno todavía no tiene calificaciones registradas.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filters-toolbar">
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="studentSearch" placeholder="Buscar alumno por nombre o apellido...">
+                </div>
+                <div class="filter-box">
+                    <i class="bi bi-funnel"></i>
+                    <select id="gradeFilter">
+                        <option value="all">Todas las calificaciones</option>
+                        <option value="reprobado">Rojo · Reprobado (&lt; 70)</option>
+                        <option value="regular">Naranja · Regular (70 - 80)</option>
+                        <option value="satisfactorio">Negro · Satisfactorio (81 - 88)</option>
+                        <option value="excelente">Verde · Excelente (89 - 94)</option>
+                        <option value="sobresaliente">Amarillo · Sobresaliente (95 - 100)</option>
+                        <option value="sin-notas">Gris · Sin notas</option>
+                    </select>
+                </div>
+                <button type="button" class="clear-filters-button" id="clearFilters">
+                    <i class="bi bi-x-circle"></i>
+                    Limpiar
+                </button>
+            </div>
+
+            <div class="folder-system">
+                {% for grado in grados_data %}
+                    <div class="folder-wrapper grade-wrapper" data-grade-name="{{ grado.nombre|lower }}">
+                        <div class="folder-header" onclick="toggleCarpeta(this)">
+                            <i class="bi bi-folder-fill folder-icon"></i>
+                            <span class="folder-name">{{ grado.nombre }}</span>
+                            <span class="chip-glass ms-auto">{{ grado.promedio }}</span>
+                        </div>
+                        <div class="folder-content">
+                            {% for seccion in grado.secciones %}
+                                <div class="folder-wrapper section-wrapper" data-section-name="{{ seccion.nombre|lower }}">
+                                    <div class="folder-header subfolder" onclick="toggleCarpeta(this)">
+                                        <i class="bi bi-folder2-open folder-icon text-warning"></i>
+                                        <span class="folder-name">Sección "{{ seccion.nombre }}"</span>
+                                        <span class="chip-glass ms-auto">{{ seccion.promedio }}</span>
+                                    </div>
+                                    <div class="folder-content">
+                                        <div class="table-responsive" style="padding: 10px;">
+                                            {% set usa_semestres = grado.nombre in ['Décimo Grado', 'Undécimo Grado'] %}
+                                            <table class="m-table">
+                                                <thead>
+                                                    {% if usa_semestres and labels_periodos|length >= 4 %}
+                                                        <tr class="semester-row">
+                                                            <th rowspan="2">Alumno</th>
+                                                            <th colspan="2">Semestre 1</th>
+                                                            <th colspan="2">Semestre 2</th>
+                                                            <th rowspan="2">Promedio Final</th>
+                                                            <th rowspan="2">Estado</th>
+                                                        </tr>
+                                                        <tr>
+                                                            {% for label in labels_periodos[:4] %}
+                                                                <th>{{ label.nombre }}</th>
+                                                            {% endfor %}
+                                                        </tr>
+                                                    {% else %}
+                                                    <tr>
+                                                        <th>Alumno</th>
+                                                        {% for label in labels_periodos %}
+                                                            <th>{{ label.nombre }}</th>
+                                                        {% endfor %}
+                                                        <th>Promedio Final</th>
+                                                        <th>Estado</th>
+                                                    </tr>
+                                                    {% endif %}
+                                                </thead>
+                                                <tbody>
+                                                    {% for alumno in seccion.alumnos_data %}
+                                                        {% if alumno.promedio_final is none %}
+                                                            {% set categoria_nota = 'sin-notas' %}
+                                                        {% elif alumno.promedio_final < 70 %}
+                                                            {% set categoria_nota = 'reprobado' %}
+                                                        {% elif alumno.promedio_final <= 80 %}
+                                                            {% set categoria_nota = 'regular' %}
+                                                        {% elif alumno.promedio_final <= 88 %}
+                                                            {% set categoria_nota = 'satisfactorio' %}
+                                                        {% elif alumno.promedio_final <= 94 %}
+                                                            {% set categoria_nota = 'excelente' %}
+                                                        {% else %}
+                                                            {% set categoria_nota = 'sobresaliente' %}
+                                                        {% endif %}
+                                                        <tr class="student-row"
+                                                            data-student-name="{{ alumno.nombre|lower }}"
+                                                            data-grade-name="{{ grado.nombre|lower }}"
+                                                            data-section-name="{{ seccion.nombre|lower }}"
+                                                            data-score-category="{{ categoria_nota }}">
+                                                            <td class="name-text">{{ alumno.nombre }}</td>
+                                                            {% for label in labels_periodos %}
+                                                                {% set promedio_periodo = alumno.promedios_periodo.get(label.id_periodo) %}
+                                                                <td>
+                                                                    {% if promedio_periodo is not none %}
+                                                                        <span class="badge-count score-blue">{{ promedio_periodo }}</span>
+                                                                    {% else %}
+                                                                        <span class="empty-note">Sin nota</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                            {% endfor %}
+                                                                <td>
+                                                                    {% if alumno.promedio_final is not none %}
+                                                                    <span class="badge-count {% if alumno.promedio_final < 70 %}score-danger{% elif alumno.promedio_final <= 80 %}score-regular{% elif alumno.promedio_final <= 88 %}score-satisfactory{% elif alumno.promedio_final <= 94 %}score-success{% else %}score-outstanding{% endif %}">
+                                                                        {{ alumno.promedio_final }}
+                                                                    </span>
+                                                                {% else %}
+                                                                    <span class="empty-note">Sin nota</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge-count {% if alumno.promedio_final is none %}score-muted{% elif alumno.promedio_final < 70 %}score-danger{% elif alumno.promedio_final <= 80 %}score-regular{% elif alumno.promedio_final <= 88 %}score-satisfactory{% elif alumno.promedio_final <= 94 %}score-success{% else %}score-outstanding{% endif %}">
+                                                                    {% if alumno.promedio_final is none %}
+                                                                        Sin notas
+                                                                    {% elif alumno.promedio_final < 70 %}
+                                                                        Reprobado
+                                                                    {% elif alumno.promedio_final <= 80 %}
+                                                                        Regular
+                                                                    {% elif alumno.promedio_final <= 88 %}
+                                                                        Satisfactorio
+                                                                    {% elif alumno.promedio_final <= 94 %}
+                                                                        Excelente
+                                                                    {% else %}
+                                                                        Sobresaliente
+                                                                    {% endif %}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    {% else %}
+                                                        <tr><td colspan="{{ labels_periodos|length + 3 }}" class="email-text">No hay alumnos registrados en esta sección.</td></tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="table-responsive" style="padding: 10px;">
+                                    <span class="email-text">Este grado aún no tiene secciones configuradas.</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <span class="email-text">No hay grados disponibles.</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #0f766e;
+        --primary-soft: #ccfbf1;
+        --dark: #134e4a;
+        --muted: #7c8f8d;
+        --bg: #f2fbfa;
+        --danger: #ff0000;
+        --warning: #ffd400;
+        --success: #008000;
+        --blue: #0057ff;
+        --orange: #ff7a00;
+        --black: #111111;
+    }
+    body { background-color: var(--bg); margin: 0; }
+    .viewport-wrapper { min-height: 100vh; padding: 40px 20px; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; }
+    .main-content-box { max-width: 1100px; width: 100%; margin: 0 auto; }
+    .header-minimal { text-align: center; margin-bottom: 2.5rem; }
+    .logo-container { width: 75px; height: 75px; background: white; border-radius: 22px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(15,118,110,0.10); }
+    .main-title { font-weight: 800; font-size: 2.2rem; color: var(--dark); letter-spacing: -1px; }
+    .hero-average-pill {
+        background: linear-gradient(135deg, var(--primary), #115e59);
+        color: white;
+        border-radius: 24px;
+        padding: 18px 24px;
+        min-width: 280px;
+        max-width: 420px;
+        margin: 14px auto 0;
+        box-shadow: 0 18px 40px rgba(15,118,110,0.22);
+    }
+    .hero-average-pill strong {
+        display: block;
+        font-size: 2.1rem;
+        line-height: 1.05;
+        margin: 6px 0 4px;
+    }
+    .hero-average-label,
+    .hero-average-pill small {
+        display: block;
+    }
+    .hero-average-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        opacity: 0.88;
+    }
+    .hero-average-pill small {
+        font-size: 0.9rem;
+        opacity: 0.88;
+    }
+    .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .m-card { background: white; padding: 2.5rem; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.02); margin-bottom: 20px; }
+    .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .m-section-title { font-weight: 800; color: var(--dark); font-size: 1.3rem; margin: 0; }
+    .filters-toolbar {
+        display: grid;
+        grid-template-columns: minmax(280px, 1.5fr) minmax(220px, 1fr) auto;
+        gap: 12px;
+        margin-bottom: 1.4rem;
+        align-items: center;
+    }
+    .search-box,
+    .filter-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8fcfb;
+        border: 1px solid #dcefeb;
+        border-radius: 14px;
+        padding: 0 14px;
+        min-height: 50px;
+    }
+    .search-box i,
+    .filter-box i {
+        color: var(--primary);
+        font-size: 1rem;
+    }
+    .search-box input,
+    .filter-box select {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--dark);
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+    .filter-box select {
+        appearance: none;
+        cursor: pointer;
+    }
+    .clear-filters-button {
+        min-height: 50px;
+        border: 0;
+        border-radius: 14px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        padding: 0 16px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+    .clear-filters-button:hover {
+        transform: translateY(-1px);
+        background: #bff7ef;
+    }
+    .info-popover-wrapper { position: relative; }
+    .info-button {
+        background: var(--primary-soft);
+        color: var(--primary);
+        border: 1px solid rgba(15,118,110,0.15);
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+    .info-button:hover {
+        transform: translateY(-1px);
+        background: #bff7ef;
+    }
+    .info-popup {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        width: 320px;
+        background: white;
+        border: 1px solid #d9eeeb;
+        border-radius: 18px;
+        box-shadow: 0 18px 40px rgba(15,118,110,0.14);
+        padding: 16px;
+        text-align: left;
+        display: none;
+        z-index: 30;
+    }
+    .info-popup.open { display: block; }
+    .info-popup h4 {
+        margin: 0 0 12px;
+        color: var(--dark);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+    .info-popup-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: #45615f;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    .info-popup-item + .info-popup-item { margin-top: 10px; }
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        flex: 0 0 12px;
+        margin-top: 4px;
+    }
+    .legend-blue { background: #0057ff; }
+    .legend-green { background: #008000; }
+    .legend-orange { background: #ff7a00; }
+    .legend-black { background: #111111; }
+    .legend-gold { background: #ffd400; }
+    .legend-red { background: #ff0000; }
+    .legend-gray { background: #e2e8f0; }
+    .m-table { width: 100%; border-collapse: collapse; }
+    .m-table th { text-align: left; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; padding: 15px; border-bottom: 2px solid var(--bg); }
+    .m-table td { padding: 18px 15px; border-bottom: 1px solid #f8fafc; color: var(--dark); font-weight: 600; }
+    .semester-row th {
+        text-align: center;
+        color: var(--primary);
+        background: #eefaf8;
+        border-bottom: 1px solid #dcefeb;
+    }
+    .name-text { color: var(--dark); font-weight: 700; }
+    .email-text { color: var(--muted); font-size: 0.9rem; font-weight: 500; text-align: center; }
+    .badge-count { font-size: 0.8rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; min-width: 64px; }
+    .score-blue { background: #e6eeff; color: var(--blue); }
+    .score-danger { background: #ffe5e5; color: var(--danger); }
+    .score-regular { background: #fff0e5; color: var(--orange); }
+    .score-satisfactory { background: #ededed; color: var(--black); }
+    .score-success { background: #e6f4e6; color: var(--success); }
+    .score-outstanding { background: #fff8cc; color: #9a7a00; }
+    .score-muted { background: #e2e8f0; color: #475569; }
+    .empty-note { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+    .top-action-bar { display: flex; justify-content: flex-end; margin-bottom: -10px; width: 100%; }
+    .chip-logout { background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s; display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+    .chip-logout:hover { background: var(--primary-soft); color: var(--primary); transform: translateY(-2px); }
+    .folder-wrapper { margin-bottom: 8px; border-radius: 12px; overflow: hidden; background: #f8fafc; }
+    .folder-header { display: flex; align-items: center; padding: 14px 20px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: 0.2s; font-weight: 700; color: var(--dark); }
+    .folder-header:hover { background: #effcf9; transform: translateX(3px); }
+    .folder-icon { font-size: 1.3rem; color: var(--primary); margin-right: 12px; }
+    .folder-header.subfolder { background: #fafafa; padding-left: 35px; border-color: #f1f5f9; }
+    .folder-header.subfolder:hover { background: #f2fbfa; }
+    .folder-name { color: var(--dark); }
+    .folder-content { display: none; padding: 5px 0 10px 15px; }
+    .folder-content.open { display: block; animation: fadeIn 0.3s ease; }
+    .ms-auto { margin-left: auto; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 768px) {
+        .viewport-wrapper { padding: 24px 14px; }
+        .m-card { padding: 1.25rem; border-radius: 22px; }
+        .folder-header,
+        .card-header-flex { padding: 12px 14px; }
+        .card-header-flex {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 0;
+        }
+        .filters-toolbar {
+            grid-template-columns: 1fr;
+        }
+        .hero-average-pill {
+            min-width: unset;
+            width: 100%;
+        }
+        .info-popup {
+            width: min(320px, calc(100vw - 40px));
+            right: auto;
+            left: 0;
+        }
+    }
+</style>
+
+<script>
+    function toggleCarpeta(elementoHeader) {
+        const content = elementoHeader.nextElementSibling;
+        content.classList.toggle('open');
+    }
+
+    function toggleInfoPopup(event) {
+        event.stopPropagation();
+        const popup = document.getElementById('gradeInfoPopup');
+        popup.classList.toggle('open');
+    }
+
+    document.addEventListener('click', function (event) {
+        const popup = document.getElementById('gradeInfoPopup');
+        const wrapper = document.querySelector('.info-popover-wrapper');
+        if (popup && wrapper && !wrapper.contains(event.target)) {
+            popup.classList.remove('open');
+        }
+    });
+
+    function normalizeText(value) {
+        return (value || '')
+            .toString()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim();
+    }
+
+    function applyStudentFilters() {
+        const searchValue = normalizeText(document.getElementById('studentSearch').value);
+        const filterValue = document.getElementById('gradeFilter').value;
+        const gradeWrappers = document.querySelectorAll('.grade-wrapper');
+        const hasActiveFilters = !!searchValue || filterValue !== 'all';
+
+        if (!hasActiveFilters) {
+            gradeWrappers.forEach(function (gradeWrapper) {
+                gradeWrapper.style.display = '';
+
+                const gradeContent = gradeWrapper.querySelector(':scope > .folder-content');
+                if (gradeContent) {
+                    gradeContent.classList.remove('open');
+                }
+
+                const sectionWrappers = gradeWrapper.querySelectorAll('.section-wrapper');
+                sectionWrappers.forEach(function (sectionWrapper) {
+                    sectionWrapper.style.display = '';
+
+                    const sectionContent = sectionWrapper.querySelector('.folder-content');
+                    if (sectionContent) {
+                        sectionContent.classList.remove('open');
+                    }
+
+                    const studentRows = sectionWrapper.querySelectorAll('.student-row');
+                    studentRows.forEach(function (row) {
+                        row.style.display = '';
+                    });
+                });
+            });
+            return;
+        }
+
+        gradeWrappers.forEach(function (gradeWrapper) {
+            const sectionWrappers = gradeWrapper.querySelectorAll('.section-wrapper');
+            let visibleSections = 0;
+
+            sectionWrappers.forEach(function (sectionWrapper) {
+                const studentRows = sectionWrapper.querySelectorAll('.student-row');
+                let visibleRows = 0;
+
+                studentRows.forEach(function (row) {
+                    const studentName = normalizeText(row.dataset.studentName);
+                    const category = row.dataset.scoreCategory || '';
+                    const matchesSearch = !searchValue || studentName.includes(searchValue);
+                    const matchesCategory = filterValue === 'all' || category === filterValue;
+                    const shouldShow = matchesSearch && matchesCategory;
+
+                    row.style.display = shouldShow ? '' : 'none';
+                    if (shouldShow) visibleRows += 1;
+                });
+
+                sectionWrapper.style.display = visibleRows > 0 ? '' : 'none';
+                const sectionContent = sectionWrapper.querySelector('.folder-content');
+                if (visibleRows > 0 && sectionContent) {
+                    sectionContent.classList.add('open');
+                    visibleSections += 1;
+                }
+            });
+
+            gradeWrapper.style.display = visibleSections > 0 ? '' : 'none';
+            const gradeContent = gradeWrapper.querySelector(':scope > .folder-content');
+            if (visibleSections > 0 && gradeContent) {
+                gradeContent.classList.add('open');
+            }
+        });
+    }
+
+    document.getElementById('studentSearch').addEventListener('input', applyStudentFilters);
+    document.getElementById('gradeFilter').addEventListener('change', applyStudentFilters);
+    document.getElementById('clearFilters').addEventListener('click', function () {
+        document.getElementById('studentSearch').value = '';
+        document.getElementById('gradeFilter').value = 'all';
+        applyStudentFilters();
+    });
+</script>
+
+{% endblock %}

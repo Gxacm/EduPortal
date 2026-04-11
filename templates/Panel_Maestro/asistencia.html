@@ -140,6 +140,8 @@
         {% endfor %}
     ];
     const ID_GRADO = "{{ grado.id_grado }}";
+    const ID_CLASE = "{{ clase_asistencia.id_clase if clase_asistencia else '' }}";
+    const ASISTENCIA_GUARDADA = JSON.parse('{{ asistencia_guardada|tojson|safe }}');
 
     document.addEventListener('DOMContentLoaded', () => {
         const inputMes = document.getElementById('mes-asistencia');
@@ -205,12 +207,12 @@
                         td.innerHTML = '-';
                     } else {
                         const fechaCompleta = `${inputMes.value}-${String(dia).padStart(2, '0')}`;
-                        const storageKey = `asistencia_grado${ID_GRADO}_${fechaCompleta}_${alumno.id}`;
-                        
-                        const valorGuardado = localStorage.getItem(storageKey) || '-';
+                        const storageKey = `${alumno.id}|${fechaCompleta}`;
+                        const valorGuardado = ASISTENCIA_GUARDADA[storageKey] || '-';
                         
                         const select = document.createElement('select');
                         select.className = `status-select ${obtenerClaseColor(valorGuardado)}`;
+                        select.dataset.currentValue = valorGuardado;
                         
                         select.innerHTML = `
                             <option value="-" ${valorGuardado === '-' ? 'selected' : ''}>-</option>
@@ -220,13 +222,42 @@
                             <option value="F" ${valorGuardado === 'F' ? 'selected' : ''}>F</option>
                         `;
                         
-                        select.addEventListener('change', (e) => {
+                        select.addEventListener('change', async (e) => {
                             const nuevoValor = e.target.value;
+                            const valorAnterior = e.target.dataset.currentValue || '-';
                             e.target.className = `status-select ${obtenerClaseColor(nuevoValor)}`;
-                            if (nuevoValor === '-') {
-                                localStorage.removeItem(storageKey);
-                            } else {
-                                localStorage.setItem(storageKey, nuevoValor);
+
+                            try {
+                                if (!ID_CLASE) {
+                                    throw new Error('No hay una clase configurada para guardar esta asistencia');
+                                }
+
+                                const response = await fetch("{{ url_for('guardar_asistencia') }}", {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        id_alumno: alumno.id,
+                                        id_clase: ID_CLASE,
+                                        fecha: fechaCompleta,
+                                        estado: nuevoValor
+                                    })
+                                });
+
+                                const result = await response.json();
+                                if (!response.ok || !result.ok) {
+                                    throw new Error(result.error || 'No se pudo guardar la asistencia');
+                                }
+
+                                if (nuevoValor === '-') {
+                                    delete ASISTENCIA_GUARDADA[storageKey];
+                                } else {
+                                    ASISTENCIA_GUARDADA[storageKey] = nuevoValor;
+                                }
+                                e.target.dataset.currentValue = nuevoValor;
+                            } catch (error) {
+                                e.target.value = valorAnterior;
+                                e.target.className = `status-select ${obtenerClaseColor(valorAnterior)}`;
+                                alert(error.message || 'Ocurrio un error al guardar la asistencia');
                             }
                         });
 

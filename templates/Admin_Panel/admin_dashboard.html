@@ -31,20 +31,26 @@
                     <span class="kpi-label">Docentes Activos</span>
                 </div>
             </div>
-            <div class="kpi-card blue">
+            <a href="/admin/reporte_asistencia" class="kpi-card kpi-link blue" aria-label="Ver reporte de asistencia">
                 <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
                 <div class="kpi-data">
                     <span class="kpi-value">{{ porcentaje_asistencia|default(0) }}%</span>
                     <span class="kpi-label">Asistencia Promedio</span>
                 </div>
-            </div>
-            <div class="kpi-card orange">
+                <div class="kpi-action">
+                    <i class="bi bi-arrow-up-right-circle-fill"></i>
+                </div>
+            </a>
+            <a href="/admin/reporte_notas" class="kpi-card kpi-link orange" aria-label="Ver reporte de notas">
                 <div class="kpi-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
                 <div class="kpi-data">
                     <span class="kpi-value">{{ alertas_notas|default(0) }}</span>
                     <span class="kpi-label">Alertas de Notas (< 70)</span>
                 </div>
-            </div>
+                <div class="kpi-action">
+                    <i class="bi bi-arrow-up-right-circle-fill"></i>
+                </div>
+            </a>
         </div>
 
         <div class="main-dashboard-grid">
@@ -125,7 +131,13 @@
     /* KPIs */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
     .kpi-card { background: white; padding: 25px; border-radius: 24px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+    .kpi-link { text-decoration: none; color: inherit; position: relative; transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; border: 1px solid transparent; }
+    .kpi-link:hover { transform: translateY(-6px); box-shadow: 0 18px 35px rgba(67,24,255,0.10); border-color: #dbe4ff; }
+    .kpi-link:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(67, 24, 255, 0.16); border-color: var(--primary); }
     .kpi-icon { width: 50px; height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .kpi-data { flex: 1; }
+    .kpi-action { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.2rem; transition: transform 0.25s ease, color 0.25s ease; }
+    .kpi-link:hover .kpi-action { color: var(--primary); transform: translate(3px, -3px); }
     
     .purple .kpi-icon { background: #f4f7fe; color: var(--primary); }
     .green .kpi-icon { background: #e6fcf5; color: var(--success); }
@@ -206,6 +218,12 @@
         color: var(--dark);
         font-weight: 600;
         padding: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .kpi-link {
+            padding-right: 20px;
+        }
     }
 </style>
 

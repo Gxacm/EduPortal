@@ -1,0 +1,155 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<div class="viewport-wrapper">
+    <div class="container main-content-box">
+        <div class="top-action-bar">
+            <a href="{{ url_for('admin_dashboard') }}" class="chip-logout">
+                <i class="bi bi-arrow-left" style="margin-right: 7px;"></i>Volver al Panel
+            </a>
+        </div>
+
+        <header class="header-minimal">
+            <div class="logo-container">
+                <i class="bi bi-clipboard2-check-fill" style="font-size: 2.2rem; color: var(--primary);"></i>
+            </div>
+            <h1 class="main-title">Reporte de Asistencia</h1>
+            <div class="badge-group">
+                <span class="chip-glass">Asistencia General: {{ resumen.porcentaje }}%</span>
+                <span class="chip-glass">Faltas: {{ resumen.faltas }}</span>
+                <span class="chip-glass">Excusas: {{ resumen.excusas }}</span>
+                <span class="chip-glass">Alumnos: {{ resumen.alumnos }}</span>
+            </div>
+        </header>
+
+        <div class="m-card">
+            <div class="card-header-flex">
+                <h3 class="m-section-title">Desglose por Grado y Sección</h3>
+            </div>
+
+            <div class="folder-system">
+                {% for grado in grados_data %}
+                <div class="folder-wrapper">
+                    <div class="folder-header" onclick="toggleCarpeta(this)">
+                        <i class="bi bi-folder-fill folder-icon"></i>
+                        <span class="folder-name">{{ grado.nombre }}</span>
+                        <span class="chip-glass ms-auto">{{ grado.porcentaje }}%</span>
+                    </div>
+                    <div class="folder-content">
+                        {% for seccion in grado.secciones %}
+                        <div class="folder-wrapper">
+                            <div class="folder-header subfolder" onclick="toggleCarpeta(this)">
+                                <i class="bi bi-folder2-open folder-icon text-warning"></i>
+                                <span class="folder-name">Sección "{{ seccion.nombre }}"</span>
+                                <span class="chip-glass ms-auto">{{ seccion.porcentaje }}%</span>
+                            </div>
+                            <div class="folder-content">
+                                <div class="table-responsive" style="padding: 10px;">
+                                    <table class="m-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Alumno</th>
+                                                <th>Asistencias</th>
+                                                <th>Inasistencias</th>
+                                                <th>Excusas</th>
+                                                <th>Total</th>
+                                                <th>% Asistencia</th>
+                                                <th>% Faltó</th>
+                                                <th>Último Registro</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for alumno in seccion.alumnos_data %}
+                                            <tr>
+                                                <td class="name-text">{{ alumno.nombre }}</td>
+                                                <td>{{ alumno.presentes }}</td>
+                                                <td>{{ alumno.ausentes }}</td>
+                                                <td>{{ alumno.excusas }}</td>
+                                                <td>{{ alumno.registros }}</td>
+                                                <td>
+                                                    <span class="badge-count" style="background:#e0e7ff; color:#4318ff;">{{ alumno.porcentaje_asistencia }}%</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge-count" style="background:{% if alumno.porcentaje_faltas >= 25 %}#fee2e2{% elif alumno.porcentaje_faltas >= 10 %}#fef3c7{% else %}#dcfce7{% endif %}; color:{% if alumno.porcentaje_faltas >= 25 %}#ef4444{% elif alumno.porcentaje_faltas >= 10 %}#b45309{% else %}#166534{% endif %};">
+                                                        {{ alumno.porcentaje_faltas }}%
+                                                    </span>
+                                                </td>
+                                                <td class="email-text">{{ alumno.ultima_fecha }} · {{ alumno.ultimo_estado }}</td>
+                                            </tr>
+                                            {% else %}
+                                            <tr>
+                                                <td colspan="8" class="email-text">No hay alumnos registrados en esta sección.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="table-responsive" style="padding: 10px;">
+                            <span class="email-text">Este grado aún no tiene secciones configuradas.</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <span class="email-text">No hay grados disponibles.</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #4318ff;
+        --dark: #2b3674;
+        --muted: #a3aed0;
+        --bg: #f4f7fe;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+    }
+    body { background-color: var(--bg); margin: 0; }
+    .viewport-wrapper { min-height: 100vh; padding: 40px 20px; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; }
+    .main-content-box { max-width: 1100px; width: 100%; margin: 0 auto; }
+    .header-minimal { text-align: center; margin-bottom: 2.5rem; }
+    .logo-container { width: 75px; height: 75px; background: white; border-radius: 22px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(0,0,0,0.04); }
+    .main-title { font-weight: 800; font-size: 2.2rem; color: var(--dark); letter-spacing: -1px; }
+    .badge-group { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .chip-glass { background: white; padding: 6px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .m-card { background: white; padding: 2.5rem; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.02); margin-bottom: 20px; }
+    .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .m-section-title { font-weight: 800; color: var(--dark); font-size: 1.3rem; margin: 0; }
+    .m-table { width: 100%; border-collapse: collapse; }
+    .m-table th { text-align: left; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; padding: 15px; border-bottom: 2px solid var(--bg); }
+    .m-table td { padding: 18px 15px; border-bottom: 1px solid #f8fafc; color: var(--dark); font-weight: 600; vertical-align: middle; }
+    .name-text { color: var(--dark); font-weight: 700; }
+    .email-text { color: var(--muted); font-size: 0.9rem; font-weight: 500; }
+    .badge-count { font-size: 0.8rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; display: inline-flex; }
+    .top-action-bar { display: flex; justify-content: flex-end; margin-bottom: -10px; width: 100%; }
+    .chip-logout { background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s; display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+    .chip-logout:hover { background: #fee2e2; color: #ef4444; transform: translateY(-2px); }
+    .folder-wrapper { margin-bottom: 8px; border-radius: 12px; overflow: hidden; background: #f8fafc; }
+    .folder-header { display: flex; align-items: center; padding: 14px 20px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: 0.2s; font-weight: 700; color: var(--dark); }
+    .folder-header:hover { background: #f1f5f9; transform: translateX(3px); }
+    .folder-icon { font-size: 1.3rem; color: var(--primary); margin-right: 12px; }
+    .folder-header.subfolder { background: #fafafa; padding-left: 35px; border-color: #f1f5f9; }
+    .folder-header.subfolder:hover { background: #f8fafc; }
+    .folder-content { display: none; padding: 5px 0 10px 15px; }
+    .folder-content.open { display: block; animation: fadeIn 0.3s ease; }
+    .ms-auto { margin-left: auto; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<script>
+    function toggleCarpeta(elementoHeader) {
+        const content = elementoHeader.nextElementSibling;
+        content.classList.toggle('open');
+    }
+</script>
+
+{% endblock %}

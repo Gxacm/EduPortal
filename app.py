@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash
+from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime
 import random
@@ -7,7 +7,7 @@ from config import Config
 from sqlalchemy.orm import joinedload
 import os
 from werkzeug.utils import secure_filename
-from models import db, Usuarios, Maestros, CiclosLectivos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
+from models import db, Usuarios, Maestros, CiclosLectivos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes, Periodos
 
 
 app = Flask(__name__)
@@ -633,7 +633,10 @@ def control_asistencia(id_grado):
     if session.get('rol') != 2: 
         return redirect(url_for('login'))
     
+    user_id = session.get('user_id')
+    perfil = Maestros.query.filter_by(id_usuario=user_id).first()
     grado = Grados.query.get_or_404(id_grado)
+    clase_asistencia = Clases.query.filter_by(id_maestro=perfil.id_maestro, id_grado=id_grado).order_by(Clases.id_clase.asc()).first() if perfil else None
     
     # Obtener alumnos del grado
     secciones = Secciones.query.filter_by(id_grado=id_grado).all()
@@ -648,8 +651,88 @@ def control_asistencia(id_grado):
             'usuario': au,
             'id_alumno': perfil_alumno.id_alumno
         })
+
+    asistencia_guardada = {}
+    if clase_asistencia and alumnos_data:
+        ids_alumnos = [alumno['id_alumno'] for alumno in alumnos_data]
+        asistencias_db = Asistencias.query.filter(
+            Asistencias.id_clase == clase_asistencia.id_clase,
+            Asistencias.id_alumno.in_(ids_alumnos)
+        ).all()
+
+        estado_a_codigo = {
+            'Presente': 'P',
+            'Ausente': 'A',
+            'Excusa': 'E',
+            'Feriado': 'F'
+        }
+        for asistencia in asistencias_db:
+            fecha_str = asistencia.fecha.strftime('%Y-%m-%d') if asistencia.fecha else ''
+            asistencia_guardada[f"{asistencia.id_alumno}|{fecha_str}"] = estado_a_codigo.get(asistencia.estado, '-')
             
-    return render_template('Panel_Maestro/asistencia.html', grado=grado, alumnos=alumnos_data)
+    return render_template(
+        'Panel_Maestro/asistencia.html',
+        grado=grado,
+        alumnos=alumnos_data,
+        clase_asistencia=clase_asistencia,
+        asistencia_guardada=asistencia_guardada
+    )
+
+@app.route('/maestro/asistencia/guardar', methods=['POST'])
+def guardar_asistencia():
+    if session.get('rol') != 2:
+        return jsonify({'ok': False, 'error': 'No autorizado'}), 403
+
+    data = request.get_json(silent=True) or {}
+    id_alumno = data.get('id_alumno')
+    id_clase = data.get('id_clase')
+    fecha = data.get('fecha')
+    estado_codigo = data.get('estado')
+
+    if not id_alumno or not id_clase or not fecha:
+        return jsonify({'ok': False, 'error': 'Datos incompletos'}), 400
+
+    try:
+        fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'ok': False, 'error': 'Fecha invalida'}), 400
+
+    estado_map = {
+        'P': 'Presente',
+        'A': 'Ausente',
+        'E': 'Excusa',
+        'F': 'Feriado'
+    }
+
+    asistencia = Asistencias.query.filter_by(
+        id_clase=id_clase,
+        id_alumno=id_alumno,
+        fecha=fecha_obj
+    ).first()
+
+    if estado_codigo == '-' or not estado_codigo:
+        if asistencia:
+            db.session.delete(asistencia)
+            db.session.commit()
+        return jsonify({'ok': True})
+
+    estado_db = estado_map.get(estado_codigo)
+    if not estado_db:
+        return jsonify({'ok': False, 'error': 'Estado invalido'}), 400
+
+    if asistencia:
+        asistencia.estado = estado_db
+    else:
+        asistencia = Asistencias(
+            id_clase=id_clase,
+            id_alumno=id_alumno,
+            fecha=fecha_obj,
+            estado=estado_db
+        )
+        db.session.add(asistencia)
+
+    db.session.commit()
+    return jsonify({'ok': True})
 
 @app.route('/maestro/datos/exportar')
 def exportar_datos():
@@ -905,6 +988,291 @@ def admin_dashboard():
                            porcentaje_asistencia=porcentaje_asistencia, alertas_notas=alertas_notas,
                            mapa_grados=mapa_grados, ultimos_usuarios=ultimos_usuarios,
                            fecha_actual=datetime.now().strftime("%d/%m/%Y"))
+
+@app.route('/admin/reporte_asistencia')
+def reporte_asistencia():
+    if session.get('rol') != 1:
+        return redirect(url_for('login'))
+
+    grados = Grados.query.options(
+        joinedload(Grados.secciones)
+        .joinedload(Secciones.alumnos)
+        .joinedload(Alumnos.usuario)
+    ).order_by(Grados.id_grado.asc()).all()
+
+    todas_asistencias = Asistencias.query.order_by(Asistencias.fecha.desc()).all()
+    asist_por_alumno = {}
+
+    for asistencia in todas_asistencias:
+        alumno_stats = asist_por_alumno.setdefault(asistencia.id_alumno, {
+            'presentes': 0,
+            'ausentes': 0,
+            'excusas': 0,
+            'feriados': 0,
+            'registros': 0,
+            'ultima_fecha': None,
+            'ultimo_estado': None
+        })
+
+        estado = (asistencia.estado or '').strip()
+        if estado == 'Presente':
+            alumno_stats['presentes'] += 1
+        elif estado == 'Ausente':
+            alumno_stats['ausentes'] += 1
+        elif estado == 'Excusa':
+            alumno_stats['excusas'] += 1
+        elif estado == 'Feriado':
+            alumno_stats['feriados'] += 1
+
+        if estado != 'Feriado':
+            alumno_stats['registros'] += 1
+
+        if not alumno_stats['ultima_fecha']:
+            alumno_stats['ultima_fecha'] = asistencia.fecha
+            alumno_stats['ultimo_estado'] = estado or 'Sin estado'
+
+    resumen_general = {
+        'presentes': 0,
+        'ausentes': 0,
+        'excusas': 0,
+        'registros': 0,
+        'alumnos': 0
+    }
+    grados_data = []
+
+    for grado in grados:
+        grado_data = {
+            'id_grado': grado.id_grado,
+            'nombre': grado.nombre_grado,
+            'alumnos': 0,
+            'presentes': 0,
+            'ausentes': 0,
+            'excusas': 0,
+            'registros': 0,
+            'porcentaje': 0,
+            'secciones': []
+        }
+
+        for seccion in sorted(grado.secciones, key=lambda seccion: (seccion.nombre_seccion or '').upper()):
+            seccion_data = {
+                'id_seccion': seccion.id_seccion,
+                'nombre': seccion.nombre_seccion,
+                'alumnos': 0,
+                'presentes': 0,
+                'ausentes': 0,
+                'excusas': 0,
+                'registros': 0,
+                'porcentaje': 0,
+                'alumnos_data': []
+            }
+
+            for alumno in seccion.alumnos:
+                stats = asist_por_alumno.get(alumno.id_alumno, {
+                    'presentes': 0,
+                    'ausentes': 0,
+                    'excusas': 0,
+                    'feriados': 0,
+                    'registros': 0,
+                    'ultima_fecha': None,
+                    'ultimo_estado': 'Sin registros'
+                })
+
+                porcentaje_asistencia = round((stats['presentes'] / stats['registros']) * 100, 1) if stats['registros'] else 0
+                porcentaje_faltas = round((stats['ausentes'] / stats['registros']) * 100, 1) if stats['registros'] else 0
+
+                alumno_data = {
+                    'id_alumno': alumno.id_alumno,
+                    'nombre': f"{alumno.usuario.nombre} {alumno.usuario.apellido}" if alumno.usuario else f"Alumno #{alumno.id_alumno}",
+                    'presentes': stats['presentes'],
+                    'ausentes': stats['ausentes'],
+                    'excusas': stats['excusas'],
+                    'registros': stats['registros'],
+                    'porcentaje_asistencia': porcentaje_asistencia,
+                    'porcentaje_faltas': porcentaje_faltas,
+                    'ultima_fecha': stats['ultima_fecha'].strftime('%d/%m/%Y') if stats['ultima_fecha'] else 'Sin registros',
+                    'ultimo_estado': stats['ultimo_estado'] or 'Sin registros'
+                }
+
+                alumno.asist_presentes = alumno_data['presentes']
+                alumno.asist_ausentes = alumno_data['ausentes']
+                alumno.asist_excusas = alumno_data['excusas']
+                alumno.asist_total = alumno_data['registros']
+                alumno.asist_pct = alumno_data['porcentaje_asistencia']
+                alumno.asist_faltas_pct = alumno_data['porcentaje_faltas']
+                alumno.asist_ultima_fecha = alumno_data['ultima_fecha']
+                alumno.asist_ultimo_estado = alumno_data['ultimo_estado']
+
+                seccion_data['alumnos_data'].append(alumno_data)
+                seccion_data['alumnos'] += 1
+                seccion_data['presentes'] += stats['presentes']
+                seccion_data['ausentes'] += stats['ausentes']
+                seccion_data['excusas'] += stats['excusas']
+                seccion_data['registros'] += stats['registros']
+
+            seccion_data['porcentaje'] = round((seccion_data['presentes'] / seccion_data['registros']) * 100, 1) if seccion_data['registros'] else 0
+            grado_data['secciones'].append(seccion_data)
+            grado_data['alumnos'] += seccion_data['alumnos']
+            grado_data['presentes'] += seccion_data['presentes']
+            grado_data['ausentes'] += seccion_data['ausentes']
+            grado_data['excusas'] += seccion_data['excusas']
+            grado_data['registros'] += seccion_data['registros']
+
+        grado_data['porcentaje'] = round((grado_data['presentes'] / grado_data['registros']) * 100, 1) if grado_data['registros'] else 0
+        grados_data.append(grado_data)
+        resumen_general['alumnos'] += grado_data['alumnos']
+        resumen_general['presentes'] += grado_data['presentes']
+        resumen_general['ausentes'] += grado_data['ausentes']
+        resumen_general['excusas'] += grado_data['excusas']
+        resumen_general['registros'] += grado_data['registros']
+
+    resumen_general['porcentaje'] = round((resumen_general['presentes'] / resumen_general['registros']) * 100, 1) if resumen_general['registros'] else 0
+    resumen_general['faltas'] = resumen_general['ausentes']
+
+    return render_template(
+        'Admin_Panel/reporte_asistencia.html',
+        grados=grados,
+        grados_data=grados_data,
+        resumen=resumen_general
+    )
+
+@app.route('/admin/reporte_notas')
+def reporte_notas():
+    if session.get('rol') != 1:
+        return redirect(url_for('login'))
+
+    grados = Grados.query.options(
+        joinedload(Grados.secciones)
+        .joinedload(Secciones.alumnos)
+        .joinedload(Alumnos.usuario)
+    ).order_by(Grados.id_grado.asc()).all()
+    periodos = Periodos.query.order_by(Periodos.id_periodo.asc()).all()
+
+    notas = Notas.query.options(
+        joinedload(Notas.tarea).joinedload(Tareas.periodo),
+        joinedload(Notas.examen).joinedload(Examenes.periodo)
+    ).all()
+
+    periodos_data = [
+        {
+            'id_periodo': periodo.id_periodo,
+            'nombre': periodo.nombre_periodo
+        }
+        for periodo in periodos
+    ]
+
+    notas_por_alumno = {}
+    for nota in notas:
+        alumno_bucket = notas_por_alumno.setdefault(nota.id_alumno, {
+            'por_periodo': {},
+            'todas': []
+        })
+
+        try:
+            calificacion = float(nota.calificacion)
+        except (TypeError, ValueError):
+            continue
+
+        periodo_id = None
+        if nota.tarea and nota.tarea.id_periodo:
+            periodo_id = nota.tarea.id_periodo
+        elif nota.examen and nota.examen.id_periodo:
+            periodo_id = nota.examen.id_periodo
+
+        alumno_bucket['todas'].append(calificacion)
+
+        if periodo_id:
+            alumno_bucket['por_periodo'].setdefault(periodo_id, []).append(calificacion)
+
+    resumen_general = {
+        'promedio_general': 0,
+        'alertas': 0,
+        'alumnos': 0
+    }
+    grados_data = []
+    promedios_generales = []
+
+    for grado in grados:
+        grado_data = {
+            'id_grado': grado.id_grado,
+            'nombre': grado.nombre_grado,
+            'promedio': 0,
+            'alumnos': 0,
+            'secciones': []
+        }
+        promedios_grado = []
+
+        for seccion in sorted(grado.secciones, key=lambda item: (item.nombre_seccion or '').upper()):
+            seccion_data = {
+                'id_seccion': seccion.id_seccion,
+                'nombre': seccion.nombre_seccion,
+                'promedio': 0,
+                'alumnos': 0,
+                'alumnos_data': []
+            }
+            promedios_seccion = []
+
+            alumnos_ordenados = sorted(
+                seccion.alumnos,
+                key=lambda item: (
+                    (item.usuario.apellido if item.usuario else ''),
+                    (item.usuario.nombre if item.usuario else '')
+                )
+            )
+
+            for alumno in alumnos_ordenados:
+                stats = notas_por_alumno.get(alumno.id_alumno, {'por_periodo': {}, 'todas': []})
+                promedios_periodo = {}
+
+                for periodo in periodos_data:
+                    notas_periodo = stats['por_periodo'].get(periodo['id_periodo'], [])
+                    promedios_periodo[periodo['id_periodo']] = round(
+                        sum(notas_periodo) / len(notas_periodo), 1
+                    ) if notas_periodo else None
+
+                promedio_final = round(sum(stats['todas']) / len(stats['todas']), 1) if stats['todas'] else None
+                estado = 'Sin notas'
+                if promedio_final is not None:
+                    if promedio_final < 70:
+                        estado = 'Reprobado'
+                        resumen_general['alertas'] += 1
+                    elif promedio_final < 80:
+                        estado = 'En riesgo'
+                    else:
+                        estado = 'Aprobado'
+
+                    promedios_seccion.append(promedio_final)
+                    promedios_grado.append(promedio_final)
+                    promedios_generales.append(promedio_final)
+
+                alumno_data = {
+                    'id_alumno': alumno.id_alumno,
+                    'nombre': f"{alumno.usuario.nombre} {alumno.usuario.apellido}" if alumno.usuario else f"Alumno #{alumno.id_alumno}",
+                    'promedios_periodo': promedios_periodo,
+                    'promedio_final': promedio_final,
+                    'estado': estado
+                }
+
+                seccion_data['alumnos_data'].append(alumno_data)
+                seccion_data['alumnos'] += 1
+                resumen_general['alumnos'] += 1
+
+            seccion_data['promedio'] = round(sum(promedios_seccion) / len(promedios_seccion), 1) if promedios_seccion else 0
+            grado_data['secciones'].append(seccion_data)
+            grado_data['alumnos'] += seccion_data['alumnos']
+
+        grado_data['promedio'] = round(sum(promedios_grado) / len(promedios_grado), 1) if promedios_grado else 0
+        grados_data.append(grado_data)
+
+    resumen_general['promedio_general'] = round(
+        sum(promedios_generales) / len(promedios_generales), 1
+    ) if promedios_generales else 0
+
+    return render_template(
+        'Admin_Panel/reporte_notas.html',
+        grados_data=grados_data,
+        periodos_data=periodos_data,
+        resumen=resumen_general
+    )
 
 def generar_nuevo_carnet():
     """Genera un carnet con formato AAAA-001 basado en el ciclo lectivo activo"""
