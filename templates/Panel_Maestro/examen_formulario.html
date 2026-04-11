@@ -64,7 +64,7 @@
                 <select name="id_clase" class="custom-input" required>
                     <option value="" disabled selected>Selecciona la materia para este examen...</option>
                     {% for clase in clases %}
-                        <option value="{{ clase.id_clase }}">{{ clase.nombre_materia }}</option>
+                        <option value="{{ clase.id_clase }}">{{ clase.nombre_clase }}</option>
                     {% endfor %}
                 </select>
                 <small class="text-muted">El examen solo será visible para los alumnos de esta materia.</small>
@@ -78,6 +78,18 @@
             <div style="margin-bottom: 20px;">
                 <label class="custom-label">Instrucciones Generales</label>
                 <textarea name="descripcion" class="custom-input" rows="2" placeholder="Ej: Lee cuidadosamente cada pregunta antes de responder."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                    <label class="custom-label">Periodo</label>
+                    <select name="periodo" class="custom-input" required>
+                        <option value="" disabled selected>Selecciona un parcial...</option>
+                        {% for periodo in periodos %}
+                            <option value="{{ periodo.nombre_periodo }}">{{ periodo.nombre_periodo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             <div style="display: flex; gap: 20px;">

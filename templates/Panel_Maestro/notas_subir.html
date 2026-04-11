@@ -177,7 +177,7 @@
 
                                     <td>
                                         <input type="number" name="nota_{{ entrega.alumno.id_usuario }}" 
-                                               class="input-grade" placeholder="--" min="0" max="100" 
+                                               class="input-grade" placeholder="--" min="0" max="{{ tarea.puntos }}" step="0.1" 
                                                value="{{ entrega.nota if entrega.nota else '' }}">
                                     </td>
                                 </tr>
