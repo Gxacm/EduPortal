@@ -8,11 +8,7 @@ from config import Config
 from sqlalchemy.orm import joinedload
 import os
 from werkzeug.utils import secure_filename
-<<<<<<< HEAD
-from models import db, Usuarios, Maestros, CiclosLectivos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes, Periodos
-=======
 from models import db, Usuarios, Maestros, CiclosLectivos, Periodos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes
->>>>>>> a80425f25ca95bb9823ec4a24d380c8e58761f22
 
 
 app = Flask(__name__)
@@ -1219,8 +1215,8 @@ def reporte_notas():
     periodos = Periodos.query.order_by(Periodos.id_periodo.asc()).all()
 
     notas = Notas.query.options(
-        joinedload(Notas.tarea).joinedload(Tareas.periodo),
-        joinedload(Notas.examen).joinedload(Examenes.periodo)
+        joinedload(Notas.tarea),
+        joinedload(Notas.examen)
     ).all()
 
     periodos_data = [
@@ -1230,6 +1226,11 @@ def reporte_notas():
         }
         for periodo in periodos
     ]
+
+    mapa_periodos = {
+        (periodo.nombre_periodo or '').strip().lower(): periodo.id_periodo
+        for periodo in periodos
+    }
 
     notas_por_alumno = {}
     for nota in notas:
@@ -1244,10 +1245,10 @@ def reporte_notas():
             continue
 
         periodo_id = None
-        if nota.tarea and nota.tarea.id_periodo:
-            periodo_id = nota.tarea.id_periodo
-        elif nota.examen and nota.examen.id_periodo:
-            periodo_id = nota.examen.id_periodo
+        if nota.tarea and nota.tarea.periodo:
+            periodo_id = mapa_periodos.get(nota.tarea.periodo.strip().lower())
+        elif nota.examen and nota.examen.periodo:
+            periodo_id = mapa_periodos.get(nota.examen.periodo.strip().lower())
 
         alumno_bucket['todas'].append(calificacion)
 
