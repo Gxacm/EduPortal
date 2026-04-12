@@ -1,101 +1,135 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block content %}
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
 <div class="dashboard-container">
-    
     <aside class="sidebar-modern">
         <div class="sidebar-header-widget">
             <small>Mi Carnet: <strong>{{ alumno.carnet }}</strong></small>
             <div class="mini-progress-bar">
-                <div class="fill" style="width: 75%;"></div>
+                <div class="fill" style="width: {{ progreso_ciclo.porcentaje }}%;"></div>
+            </div>
+            <div class="cycle-progress-meta">
+                <span>{{ progreso_ciclo.texto }}</span>
+                <span>{{ progreso_ciclo.detalle }}</span>
             </div>
             <span class="semester-tag">{{ alumno.seccion.grado.nombre_grado }} - "{{ alumno.seccion.nombre_seccion }}"</span>
         </div>
 
         <nav class="nav-menu">
-            <a href="{{ url_for('alumno_dashboard') }}" class="nav-link active">
-                <i class="bi bi-house"></i> Inicio
-            </a>
-            <a href="{{ url_for('alumno_clases') }}" class="nav-link">
-                <i class="bi bi-journals"></i> Mis Clases
-            </a>
-            <a href="{{ url_for('alumno_agenda') }}" class="nav-link">
-                <i class="bi bi-calendar"></i> Agenda
-            </a>
-            <a href="{{ url_for('alumno_notas') }}" class="nav-link">
-                <i class="bi bi-star"></i> Notas
-            </a>
-            <a href="{{ url_for('alumno_horario') }}" class="nav-link">
-                <i class="bi bi-clock"></i> Horario
-            </a>
+            <a href="{{ url_for('alumno_dashboard') }}" class="nav-link active"><i class="bi bi-house"></i> Inicio</a>
+            <a href="{{ url_for('alumno_clases') }}" class="nav-link"><i class="bi bi-journals"></i> Mis Clases</a>
+            <a href="{{ url_for('alumno_agenda') }}" class="nav-link"><i class="bi bi-calendar"></i> Agenda</a>
+            <a href="{{ url_for('alumno_notas') }}" class="nav-link"><i class="bi bi-star"></i> Notas</a>
+            <a href="{{ url_for('alumno_horario') }}" class="nav-link"><i class="bi bi-clock"></i> Horario</a>
         </nav>
     </aside>
 
     <main class="main-viewport">
-        
         <header class="welcome-banner">
             <div class="welcome-text">
-                <h1>Hola, {{ session['nombre'] }} 👋</h1>
-                <p>Hoy es {{ datetime.now() | fecha_es }}. Tienes {{ tareas|length }} tareas pendientes para esta semana.</p>
+                <span class="eyebrow">Panel Académico</span>
+                <h1>Hola, {{ session['nombre'] }}</h1>
+                <p>Hoy es {{ datetime.now() | fecha_es }}. Tienes {{ tareas|length }} entregas próximas durante los próximos 7 días.</p>
             </div>
-            <div class="quick-status-widget">
-                <div class="status-item">
-                    <i class="bi bi-lightning-charge-fill" style="color: var(--accent-orange);"></i>
-                    <div>
-                        <span class="val">{{ asistencia_val }}%</span>
-                        <span class="lab">Asistencia</span>
+
+            <div class="header-actions">
+                <button class="notification-trigger" type="button" onclick="toggleNotifications()">
+                    <i class="bi bi-bell-fill"></i>
+                    {% if anuncios|length > 0 %}<span class="bell-badge" id="unreadBadge">{{ anuncios|length }}</span>{% endif %}
+                </button>
+
+                <div class="quick-status-widget">
+                    <div class="status-item">
+                        <i class="bi bi-lightning-charge-fill" style="color: #f59e0b;"></i>
+                        <div>
+                            <span class="val">{{ asistencia_val }}%</span>
+                            <span class="lab">Asistencia</span>
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="status-item">
+                        <i class="bi bi-journal-bookmark-fill" style="color: #0f172a;"></i>
+                        <div>
+                            <span class="val dark">{{ total_materias }}</span>
+                            <span class="lab dark">Materias</span>
+                        </div>
                     </div>
                 </div>
-                <div class="divider"></div>
-                <div class="status-item">
-                    <i class="bi bi-journal-bookmark-fill" style="color: var(--white);"></i>
-                    <div>
-                        <span class="val">{{ total_materias }}</span>
-                        <span class="lab">Materias</span>
+
+                <div class="notifications-panel" id="notificationsPanel">
+                    <div class="notifications-header">
+                        <h3>Comunicados</h3>
+                        <span>{{ anuncios|length }} recientes</span>
+                    </div>
+                    <div class="notifications-list">
+                        {% for anuncio in anuncios %}
+                            {% if anuncio.url %}
+                            <a href="{{ anuncio.url }}" class="notification-item is-link" data-announcement-id="{{ anuncio.id_anuncio }}">
+                            {% else %}
+                            <div class="notification-item" data-announcement-id="{{ anuncio.id_anuncio }}">
+                            {% endif %}
+                                <small>{{ anuncio.fecha.strftime('%d/%m') }} • {{ anuncio.autor }}</small>
+                                <strong>{{ anuncio.titulo }}</strong>
+                                <p>{{ anuncio.contenido }}</p>
+                                <span class="notification-origin">{{ anuncio.origen }}</span>
+                            {% if anuncio.url %}
+                            </a>
+                            {% else %}
+                            </div>
+                            {% endif %}
+                        {% else %}
+                        <div class="notification-item">
+                            <strong>Sin comunicados</strong>
+                            <p>No hay anuncios recientes por el momento.</p>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </header>
 
         <div class="bento-grid">
-            
             <section class="bento-item today-classes">
                 <div class="item-header">
-                    <h3><i class="bi bi-calendar-event"></i> Mis Materias</h3>
-                    <a href="{{ url_for('alumno_clases') }}">Ver todas</a>
+                    <h3><i class="bi bi-calendar-event"></i> Clases de {{ clases_hoy.dia_label }}</h3>
+                    <a href="{{ url_for('alumno_horario') }}">Ver horario</a>
                 </div>
-                
-                {% for clase in alumno.seccion.grado.clases[:2] %}
-                <div class="class-card {% if loop.index == 2 %}next{% endif %}">
-                    <div class="time"><i class="bi bi-book" style="font-size: 1.2rem; color: var(--primary);"></i></div>
-                    <div class="details">
-                        <strong>{{ clase.nombre_clase }}</strong>
-                        <span>Prof. {{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}</span>
+
+                {% for bloque in clases_hoy.bloques %}
+                <div class="schedule-card" style="--accent-line: {{ bloque.accent }}; --estado-fondo: {{ bloque.estado_ui.fondo }}; --estado-borde: {{ bloque.estado_ui.borde }}; --estado-color: {{ bloque.estado_ui.color }};">
+                    <div class="schedule-time">{{ bloque.hora }}</div>
+                    <div class="schedule-details">
+                        <strong>{{ bloque.materia }}</strong>
+                        <span>{{ bloque.maestro }}</span>
                     </div>
-                    {% if loop.first %}
-                    <span class="status-live">Principal</span>
-                    {% endif %}
+                    <div class="schedule-state">
+                        <span class="estado-pill"><i class="bi {{ bloque.estado_ui.icono }}"></i> {{ bloque.estado_ui.texto }}</span>
+                    </div>
                 </div>
                 {% else %}
-                <p class="text-muted mt-3">No hay materias asignadas a tu grado aún.</p>
+                <div class="empty-inline">
+                    <i class="bi bi-calendar2-x"></i>
+                    <span>No tienes clases programadas para {{ clases_hoy.dia_label|lower }}.</span>
+                </div>
                 {% endfor %}
             </section>
 
             <section class="bento-item gpa-card">
                 <h3>Rendimiento</h3>
                 <div class="circular-progress" style="--porcentaje: {{ promedio_val }}%;">
-                    <div class="value">{{ promedio_val|int }}%</div>
+                    <div class="value">{{ promedio_val|round(0, 'floor')|int }}%</div>
                 </div>
-                <p>Promedio General</p>
-                <span class="trend-up"><i class="bi bi-arrow-up-short"></i> Actualizado</span>
+                <p>{{ rendimiento.texto_periodo }}</p>
+                <span class="trend-up"><i class="bi bi-bar-chart-line-fill"></i> Promedio por parcial</span>
             </section>
 
             <section class="bento-item tasks-urgent">
                 <div class="item-header">
                     <h3><i class="bi bi-exclamation-circle"></i> Entregas Próximas</h3>
+                    <a href="{{ url_for('alumno_agenda') }}">Agenda</a>
                 </div>
                 {% for tarea in tareas %}
                 <div class="task-row">
@@ -104,44 +138,36 @@
                     </div>
                     <div class="task-info">
                         <strong>{{ tarea.titulo }}</strong>
-                        <span>{{ tarea.clase.nombre_clase }} • Vence: {{ tarea.fecha_entrega.strftime('%d/%m') }}</span>
+                        <span>{{ tarea.clase.nombre_clase }} • Vence: {{ tarea.fecha_entrega.strftime('%d/%m %H:%M') }}</span>
                     </div>
-                    <a href="{{ url_for('alumno_agenda') }}" class="btn-action" style="text-decoration: none; display: inline-block;">Subir</a>
+                    <a href="{{ url_for('alumno_aula', id_clase=tarea.id_clase) }}#tareas" class="btn-action">Abrir</a>
                 </div>
                 {% else %}
-                <p class="text-muted mt-3" style="font-size: 0.9rem;">¡Genial! No tienes tareas pendientes.</p>
+                <p class="text-muted mt-3" style="font-size: 0.9rem;">No tienes tareas que venzan en la próxima semana.</p>
                 {% endfor %}
             </section>
 
-            <section class="bento-item news-feed">
-                <div class="item-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0;">Comunicados</h3>
-                    <div class="notification-bell">
-                        <i class="bi bi-bell-fill" style="color: var(--primary); font-size: 1.3rem;"></i>
-                        {% if anuncios|length > 0 %}
-                        <span class="bell-badge">{{ anuncios|length }}</span>
-                        {% endif %}
-                    </div>
+            <section class="bento-item period-card">
+                <div class="item-header">
+                    <h3><i class="bi bi-clipboard-data"></i> Parciales</h3>
+                    <a href="{{ url_for('alumno_notas') }}">Ver notas</a>
                 </div>
-                <div class="news-scroll-container">
-                    {% for anuncio in anuncios %}
-                    <div class="news-item">
-                        <small>{{ anuncio.fecha_publicacion.strftime('%d/%m') }} • {{ anuncio.id_usuario_autor.nombre }}</small>
-                        <p><strong>{{ anuncio.titulo }}:</strong> {{ anuncio.contenido }}</p>
-                    </div>
-                    {% else %}
-                    <p class="text-muted" style="font-size: 0.9rem;">No hay comunicados recientes.</p>
-                    {% endfor %}
+                {% for periodo in rendimiento_periodos %}
+                <div class="period-row">
+                    <span>{{ periodo.nombre }}</span>
+                    <strong>{% if periodo.promedio is not none %}{{ periodo.promedio }}%{% else %}--{% endif %}</strong>
                 </div>
+                {% else %}
+                <p class="text-muted mt-3" style="font-size: 0.9rem;">Aún no hay parciales calificados.</p>
+                {% endfor %}
             </section>
-
         </div>
     </main>
 </div>
 
 <style>
     :root {
-        --primary: #46319b;
+        --primary: #1f4f78;
         --secondary: #6c757d;
         --bg: #f4f7fe;
         --white: #ffffff;
@@ -150,120 +176,129 @@
         --accent-red: #ee5d50;
         --accent-orange: #ffb547;
     }
-
     body { background-color: var(--bg); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-
-    /* LAYOUT PRINCIPAL */
     .dashboard-container { display: flex; min-height: 100vh; }
-
-    /* SIDEBAR */
-    .sidebar-modern {
-        width: 280px; background: var(--white); border-right: 1px solid #e0e5f2;
-        padding: 40px 20px; display: flex; flex-direction: column;
-    }
-    
+    .sidebar-modern { width: 280px; background: var(--white); border-right: 1px solid #e0e5f2; padding: 40px 20px; display: flex; flex-direction: column; }
     .sidebar-header-widget { margin-bottom: 40px; padding: 15px; background: #f8faff; border-radius: 16px; border: 1px solid #edf2f7; }
-    .sidebar-header-widget small { color: var(--secondary); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;}
+    .sidebar-header-widget small { color: var(--secondary); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .mini-progress-bar { height: 8px; background: #e0e5f2; border-radius: 10px; margin: 12px 0; overflow: hidden; }
     .mini-progress-bar .fill { height: 100%; background: var(--primary); border-radius: 10px; }
+    .cycle-progress-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 0.73rem; color: #64748b; font-weight: 700; margin-bottom: 8px; }
     .semester-tag { font-size: 0.85rem; font-weight: 700; color: var(--dark); }
-
     .nav-menu { flex: 1; }
-    .nav-link {
-        display: flex; align-items: center; gap: 15px; padding: 15px 20px;
-        text-decoration: none; color: #a3aed0; font-weight: 700; border-radius: 15px;
-        transition: 0.3s; margin-bottom: 5px;
-    }
+    .nav-link { display: flex; align-items: center; gap: 15px; padding: 15px 20px; text-decoration: none; color: #a3aed0; font-weight: 700; border-radius: 15px; transition: 0.3s; margin-bottom: 5px; }
     .nav-link:hover, .nav-link.active { background: #f7f9ff; color: var(--primary); }
-
-    /* MAIN CONTENT */
     .main-viewport { flex: 1; padding: 40px; }
-
-    /* WELCOME BANNER */
-    .welcome-banner { 
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 40px; background: linear-gradient(90deg, var(--primary), #707eff);
-        padding: 30px; border-radius: 30px; color: white; box-shadow: 0 20px 40px rgba(67, 24, 255, 0.2);
-    }
+    .welcome-banner { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 40px; background: #dcecf4; padding: 30px; border-radius: 30px; color: #12344d; box-shadow: 0 18px 40px rgba(31, 79, 120, 0.10); border: 1px solid #c6dcec; }
+    .eyebrow { display: inline-block; padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,0.7); color: var(--primary); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
     .welcome-text h1 { margin: 0; font-weight: 800; font-size: 2rem; }
-    
-    .quick-status-widget { background: rgba(255,255,255,0.15); padding: 15px 25px; border-radius: 20px; display: flex; align-items: center; gap: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+    .welcome-text p { margin: 8px 0 0; color: #36556d; font-weight: 600; }
+    .header-actions { position: relative; display: flex; align-items: flex-start; gap: 14px; }
+    .notification-trigger { position: relative; width: 54px; height: 54px; border: none; border-radius: 18px; background: rgba(255,255,255,0.78); color: var(--primary); font-size: 1.25rem; cursor: pointer; box-shadow: 0 10px 20px rgba(31,79,120,0.08); }
+    .quick-status-widget { background: rgba(255,255,255,0.65); padding: 15px 25px; border-radius: 20px; display: flex; align-items: center; gap: 20px; border: 1px solid rgba(255,255,255,0.5); }
     .status-item { display: flex; align-items: center; gap: 12px; }
     .status-item i { font-size: 1.5rem; }
-    .status-item .val { display: block; font-weight: 800; color: var(--white); font-size: 1.1rem; line-height: 1; }
-    .status-item .lab { display: block; font-size: 0.75rem; color: rgba(255,255,255,0.8); font-weight: 600; margin-top: 4px; }
-    .quick-status-widget .divider { width: 1px; height: 35px; background: rgba(255,255,255,0.3); }
-
-    /* BENTO GRID */
-    .bento-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: auto auto;
-        gap: 25px;
-    }
+    .status-item .val { display: block; font-weight: 800; color: var(--primary); font-size: 1.1rem; line-height: 1; }
+    .status-item .val.dark { color: #0f172a; }
+    .status-item .lab { display: block; font-size: 0.75rem; color: #49647c; font-weight: 600; margin-top: 4px; }
+    .status-item .lab.dark { color: #334155; }
+    .quick-status-widget .divider { width: 1px; height: 35px; background: rgba(15,23,42,0.1); }
+    .notifications-panel { position: absolute; top: 68px; right: 0; width: 360px; max-height: 430px; overflow: hidden; border-radius: 24px; background: white; border: 1px solid #e2e8f0; box-shadow: 0 30px 50px rgba(15,23,42,0.15); display: none; z-index: 15; }
+    .notifications-panel.open { display: block; }
+    .notifications-header { padding: 18px 20px; border-bottom: 1px solid #eef2f7; display: flex; justify-content: space-between; align-items: center; }
+    .notifications-header h3 { margin: 0; font-size: 1rem; color: var(--dark); font-weight: 800; }
+    .notifications-header span { color: #64748b; font-size: 0.75rem; font-weight: 700; }
+    .notifications-list { max-height: 360px; overflow-y: auto; padding: 10px; }
+    .notification-item { display: block; text-decoration: none; padding: 14px; border-radius: 16px; color: inherit; background: #fbfdff; border: 1px solid #edf2f7; margin-bottom: 10px; }
+    .notification-item.is-link:hover { background: #f8fbff; border-color: #cbd5e1; }
+    .notification-item small { display: block; color: #64748b; font-size: 0.72rem; font-weight: 700; margin-bottom: 6px; }
+    .notification-item strong { display: block; color: #0f172a; margin-bottom: 6px; font-size: 0.92rem; }
+    .notification-item p { margin: 0 0 8px; color: #475569; font-size: 0.84rem; line-height: 1.4; }
+    .notification-origin { font-size: 0.72rem; font-weight: 800; color: var(--primary); }
+    .bento-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
     .bento-item { background: var(--white); padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-    .item-header h3 { margin: 0; font-size: 1.1rem; color: var(--dark); font-weight: 800; display: flex; align-items: center; gap: 8px;}
-    .item-header a { font-size: 0.85rem; color: var(--primary); text-decoration: none; font-weight: 600; }
     .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-
-    /* COMPONENTES ESPECIFICOS */
+    .item-header h3 { margin: 0; font-size: 1.1rem; color: var(--dark); font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .item-header a { font-size: 0.85rem; color: var(--primary); text-decoration: none; font-weight: 600; }
     .today-classes { grid-column: span 2; }
-    .class-card { 
-        display: flex; align-items: center; gap: 20px; padding: 15px; 
-        background: #f8faff; border-radius: 18px; margin-top: 15px; border: 1px solid #edf2f7;
-    }
-    .class-card .time { background: white; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-    .class-card .details strong { display: block; color: var(--dark); font-size: 1rem; }
-    .class-card .details span { color: var(--secondary); font-size: 0.85rem; }
-    .status-live { background: var(--accent-green); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; margin-left: auto; }
-
+    .schedule-card { position: relative; display: grid; grid-template-columns: 130px 1fr auto; gap: 16px; align-items: center; background: var(--estado-fondo); border-radius: 20px; margin-top: 14px; border: 1px solid var(--estado-borde); padding: 16px 18px; }
+    .schedule-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent-line); border-radius: 20px 0 0 20px; }
+    .schedule-time { font-size: 0.78rem; font-weight: 800; color: #334155; background: rgba(255,255,255,0.75); padding: 10px 12px; border-radius: 12px; text-align: center; }
+    .schedule-details strong { display: block; color: #0f172a; font-size: 1rem; }
+    .schedule-details span { color: #64748b; font-size: 0.84rem; font-weight: 700; }
+    .estado-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.7); color: var(--estado-color); border: 1px solid var(--estado-borde); font-size: 0.72rem; font-weight: 800; }
+    .empty-inline { display: flex; align-items: center; gap: 10px; padding: 18px; background: #f8fafc; color: #64748b; border-radius: 18px; font-weight: 700; }
     .gpa-card { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .circular-progress { 
-        width: 100px; height: 100px; border-radius: 50%; 
-        display: flex; align-items: center; justify-content: center; margin: 20px 0;
-    }
-    .circular-progress { 
-    width: 100px; 
-    height: 100px; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    margin: 20px 0;
-    background: radial-gradient(closest-side, white 79%, transparent 80% 100%), 
-                conic-gradient(var(--primary) var(--porcentaje), #f0f2f8 0);
-    }
-    .trend-up { font-size: 0.85rem; color: var(--accent-green); font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
-
-    .task-row { display: flex; align-items: center; gap: 15px; margin-top: 20px; }
+    .circular-progress { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 20px 0; background: #ffffff; border: 10px solid #d9e5ef; color: var(--primary); box-shadow: inset 0 0 0 6px #eef4f8; }
+    .trend-up { font-size: 0.85rem; color: var(--accent-green); font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 10px; gap: 6px; }
+    .task-row { display: flex; align-items: center; gap: 15px; margin-top: 18px; }
     .task-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
     .priority-high { background: #fee2e2; color: var(--accent-red); }
     .priority-mid { background: #fff4e5; color: var(--accent-orange); }
     .task-info strong { display: block; color: var(--dark); font-size: 0.95rem; }
     .task-info span { color: var(--secondary); font-size: 0.8rem; }
-    .btn-action { background: var(--dark); color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-left: auto; transition: 0.3s;}
-    .btn-action:hover { background: var(--primary); transform: translateY(-2px); }
-
-    .news-item { border-left: 3px solid var(--primary); padding-left: 15px; margin-top: 15px; background: #fbfcfe; padding: 12px; border-radius: 0 10px 10px 0; }
-    .news-item small { color: var(--secondary); font-weight: 600; font-size: 0.75rem; }
-    .news-item p { margin: 5px 0 0 0; font-size: 0.9rem; color: var(--dark); line-height: 1.4; }
-    
-    .news-scroll-container { max-height: 250px; overflow-y: auto; padding-right: 5px; }
-    .news-scroll-container::-webkit-scrollbar { width: 4px; }
-    .news-scroll-container::-webkit-scrollbar-thumb { background: #e0e5f2; border-radius: 10px; }
-
-    .notification-bell { position: relative; }
-    .bell-badge {
-        position: absolute; top: -5px; right: -5px; background: var(--accent-red);
-        color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 50%;
-        border: 2px solid white; font-weight: 800;
-    }
-
-    @media (max-width: 1100px) {
-        .bento-grid { grid-template-columns: 1fr; }
-        .today-classes { grid-column: span 1; }
-        .sidebar-modern { display: none; }
-    }
+    .btn-action { background: var(--dark); color: white; text-decoration: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; margin-left: auto; transition: 0.3s; }
+    .btn-action:hover { background: var(--primary); transform: translateY(-2px); color: white; }
+    .period-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #eef2f7; color: #334155; font-weight: 700; }
+    .period-row strong { color: var(--primary); }
+    .bell-badge { position: absolute; top: -4px; right: -4px; background: var(--accent-red); color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 999px; border: 2px solid white; font-weight: 800; }
+    @media (max-width: 1100px) { .bento-grid { grid-template-columns: 1fr; } .today-classes { grid-column: span 1; } .sidebar-modern { display: none; } .welcome-banner { flex-direction: column; } .header-actions { width: 100%; justify-content: space-between; } .schedule-card { grid-template-columns: 1fr; } }
 </style>
+
+<script>
+    function obtenerAnnouncementIds() {
+        return Array.from(document.querySelectorAll('[data-announcement-id]'))
+            .map(item => Number(item.dataset.announcementId))
+            .filter(id => !Number.isNaN(id))
+            .sort((a, b) => b - a);
+    }
+
+    function actualizarBadgeAnuncios() {
+        const badge = document.getElementById('unreadBadge');
+        if (!badge) return;
+
+        const ids = obtenerAnnouncementIds();
+        if (!ids.length) {
+            badge.style.display = 'none';
+            return;
+        }
+
+        const ultimoLeido = Number(localStorage.getItem('eduportal_last_seen_announcement') || '0');
+        const noLeidos = ids.filter(id => id > ultimoLeido).length;
+
+        if (noLeidos > 0) {
+            badge.textContent = noLeidos;
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function marcarAnunciosComoLeidos() {
+        const ids = obtenerAnnouncementIds();
+        if (!ids.length) return;
+        localStorage.setItem('eduportal_last_seen_announcement', String(ids[0]));
+        actualizarBadgeAnuncios();
+    }
+
+    function toggleNotifications() {
+        const panel = document.getElementById('notificationsPanel');
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+            marcarAnunciosComoLeidos();
+        }
+    }
+
+    document.addEventListener('click', function(event) {
+        const panel = document.getElementById('notificationsPanel');
+        const trigger = document.querySelector('.notification-trigger');
+        if (!panel || !trigger) return;
+        if (!panel.contains(event.target) && !trigger.contains(event.target)) {
+            panel.classList.remove('open');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', actualizarBadgeAnuncios);
+</script>
 
 {% endblock %}

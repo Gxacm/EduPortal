@@ -1,0 +1,87 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<style>
+.page-wrap { max-width: 1200px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
+.header, .panel, .item { background: white; border: 1px solid #e2e8f0; border-radius: 24px; }
+.header, .panel { padding: 24px; }
+.header { margin-bottom: 22px; }
+.back-link { text-decoration: none; color: #475569; font-weight: 800; display: inline-flex; gap: 8px; align-items: center; }
+.layout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 22px; }
+.panel h3 { margin-top: 0; }
+form { display: grid; gap: 12px; }
+input, textarea, select { width: 100%; border: 1px solid #cbd5e1; border-radius: 14px; padding: 12px 14px; font: inherit; }
+button { border: none; background: #2563eb; color: white; border-radius: 14px; padding: 12px 16px; font-weight: 800; cursor: pointer; }
+.tabs { display: grid; gap: 20px; }
+.item { padding: 18px 20px; margin-bottom: 12px; }
+.item h4 { margin: 0 0 6px; }
+.item p { margin: 0; color: #64748b; }
+.badge { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: .72rem; font-weight: 800; background: #eff6ff; color: #1d4ed8; margin-bottom: 10px; }
+@media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+</style>
+<div class="page-wrap">
+    <div class="header">
+        <a href="{{ url_for('gestionar_grado', id_grado=grado.id_grado) }}" class="back-link"><i class="bi bi-arrow-left"></i> Volver al grado</a>
+        <h1 style="margin:12px 0 6px;">Recursos del Aula</h1>
+        <p style="margin:0; color:#64748b;">Publica documentos, enlaces y videos para que aparezcan automaticamente en el aula del alumno.</p>
+    </div>
+    <div class="layout">
+        <div class="panel">
+            <h3>Nuevo contenido</h3>
+            <form method="POST" enctype="multipart/form-data">
+                <select name="tipo_contenido" required>
+                    <option value="documento">Documento</option>
+                    <option value="enlace">Enlace</option>
+                    <option value="video">Video</option>
+                </select>
+                <select name="id_clase" required>
+                    <option value="">Selecciona la clase</option>
+                    {% for clase in clases %}<option value="{{ clase.id_clase }}">{{ clase.nombre_clase }}</option>{% endfor %}
+                </select>
+                <input type="text" name="titulo" placeholder="Titulo" required>
+                <textarea name="descripcion" rows="4" placeholder="Descripcion"></textarea>
+                <input type="url" name="url" placeholder="URL para enlaces o videos">
+                <input type="file" name="archivo">
+                <button type="submit">Publicar contenido</button>
+            </form>
+        </div>
+        <div class="tabs">
+            <div class="panel">
+                <h3>Documentos publicados</h3>
+                {% for documento in documentos %}
+                <div class="item">
+                    <span class="badge">Documento</span>
+                    <h4>{{ documento.titulo }} - {{ documento.clase.nombre_clase }}</h4>
+                    <p>{{ documento.descripcion or 'Sin descripcion.' }}</p>
+                </div>
+                {% else %}
+                <p style="color:#64748b;">No hay documentos registrados.</p>
+                {% endfor %}
+            </div>
+            <div class="panel">
+                <h3>Enlaces publicados</h3>
+                {% for enlace in enlaces %}
+                <div class="item">
+                    <span class="badge">Enlace</span>
+                    <h4>{{ enlace.titulo }} - {{ enlace.clase.nombre_clase }}</h4>
+                    <p>{{ enlace.url }}</p>
+                </div>
+                {% else %}
+                <p style="color:#64748b;">No hay enlaces registrados.</p>
+                {% endfor %}
+            </div>
+            <div class="panel">
+                <h3>Videos publicados</h3>
+                {% for video in videos %}
+                <div class="item">
+                    <span class="badge">Video</span>
+                    <h4>{{ video.titulo }} - {{ video.clase.nombre_clase }}</h4>
+                    <p>{{ video.url }}</p>
+                </div>
+                {% else %}
+                <p style="color:#64748b;">No hay videos registrados.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

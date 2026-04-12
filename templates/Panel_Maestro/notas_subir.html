@@ -1,119 +1,64 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block content %}
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
 <style>
-    :root {
-        --primary-blue: #3b82f6;
-        --primary-blue-soft: #eff6ff;
-        --success-main: #10b981;
-        --success-light: #ecfdf5;
-        --warning-main: #f59e0b;
-        --warning-light: #fffbeb;
-        --dark-text: #0f172a;
-        --muted-text: #64748b;
-        --border-color: #e2e8f0;
-        --bg-soft: #f8fafc;
-        --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
-    }
-
-    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--dark-text); }
-    .viewport-container { padding: 40px 20px; max-width: 1100px; margin: 0 auto; }
-
-    /* NAVEGACIÓN SUPERIOR */
-    .top-bar { display: flex; align-items: center; gap: 20px; margin-bottom: 35px; }
-    
-    .btn-back-circle {
-        width: 48px; height: 48px; background: white; border-radius: 14px;
-        display: flex; align-items: center; justify-content: center;
-        color: var(--muted-text); text-decoration: none; border: 1px solid var(--border-color);
-        transition: all 0.2s ease; font-size: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    }
-    .btn-back-circle:hover { background: white; color: var(--dark-text); transform: translateX(-4px); border-color: #cbd5e1; }
-
-    .header-text h1 { font-weight: 800; margin: 0; font-size: 1.8rem; letter-spacing: -0.5px; }
-    .header-text p { color: var(--muted-text); margin: 4px 0 0 0; font-weight: 500; font-size: 0.95rem; }
-
-    /* ACORDEÓN DE TAREAS (LISTA) */
-    .task-list { display: flex; flex-direction: column; gap: 16px; }
-    
-    .task-item {
-        background: white; border-radius: 24px; box-shadow: var(--card-shadow);
-        border: 1px solid rgba(255,255,255,0.5); overflow: hidden;
-        transition: all 0.3s ease;
-    }
-    
-    .task-summary {
-        padding: 24px 30px; display: flex; justify-content: space-between; align-items: center;
-        cursor: pointer; list-style: none; user-select: none;
-    }
-    
-    /* Ocultar flecha nativa del details */
-    .task-summary::-webkit-details-marker { display: none; }
-    
-    .task-summary:hover { background: #fafafa; }
-    
-    .task-icon-title { display: flex; align-items: center; gap: 16px; }
-    .task-icon {
-        width: 45px; height: 45px; background: var(--primary-blue-soft); color: var(--primary-blue);
-        border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-    }
-    .task-title { font-weight: 800; font-size: 1.1rem; color: var(--dark-text); margin: 0; }
-    .task-meta { font-size: 0.85rem; color: var(--muted-text); font-weight: 500; margin-top: 4px; display: block; }
-    
-    .chevron-icon { color: var(--muted-text); transition: transform 0.3s ease; font-size: 1.2rem; }
-    details[open] .chevron-icon { transform: rotate(180deg); color: var(--primary-blue); }
-    details[open] .task-item { border-color: var(--primary-blue-soft); }
-
-    /* CONTENIDO INTERNO DE LA TAREA */
-    .task-content { padding: 0 30px 30px; border-top: 1px solid var(--border-color); margin-top: 15px; padding-top: 25px; }
-    .task-desc { background: var(--bg-soft); padding: 16px 20px; border-radius: 16px; color: var(--muted-text); font-size: 0.95rem; margin-bottom: 25px; border: 1px dashed #cbd5e1; }
-
-    /* TABLA DE ENTREGAS */
-    .grade-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-    .grade-table th { padding: 0 15px 10px; color: var(--muted-text); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; border-bottom: 2px solid var(--bg-soft); text-align: left; }
-    .grade-table td { background: #fff; padding: 14px 15px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); vertical-align: middle; }
-    .grade-table td:first-child { border-left: 1px solid var(--border-color); border-radius: 12px 0 0 12px; }
-    .grade-table td:last-child { border-right: 1px solid var(--border-color); border-radius: 0 12px 12px 0; }
-
-    .student-info { display: flex; align-items: center; gap: 12px; }
-    .student-avatar { width: 36px; height: 36px; background: #e2e8f0; color: var(--dark-text); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
-    
-    /* ETIQUETAS Y BOTONES DE CONTENIDO */
-    .badge-status { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
-    .badge-success { background: var(--success-light); color: var(--success-main); }
-    .badge-warning { background: var(--warning-light); color: var(--warning-main); }
-    
-    .btn-view-content {
-        background: white; border: 1px solid var(--border-color); color: var(--primary-blue);
-        padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
-        text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s;
-    }
-    .btn-view-content:hover { background: var(--primary-blue-soft); border-color: var(--primary-blue-soft); }
-
-    /* INPUT NOTA Y GUARDAR */
-    .input-grade { width: 85px; padding: 10px; border-radius: 10px; border: 2px solid var(--border-color); text-align: center; font-weight: 800; color: var(--dark-text); transition: 0.2s; background: var(--bg-soft); font-family: inherit; }
-    .input-grade:focus { border-color: var(--primary-blue); outline: none; background: white; }
-
-    .btn-save { background: var(--primary-blue); color: white; border: none; padding: 12px 28px; border-radius: 14px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; transition: 0.3s; margin-top: 20px; cursor: pointer; float: right; }
-    .btn-save:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); }
-    
-    /* CLEARFIX PARA EL BOTON FLOTANTE */
-    .clearfix::after { content: ""; clear: both; display: table; }
-
-    .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 24px; }
+:root { --primary-blue:#3b82f6; --primary-blue-soft:#eff6ff; --success-main:#10b981; --success-light:#ecfdf5; --warning-main:#f59e0b; --warning-light:#fffbeb; --danger-main:#ef4444; --danger-light:#fef2f2; --dark-text:#0f172a; --muted-text:#64748b; --border-color:#e2e8f0; --bg-soft:#f8fafc; --card-shadow:0 10px 30px -10px rgba(0,0,0,.05); }
+body { background-color:var(--bg-soft); font-family:'Plus Jakarta Sans',sans-serif; color:var(--dark-text); }
+.viewport-container { padding:40px 20px; max-width:1160px; margin:0 auto; }
+.top-bar { display:flex; align-items:center; gap:20px; margin-bottom:32px; }
+.btn-back-circle { width:48px; height:48px; background:white; border-radius:14px; display:flex; align-items:center; justify-content:center; color:var(--muted-text); text-decoration:none; border:1px solid var(--border-color); transition:.2s; font-size:1.2rem; box-shadow:0 2px 8px rgba(0,0,0,.02); }
+.btn-back-circle:hover { background:white; color:var(--dark-text); transform:translateX(-4px); border-color:#cbd5e1; }
+.header-text h1 { font-weight:800; margin:0; font-size:1.8rem; letter-spacing:-0.5px; }
+.header-text p { color:var(--muted-text); margin:4px 0 0 0; font-weight:500; font-size:0.95rem; }
+.task-list { display:flex; flex-direction:column; gap:16px; }
+.task-item { background:white; border-radius:24px; box-shadow:var(--card-shadow); border:1px solid rgba(255,255,255,.5); overflow:hidden; transition:all .3s ease; }
+.task-summary { padding:24px 30px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; user-select:none; }
+.task-summary::-webkit-details-marker { display:none; }
+.task-summary:hover { background:#fafafa; }
+.task-icon-title { display:flex; align-items:center; gap:16px; }
+.task-icon { width:45px; height:45px; background:var(--primary-blue-soft); color:var(--primary-blue); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+.task-title { font-weight:800; font-size:1.08rem; color:var(--dark-text); margin:0; }
+.task-meta { font-size:0.85rem; color:var(--muted-text); font-weight:500; margin-top:4px; display:block; }
+.chevron-icon { color:var(--muted-text); transition:transform .3s ease; font-size:1.2rem; }
+details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue); }
+.task-content { padding:0 30px 30px; border-top:1px solid var(--border-color); margin-top:15px; padding-top:25px; }
+.task-desc { background:var(--bg-soft); padding:16px 20px; border-radius:16px; color:var(--muted-text); font-size:0.95rem; margin-bottom:20px; border:1px dashed #cbd5e1; }
+.material-box { background:#f8fafc; border:1px solid var(--border-color); border-radius:18px; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:20px; }
+.grade-table { width:100%; border-collapse:separate; border-spacing:0 10px; }
+.grade-table th { padding:0 15px 10px; color:var(--muted-text); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; font-weight:700; border-bottom:2px solid var(--bg-soft); text-align:left; }
+.grade-table td { background:#fff; padding:14px 15px; border-top:1px solid var(--border-color); border-bottom:1px solid var(--border-color); vertical-align:top; }
+.grade-table td:first-child { border-left:1px solid var(--border-color); border-radius:12px 0 0 12px; }
+.grade-table td:last-child { border-right:1px solid var(--border-color); border-radius:0 12px 12px 0; }
+.student-info { display:flex; align-items:center; gap:12px; }
+.student-avatar { width:38px; height:38px; background:#e2e8f0; color:var(--dark-text); border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; }
+.badge-status { padding:6px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; display:inline-flex; align-items:center; gap:5px; }
+.badge-success { background:var(--success-light); color:var(--success-main); }
+.badge-warning { background:var(--warning-light); color:var(--warning-main); }
+.btn-view-content { background:white; border:1px solid var(--border-color); color:var(--primary-blue); padding:8px 14px; border-radius:10px; font-size:0.85rem; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
+.btn-view-content:hover { background:var(--primary-blue-soft); border-color:var(--primary-blue-soft); }
+.stack-actions { display:grid; gap:8px; }
+.text-feedback { width:100%; min-height:90px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-soft); padding:12px 14px; font:inherit; resize:vertical; box-sizing:border-box; }
+.file-input { width:100%; font:inherit; }
+.input-grade { width:90px; padding:10px; border-radius:10px; border:2px solid var(--border-color); text-align:center; font-weight:800; color:var(--dark-text); transition:.2s; background:var(--bg-soft); font-family:inherit; }
+.input-grade:focus { border-color:var(--primary-blue); outline:none; background:white; }
+.note-preview { display:grid; gap:8px; margin-top:10px; }
+.note-preview span { font-size:0.82rem; color:var(--muted-text); line-height:1.55; }
+.btn-save { background:var(--primary-blue); color:white; border:none; padding:12px 28px; border-radius:14px; font-weight:700; font-size:0.95rem; display:flex; align-items:center; gap:8px; transition:.3s; margin-top:20px; cursor:pointer; float:right; }
+.btn-save:hover { background:#2563eb; transform:translateY(-2px); box-shadow:0 4px 12px rgba(59,130,246,.25); }
+.clearfix::after { content:""; clear:both; display:table; }
+.empty-state { text-align:center; padding:60px 20px; background:white; border-radius:24px; }
+@media (max-width:900px) { .grade-table, .grade-table thead, .grade-table tbody, .grade-table tr, .grade-table td { display:block; width:100%; } .grade-table thead { display:none; } .grade-table td { border:1px solid var(--border-color); border-radius:14px; margin-bottom:10px; } }
 </style>
 
 <div class="viewport-container">
     <div class="top-bar">
-        <a href="{{ url_for('gestionar_grado', id_grado=request.view_args.get('id_grado')) }}" class="btn-back-circle" title="Volver a la Gestión">
-            <i class="bi bi-arrow-left"></i>
-        </a>
+        <a href="{{ url_for('gestionar_grado', id_grado=request.view_args.get('id_grado')) }}" class="btn-back-circle" title="Volver a la Gestion"><i class="bi bi-arrow-left"></i></a>
         <div class="header-text">
-            <h1>Revisión de <span style="color: var(--primary-blue);">Tareas</span></h1>
-            <p>Haz clic en una tarea para evaluar las entregas de los alumnos</p>
+            <h1>Revision de <span style="color: var(--primary-blue);">Tareas</span></h1>
+            <p>Califica, comenta y devuelve archivos a tus alumnos desde un mismo panel.</p>
         </div>
     </div>
 
@@ -126,25 +71,30 @@
                         <div class="task-icon"><i class="bi bi-journal-text"></i></div>
                         <div>
                             <h3 class="task-title">{{ tarea.titulo }}</h3>
-                            <span class="task-meta">Fecha límite: {{ tarea.fecha_entrega }}</span>
+                            <span class="task-meta">Fecha limite: {{ tarea.fecha_entrega }} · Puntaje: {{ tarea.puntos }}</span>
                         </div>
                     </div>
                     <i class="bi bi-chevron-down chevron-icon"></i>
                 </summary>
 
                 <div class="task-content clearfix">
-                    <div class="task-desc">
-                        <strong>Instrucciones:</strong> {{ tarea.descripcion }}
+                    <div class="task-desc"><strong>Instrucciones:</strong> {{ tarea.descripcion }}</div>
+                    {% if tarea.archivo_adjunto_url %}
+                    <div class="material-box">
+                        <div><strong>{{ tarea.archivo_adjunto_nombre or 'Archivo del maestro' }}</strong><div class="task-meta">Material adjunto para el alumno</div></div>
+                        <a href="{{ tarea.archivo_adjunto_url }}" target="_blank" class="btn-view-content"><i class="bi bi-download"></i> Ver material</a>
                     </div>
+                    {% endif %}
 
-                    <form action="{{ url_for('registrar_notas', id_grado=request.view_args.get('id_grado'), id_tarea=tarea.id_tarea) }}" method="POST">
+                    <form action="{{ url_for('registrar_notas', id_grado=request.view_args.get('id_grado'), id_tarea=tarea.id_tarea) }}" method="POST" enctype="multipart/form-data">
                         <table class="grade-table">
                             <thead>
                                 <tr>
                                     <th>Estudiante</th>
                                     <th>Estado</th>
-                                    <th>Contenido / Archivo</th>
-                                    <th style="width: 120px;">Calificación</th>
+                                    <th>Entrega</th>
+                                    <th>Retroalimentacion</th>
+                                    <th style="width: 120px;">Calificacion</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -153,41 +103,50 @@
                                     <td>
                                         <div class="student-info">
                                             <div class="student-avatar">{{ entrega.alumno.nombre[0] }}{{ entrega.alumno.apellido[0] }}</div>
-                                            <span class="fw-700 text-dark">{{ entrega.alumno.nombre }} {{ entrega.alumno.apellido }}</span>
+                                            <div>
+                                                <div style="font-weight:800; color:var(--dark-text);">{{ entrega.alumno.nombre }} {{ entrega.alumno.apellido }}</div>
+                                                <div class="task-meta">{{ entrega.alumno.correo }}</div>
+                                            </div>
                                         </div>
                                     </td>
-                                    
                                     <td>
                                         {% if entrega.estado == 'Entregado' %}
-                                            <span class="badge-status badge-success"><i class="bi bi-check-circle-fill"></i> Entregado</span>
+                                        <span class="badge-status badge-success"><i class="bi bi-check-circle-fill"></i> Entregado</span>
                                         {% else %}
-                                            <span class="badge-status badge-warning"><i class="bi bi-clock-fill"></i> Pendiente</span>
+                                        <span class="badge-status badge-warning"><i class="bi bi-clock-fill"></i> Pendiente</span>
                                         {% endif %}
                                     </td>
-                                    
                                     <td>
-                                        {% if entrega.estado == 'Entregado' %}
-                                            <a href="{{ entrega.archivo_url }}" target="_blank" class="btn-view-content">
-                                                <i class="bi bi-file-earmark-text"></i> Ver Entrega
-                                            </a>
-                                        {% else %}
-                                            <span class="text-muted small">Sin archivo</span>
-                                        {% endif %}
+                                        <div class="stack-actions">
+                                            {% if entrega.archivo_url %}
+                                            <a href="{{ entrega.archivo_url }}" target="_blank" class="btn-view-content"><i class="bi bi-file-earmark-text"></i> Ver entrega</a>
+                                            <span class="task-meta">{{ entrega.archivo_nombre or 'Archivo del alumno' }}</span>
+                                            {% else %}
+                                            <span class="task-meta">Sin archivo</span>
+                                            {% endif %}
+                                            {% if entrega.comentario_alumno %}
+                                            <div class="note-preview"><span><strong>Comentario del alumno:</strong> {{ entrega.comentario_alumno }}</span></div>
+                                            {% endif %}
+                                        </div>
                                     </td>
-
                                     <td>
-                                        <input type="number" name="nota_{{ entrega.alumno.id_usuario }}" 
-                                               class="input-grade" placeholder="--" min="0" max="{{ tarea.puntos }}" step="0.1" 
-                                               value="{{ entrega.nota if entrega.nota else '' }}">
+                                        <div class="stack-actions">
+                                            <textarea name="comentario_{{ entrega.id_alumno }}" class="text-feedback" placeholder="Comentario para el alumno">{{ entrega.comentario_maestro or '' }}</textarea>
+                                            <input type="file" name="archivo_revision_{{ entrega.id_alumno }}" class="file-input">
+                                            {% if entrega.archivo_revision_url %}
+                                            <a href="{{ entrega.archivo_revision_url }}" target="_blank" class="btn-view-content"><i class="bi bi-paperclip"></i> Ver revision</a>
+                                            <span class="task-meta">{{ entrega.archivo_revision_nombre or 'Archivo de revision' }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="nota_{{ entrega.id_alumno }}" class="input-grade" placeholder="--" min="0" max="{{ tarea.puntos }}" step="0.1" value="{{ entrega.nota if entrega.nota else '' }}">
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
-
-                        <button type="submit" class="btn-save">
-                            <i class="bi bi-save2"></i> Guardar Notas
-                        </button>
+                        <button type="submit" class="btn-save"><i class="bi bi-save2"></i> Guardar revision</button>
                     </form>
                 </div>
             </details>
@@ -195,8 +154,8 @@
         {% else %}
             <div class="empty-state">
                 <i class="bi bi-inbox text-muted" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
-                <h3 class="fw-800 text-dark">No hay tareas asignadas</h3>
-                <p class="text-muted">Aún no has creado ninguna tarea para esta materia. Ve a "Asignar Tareas" para crear la primera.</p>
+                <h3 style="font-weight:800; color:var(--dark-text);">No hay tareas asignadas</h3>
+                <p style="color:var(--muted-text);">Aun no has creado ninguna tarea para esta materia.</p>
             </div>
         {% endif %}
     </div>

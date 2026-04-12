@@ -131,6 +131,20 @@
                 <span class="tool-text">Anuncios</span>
         </a>
 
+        <a href="{{ url_for('maestro_contenidos_clase', id_grado=grado.id_grado) }}" class="tool-card">
+            <div class="tool-icon" style="background: #eef2ff; color: #4f46e5;">
+                <i class="bi bi-collection-play-fill"></i>
+            </div>
+            <span class="tool-text">Recursos Aula</span>
+        </a>
+
+        <a href="{{ url_for('maestro_foros_clase', id_grado=grado.id_grado) }}" class="tool-card">
+            <div class="tool-icon" style="background: #ecfeff; color: #0891b2;">
+                <i class="bi bi-chat-dots-fill"></i>
+            </div>
+            <span class="tool-text">Foros</span>
+        </a>
+
         <a href="{{ url_for('gestionar_asignaciones', id_grado=grado.id_grado) }}" class="tool-card">
             <div class="tool-icon" style="background: #f1f5f9; color: #475569;">
                 <i class="bi bi-gear-fill"></i>

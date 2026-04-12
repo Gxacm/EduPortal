@@ -189,7 +189,8 @@
                 
                 <div>
                     <div class="m-card">
-                        <h3 class="m-section-title"><i class="bi bi-clock"style="margin-right: 5px;"></i> Crear Horario Manual</h3>
+                        <h3 class="m-section-title"><i class="bi bi-clock" style="margin-right: 5px;"></i> Crear Horario Base</h3>
+                        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Cuando guardes un bloque en una sección, el sistema intentará regenerar automáticamente las demás secciones del mismo grado con las mismas materias y sin chocar maestros.</p>
                         <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST">
                             <input type="hidden" name="guardar_horario_manual" value="true">
 
@@ -198,7 +199,7 @@
                                 <option value="" disabled selected>Selecciona la sección...</option>
                                 {% for s in secciones %}
                                     <option value="{{ s.id_seccion }}" data-grado="{{ s.id_grado }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
-                                @@@{% endfor %}
+                                {% endfor %}
                             </select>
 
                             <label class="m-label" style="margin-top: 15px;">Seleccionar Clase</label>
@@ -234,14 +235,14 @@
                     </div>
 
                     <div class="m-card" style="margin-top: 20px;">
-                        <h3 class="m-section-title"><i class="bi bi-magic"style="margin-right: 5px;"></i> Generador Inteligente</h3>
-                        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Toma las clases de una sección y distribúyelas aleatoriamente en otra sin chocar maestros.</p>
+                        <h3 class="m-section-title"><i class="bi bi-magic" style="margin-right: 5px;"></i> Sincronización Inteligente</h3>
+                        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Usa una sección como horario base para regenerar automáticamente las demás secciones del mismo grado, reutilizando las materias ya configuradas y respetando la disponibilidad de los maestros.</p>
                         
                         <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST">
                             
-                            <input type="hidden" name="generar_aleatorio" value="true">
+                            <input type="hidden" name="sincronizar_grado" value="true">
 
-                            <label class="m-label">Sección Base (Origen con horario ya hecho)</label>
+                            <label class="m-label">Sección Base</label>
                             <select name="id_seccion_origen" class="m-input" required>
                                 <option value="" disabled selected>Selecciona la sección base...</option>
                                 {% for s in secciones %}
@@ -249,16 +250,12 @@
                                 {% endfor %}
                             </select>
 
-                            <label class="m-label" style="margin-top: 15px;">Sección Destino (A rellenar)</label>
-                            <select name="id_seccion_destino" class="m-input" required>
-                                <option value="" disabled selected>Selecciona la sección a rellenar...</option>
-                                {% for s in secciones %}
-                                    <option value="{{ s.id_seccion }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
-                                {% endfor %}
-                            </select>
+                            <div style="margin-top: 15px; padding: 14px 16px; border-radius: 14px; background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; font-size: 0.85rem; line-height: 1.5;">
+                                El sistema tomará esta sección como referencia y actualizará las demás secciones del mismo grado. Si hay choques de maestro, la sección conflictiva se conserva sin cambios.
+                            </div>
 
                             <button type="submit" class="m-btn-config" style="background: var(--dark); margin-top: 20px;">
-                                <i class="bi bi-shuffle"></i> Generar Horario Aleatorio
+                                <i class="bi bi-diagram-3-fill"></i> Sincronizar Todo el Grado
                             </button>
                         </form>
                     </div>

@@ -3,18 +3,15 @@
 
 <div class="aula-wrapper" style="--materia-color: {{ materia_color }};">
     <header class="aula-hero-card">
-        <div class="header-bg-icon">
-            <i class="bi bi-people-fill"></i>
-        </div>
         <div class="hero-left">
             <a href="{{ url_for('alumno_clases') }}" class="btn-back-square" title="Volver al Panel">
                 <i class="bi bi-chevron-left"></i>
             </a>
             <div class="title-group">
-                <span class="materia-tag">Mi Aula Virtual</span>
+                <span class="materia-tag">Aula conectada</span>
                 <h1>{{ clase.nombre_clase }}</h1>
                 <p class="profesor-name">
-                    <i class="bi bi-person-workspace" style="margin-right: 5px;"></i> 
+                    <i class="bi bi-person-workspace"></i>
                     Docente: {{ clase.maestro_titular.usuario.nombre }} {{ clase.maestro_titular.usuario.apellido }}
                 </p>
             </div>
@@ -23,12 +20,13 @@
         <div class="hero-right">
             <div class="aula-nav-group">
                 <button class="btn-nav-tab active" onclick="openTab(event, 'inicio')">
-                    <i class="bi bi-house-door-fill"></i>
-                    <span>Inicio</span>
+                    <i class="bi bi-house-door-fill"></i><span>Inicio</span>
                 </button>
                 <button id="btn-tareas" class="btn-nav-tab" onclick="openTab(event, 'tareas')">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Tareas</span>
+                    <i class="bi bi-journal-text"></i><span>Tareas</span>
+                </button>
+                <button id="btn-anuncios" class="btn-nav-tab" onclick="openTab(event, 'anuncios')">
+                    <i class="bi bi-megaphone-fill"></i><span>Anuncios</span>
                 </button>
             </div>
         </div>
@@ -36,25 +34,48 @@
 
     <div class="aula-content-grid">
         <main class="main-column">
-            
             <div id="inicio" class="tab-content active">
                 <section class="content-section">
                     <div class="section-title">
-                        <i class="bi bi-megaphone-fill"></i>
-                        <h2>Novedades de la Clase</h2>
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <h2>Accesos del Aula</h2>
                     </div>
-                    
-                    <div class="news-container">
-                        <div class="news-item-simple">
-                            <div class="news-icon-box">
-                                <i class="bi bi-chat-left-dots-fill"></i>
-                            </div>
-                            <div class="news-text">
-                                <strong>Mensaje del Docente</strong>
-                                <p>¡Hola! Bienvenidos a nuestra aula virtual. En la pestaña de tareas podrán encontrar todas las actividades asignadas para este parcial.</p>
-                                <span class="news-date">Publicado recientemente</span>
-                            </div>
-                        </div>
+
+                    <div class="launcher-grid">
+                        <a href="{{ url_for('alumno_aula_categoria', id_clase=clase.id_clase, categoria='documentos') }}" class="launcher-card">
+                            <div class="launcher-icon"><i class="bi bi-folder2-open"></i></div>
+                            <h3>Documentos de clase</h3>
+                            <p>Guias, PDFs y material subido por el docente.</p>
+                            <span>{{ documentos|length }} disponibles</span>
+                        </a>
+
+                        <a href="{{ url_for('alumno_aula_categoria', id_clase=clase.id_clase, categoria='foros') }}" class="launcher-card">
+                            <div class="launcher-icon"><i class="bi bi-chat-dots-fill"></i></div>
+                            <h3>Foros</h3>
+                            <p>Espacios de consulta y conversacion entre alumno y maestro.</p>
+                            <span>{{ foros|length }} temas activos</span>
+                        </a>
+
+                        <a href="{{ url_for('alumno_aula_categoria', id_clase=clase.id_clase, categoria='examenes') }}" class="launcher-card">
+                            <div class="launcher-icon"><i class="bi bi-patch-check-fill"></i></div>
+                            <h3>Examenes</h3>
+                            <p>Evaluaciones creadas por tu maestro para esta clase.</p>
+                            <span>{{ examenes|length }} registrados</span>
+                        </a>
+
+                        <a href="{{ url_for('alumno_aula_categoria', id_clase=clase.id_clase, categoria='enlaces') }}" class="launcher-card">
+                            <div class="launcher-icon"><i class="bi bi-link-45deg"></i></div>
+                            <h3>Enlaces de interes</h3>
+                            <p>Sitios, laboratorios y material externo recomendado.</p>
+                            <span>{{ enlaces|length }} compartidos</span>
+                        </a>
+
+                        <a href="{{ url_for('alumno_aula_categoria', id_clase=clase.id_clase, categoria='videos') }}" class="launcher-card">
+                            <div class="launcher-icon"><i class="bi bi-play-btn-fill"></i></div>
+                            <h3>Videos de la clase</h3>
+                            <p>Contenido audiovisual para repasar o ampliar el tema.</p>
+                            <span>{{ videos|length }} publicados</span>
+                        </a>
                     </div>
                 </section>
             </div>
@@ -66,7 +87,6 @@
                             <i class="bi bi-pencil-square"></i>
                             <h2>Mis Tareas y Trabajos</h2>
                         </div>
-                        
                         <div class="stats-mini-inner">
                             <div class="stat-item">
                                 <span class="stat-value">{{ tareas|length }}</span>
@@ -75,7 +95,7 @@
                             <div class="divider-v"></div>
                             <div class="stat-item">
                                 <span class="stat-value">{{ entregadas_ids|length }}</span>
-                                <span class="stat-label">Hechas</span>
+                                <span class="stat-label">Entregadas</span>
                             </div>
                         </div>
                     </div>
@@ -87,22 +107,16 @@
                                 <div class="tarea-status-icon {% if tarea.id_tarea in entregadas_ids %}success{% endif %}">
                                     <i class="bi {% if tarea.id_tarea in entregadas_ids %}bi-check-circle-fill{% else %}bi-journal-bookmark{% endif %}"></i>
                                 </div>
-                                
                                 <div class="tarea-info">
                                     <h3>{{ tarea.titulo }}</h3>
-                                    <p class="tarea-meta">
-                                        <i class="bi bi-calendar-check" style="margin-right: 5px;"></i> 
-                                        Límite: {{ tarea.fecha_entrega.strftime('%d/%m/%Y') }}
-                                    </p>
+                                    <p class="tarea-meta">Limite: {{ tarea.fecha_entrega.strftime('%d/%m/%Y %H:%M') if tarea.fecha_entrega else 'Sin fecha' }}</p>
                                 </div>
-
                                 <div class="tarea-status-tag">
                                     {% if tarea.id_tarea in entregadas_ids %}
-                                        <span class="badge-status delivered">Entregado</span>
+                                    <span class="badge-status delivered">Entregado</span>
                                     {% else %}
-                                        <span class="badge-status pending">Pendiente</span>
+                                    <span class="badge-status pending">Pendiente</span>
                                     {% endif %}
-                                    <i class="bi bi-chevron-right ms-2"></i>
                                 </div>
                             </div>
                         </a>
@@ -115,245 +129,168 @@
                     </div>
                 </section>
             </div>
-        </main>
 
-        <aside class="side-column">
-            <section class="side-card announcement-box">
-                <div class="side-card-header">
-                    <i class="bi bi-bell-fill"></i>
-                    <h3>Avisos de la Clase</h3>
-                </div>
-                <div class="announcement-content">
-                    {% if anuncios %}
+            <div id="anuncios" class="tab-content">
+                <section class="content-section">
+                    <div class="section-title">
+                        <i class="bi bi-megaphone-fill"></i>
+                        <h2>Anuncios de la Clase</h2>
+                    </div>
+
+                    <div class="tareas-container">
                         {% for anuncio in anuncios %}
-                            <div class="aviso-item" style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                                <strong style="display: block; font-size: 0.9rem; color: var(--text-color, #ffffff);">
-                                    {{ anuncio.titulo }}
-                                </strong>
-                                
-                                <p class="announcement-text" style="margin: 5px 0; font-size: 0.85rem;">
-                                    {{ anuncio.contenido }}
-                                </p>
-                                
-                                <span class="announcement-date" style="font-size: 0.7rem; opacity: 0.7;">
-                                    <i class="bi bi-calendar3"></i> {{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') }}
-                                </span>
+                        <div class="tarea-card card-announcement">
+                            <div class="tarea-status-icon success">
+                                <i class="bi bi-megaphone-fill"></i>
                             </div>
+                            <div class="tarea-info">
+                                <h3>{{ anuncio.titulo }}</h3>
+                                <p class="tarea-meta">{{ anuncio.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</p>
+                                <p class="announcement-text">{{ anuncio.contenido }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-bell-slash"></i>
+                            <p>No hay anuncios publicados para esta clase.</p>
+                        </div>
                         {% endfor %}
-                    {% else %}
-                        <p class="announcement-text" style="opacity: 0.6; font-style: italic; text-align: center;">
-                            No hay avisos recientes para esta materia.
-                        </p>
-                    {% endif %}
-                </div>
-            </section>
-
-            <section class="side-card resources-box">
-                <div class="side-card-header">
-                    <i class="bi bi-backpack-fill"></i>
-                    <h3>Materiales de Clase</h3>
-                </div>
-                <ul class="resource-list">
-                    <li>
-                        <a href="#" class="resource-item">
-                            <i class="bi bi-file-earmark-pdf-fill"></i>
-                            <span>Documentos de Clase</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="resource-item">
-                            <i class="bi bi-link-45deg"></i>
-                            <span>Lectura divertida</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="resource-item">
-                            <i class="bi bi-play-btn-fill"></i>
-                            <span>Video de repaso</span>
-                        </a>
-                    </li>
-                </ul>
-            </section>
-        </aside>
+                    </div>
+                </section>
+            </div>
+        </main>
     </div>
 </div>
 
 <style>
-    :root {
-        --primary: #4361ee;
-        --dark: #1e293b;
-        --light-bg: #f1f5f9;
-        --text-muted: #64748b;
-        --success: #2ecc71;
-        --warning: #e74c3c;
-    }
-    .aula-wrapper { padding: 30px; max-width: 1300px; margin: 0 auto; }
-
-    /* HEADER Y HERO */
-    .aula-hero-card {
-        position: relative; overflow: hidden; 
-        background: color-mix(in srgb, var(--materia-color), white 92%);
-        border: 1px solid color-mix(in srgb, var(--materia-color), white 80%);
-        padding: 35px; border-radius: 30px;
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.02);
-    }
-
-    /* BOTONES DE NAVEGACIÓN (Estética Original) */
-    .aula-nav-group { display: flex; gap: 10px; }
-    
-    .btn-nav-tab {
-        height: 45px; padding: 0 20px; background: var(--light-bg); border-radius: 14px;
-        display: flex; align-items: center; gap: 10px; border: none;
-        text-decoration: none; color: var(--dark); transition: 0.2s;
-        font-weight: 700; cursor: pointer;
-        z-index: 1;
-    }
-
-    .btn-nav-tab:hover { background: var(--dark); color: white; transform: translateY(-2px); }
-    .btn-nav-tab.active { background: var(--materia-color); color: white; }
-
-    .btn-back-square {
-        width: 45px; height: 45px; background: var(--light-bg); border-radius: 14px;
-        display: flex; align-items: center; justify-content: center;
-        text-decoration: none; color: var(--dark); transition: 0.2s;
-    }
-    .btn-back-square:hover { background: var(--dark); color: white; transform: translateX(-4px); }
-
-    /* CONTENIDO DE PESTAÑAS */
-    .tab-content { display: none; }
-    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    /* MURO DE NOVEDADES */
-    .news-item-simple { display: flex; gap: 15px; padding: 20px; background: var(--light-bg); border-radius: 20px; align-items: flex-start; }
-    .news-icon-box { width: 40px; height: 40px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--materia-color); font-size: 1.2rem; }
-    .news-text strong { display: block; margin-bottom: 5px; color: var(--dark); }
-    .news-text p { margin: 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
-    .news-date { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-top: 10px; display: block; }
-
-    /* TAREAS (DISEÑO ORIGINAL) */
-    .tareas-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .stats-mini-inner { background: var(--light-bg); padding: 10px 18px; border-radius: 16px; display: flex; align-items: center; gap: 15px; }
-    .tarea-card-link { text-decoration: none; color: inherit; display: block; }
-    .tarea-status-tag { display: flex; align-items: center; color: var(--text-muted); font-size: 0.9rem; font-weight: 700; }
-
-    /* RESTO DE ESTILOS MANTENIDOS */
-    .hero-left { display: flex; align-items: center; gap: 20px; z-index: 1; }
-    .materia-tag { background: var(--materia-color); color: white; padding: 5px 12px; border-radius: 50px; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
-    .title-group h1 { font-size: 2rem; font-weight: 900; margin: 5px 0; color: var(--dark); }
-    .profesor-name { color: var(--text-muted); font-weight: 700; font-size: 0.9rem; }
-    .header-bg-icon { position: absolute; right: 15%; top: 50%; transform: translateY(-50%) rotate(-16deg); font-size: 20rem; color: var(--materia-color); opacity: 0.06; pointer-events: none; }
-
-    .aula-content-grid { display: grid; grid-template-columns: 1fr 320px; gap: 25px; }
-    .content-section { background: white; padding: 30px; border-radius: 30px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
-    .section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-    .section-title i { font-size: 1.4rem; color: var(--materia-color); }
-    .section-title h2 { font-size: 1.3rem; font-weight: 800; margin: 0; color: var(--dark); }
-
-    .tarea-card {
-        display: flex; align-items: center; padding: 18px; background: var(--light-bg);
-        border-radius: 20px; margin-bottom: 12px; transition: 0.2s;
-    }
-    .tarea-card:hover { background: white; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-
-    .tarea-status-icon {
-        width: 50px; height: 50px; border-radius: 15px; background: #fff5f5; color: var(--warning);
-        display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-right: 15px;
-    }
-    .tarea-status-icon.success { background: #f0fff4; color: var(--success); }
-
-    .tarea-info { flex: 1; }
-    .tarea-info h3 { font-size: 1.05rem; font-weight: 800; margin: 0; color: var(--dark); }
-    .tarea-meta { font-size: 0.8rem; color: var(--text-muted); margin: 3px 0 0 0; font-weight: 700; }
-
-    .tarea-actions { display: flex; align-items: center; gap: 12px; }
-    .badge-status { padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 800; }
-    .badge-status.pending { background: #fee2e2; color: var(--warning); }
-    .badge-status.delivered { background: #dcfce7; color: var(--success); }
-
-    .btn-action-upload, .btn-action-view {
-        width: 38px; height: 38px; border-radius: 12px; border: none;
-        display: flex; align-items: center; justify-content: center;
-        background: white; color: var(--dark); cursor: pointer; transition: 0.2s;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-decoration: none; font-size: 1.1rem;
-    }
-    .btn-action-upload:hover { background: var(--primary); color: white; }
-    .btn-action-view:hover { background: var(--dark); color: white; }
-    
-    .stat-item { text-align: center; }
-    .stat-value { display: block; font-size: 1.3rem; font-weight: 900; color: var(--dark); }
-    .stat-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
-    .divider-v { width: 1px; height: 25px; background: #cbd5e1; }
-
-    .side-card { background: white; padding: 22px; border-radius: 25px; margin-bottom: 20px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
-    .side-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .side-card-header i { color: var(--materia-color); font-size: 1.2rem; }
-    .side-card-header h3 { font-size: 1.05rem; font-weight: 800; margin: 0; }
-    
-    .announcement-box { background: var(--primary); color: white; border: none; }
-    .announcement-box i, .announcement-box h3 { color: white; }
-    .announcement-text { font-size: 0.85rem; line-height: 1.5; margin-bottom: 10px; font-weight: 600; opacity: 0.95; }
-    .announcement-date { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; opacity: 0.8; }
-    
-    .resource-list { list-style: none; padding: 0; margin: 0; }
-    .resource-item {
-        display: flex; align-items: center; gap: 10px; padding: 10px;
-        text-decoration: none; color: var(--dark); font-weight: 700; font-size: 0.85rem;
-        border-radius: 10px; transition: 0.2s;
-    }
-    .resource-item:hover { background: var(--light-bg); color: var(--materia-color); }    .badge-status { padding: 5px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 800; }
-    .badge-status.pending { background: #fee2e2; color: var(--warning); }
-    .badge-status.delivered { background: #dcfce7; color: var(--success); }
-
-    @media (max-width: 1024px) {
-        .aula-content-grid { grid-template-columns: 1fr; }
-        .aula-hero-card { flex-direction: column; text-align: center; gap: 25px; }
-        .hero-left { flex-direction: column; }
-    }
+.aula-wrapper { padding: 30px; max-width: 1300px; margin: 0 auto; color: #1e293b; }
+.aula-hero-card {
+    display: flex; justify-content: space-between; gap: 24px; align-items: flex-start;
+    padding: 30px; border-radius: 30px; margin-bottom: 24px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--materia-color), white 92%), #ffffff);
+    border: 1px solid color-mix(in srgb, var(--materia-color), white 78%);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+}
+.hero-left { display: flex; gap: 18px; align-items: center; }
+.btn-back-square, .btn-nav-tab {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    border-radius: 14px; text-decoration: none; border: none; cursor: pointer;
+}
+.btn-back-square {
+    width: 45px; height: 45px; background: #f1f5f9; color: #1e293b; transition: 0.2s;
+}
+.btn-back-square:hover {
+    background: #1e293b; color: white; transform: translateX(-4px);
+}
+.title-group h1 { margin: 8px 0; font-size: 2rem; font-weight: 900; }
+.materia-tag {
+    display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: .72rem; font-weight: 800;
+    background: var(--materia-color); color: white; text-transform: uppercase; letter-spacing: .08em;
+}
+.profesor-name { display: flex; align-items: center; gap: 8px; margin: 0; color: #64748b; font-weight: 700; }
+.hero-right { display: flex; flex-direction: column; gap: 16px; align-items: flex-end; }
+.aula-nav-group { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-nav-tab {
+    padding: 12px 18px; background: #eff6ff; color: #1e293b; font-weight: 800;
+    font-family: inherit; transition: background .25s ease, color .25s ease, transform .25s ease, box-shadow .25s ease;
+}
+.btn-nav-tab:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); }
+.btn-nav-tab.active { background: var(--materia-color); color: white; }
+.aula-content-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.content-section {
+    background: white; border-radius: 28px; padding: 28px; border: 1px solid #eef2f7;
+    box-shadow: 0 16px 35px rgba(15, 23, 42, 0.04);
+}
+.tab-content {
+    display: none;
+    opacity: 0;
+    transform: translateY(14px);
+}
+.tab-content.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    animation: tabFade .35s ease;
+}
+@keyframes tabFade {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.section-title i { color: var(--materia-color); font-size: 1.2rem; }
+.section-title h2 { margin: 0; font-size: 1.2rem; font-weight: 800; }
+.launcher-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.launcher-card {
+    text-decoration: none; color: inherit; padding: 20px; border-radius: 24px;
+    background: linear-gradient(180deg, #ffffff, #f8fafc); border: 1px solid #e2e8f0;
+    transition: .22s ease; min-height: 190px; display: flex; flex-direction: column; justify-content: space-between;
+}
+.launcher-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--materia-color), white 30%); box-shadow: 0 16px 30px rgba(15, 23, 42, 0.07); }
+.launcher-icon {
+    width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--materia-color), white 84%); color: var(--materia-color); font-size: 1.45rem;
+}
+.launcher-card h3 { margin: 14px 0 8px; font-size: 1.05rem; font-weight: 800; }
+.launcher-card p { margin: 0; color: #64748b; font-weight: 600; line-height: 1.55; font-size: .92rem; }
+.launcher-card span { margin-top: 16px; color: var(--materia-color); font-weight: 800; font-size: .8rem; }
+.tareas-header-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 20px; }
+.stats-mini-inner { background: #f8fafc; padding: 10px 16px; border-radius: 16px; align-items: center; }
+.stat-item { text-align: center; }
+.stat-value { display: block; font-size: 1.25rem; font-weight: 900; }
+.stat-label { font-size: .68rem; color: #64748b; font-weight: 800; text-transform: uppercase; }
+.divider-v { width: 1px; background: #cbd5e1; }
+.tarea-card-link { display: block; text-decoration: none; color: inherit; }
+.tarea-card {
+    display: flex; align-items: center; gap: 16px; padding: 18px; margin-bottom: 12px;
+    border-radius: 22px; background: #f8fafc; border: 1px solid transparent;
+}
+.tarea-card:hover { border-color: #dbe4f0; background: white; }
+.card-announcement { align-items: flex-start; }
+.tarea-status-icon {
+    width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    background: #fee2e2; color: #dc2626; font-size: 1.2rem; flex-shrink: 0;
+}
+.tarea-status-icon.success { background: #dcfce7; color: #16a34a; }
+.tarea-info { flex: 1; }
+.tarea-info h3 { margin: 0; font-size: 1rem; font-weight: 800; }
+.tarea-meta { margin: 4px 0 0; color: #64748b; font-weight: 700; font-size: .85rem; }
+.announcement-text { margin: 10px 0 0; line-height: 1.6; color: #475569; font-weight: 600; }
+.tarea-status-tag { font-weight: 800; }
+.badge-status { padding: 6px 12px; border-radius: 999px; font-size: .74rem; }
+.badge-status.pending { background: #fee2e2; color: #dc2626; }
+.badge-status.delivered { background: #dcfce7; color: #15803d; }
+.empty-state { text-align: center; padding: 46px 20px; color: #64748b; font-weight: 700; }
+.empty-state i { font-size: 2rem; display: block; margin-bottom: 8px; color: var(--materia-color); }
+@media (max-width: 1024px) {
+    .aula-hero-card { flex-direction: column; }
+    .hero-right { align-items: stretch; width: 100%; }
+}
+@media (max-width: 720px) {
+    .aula-wrapper { padding: 18px; }
+    .hero-left { flex-direction: column; align-items: flex-start; }
+    .tareas-header-row { flex-direction: column; align-items: flex-start; }
+}
 </style>
 
 <script>
-    function openTab(evt, tabName) {
-        var i, tabcontent, tablinks;
-        
-        // 1. Ocultar todos los contenidos
-        tabcontent = document.getElementsByClassName("tab-content");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].classList.remove("active");
-        }
-        
-        // 2. Desactivar todos los botones
-        tablinks = document.getElementsByClassName("btn-nav-tab");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].classList.remove("active");
-        }
-        
-        // 3. Activar la pestaña seleccionada
-        document.getElementById(tabName).classList.add("active");
-        if (evt) {
-            evt.currentTarget.classList.add("active");
-            // Actualiza la URL con el # (opcional pero recomendado)
-            window.location.hash = tabName;
-        }
+function openTab(evt, tabName) {
+    document.querySelectorAll('.tab-content').forEach((item) => item.classList.remove('active'));
+    document.querySelectorAll('.btn-nav-tab').forEach((item) => item.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    if (evt) {
+        evt.currentTarget.classList.add('active');
+        window.location.hash = tabName;
     }
+}
 
-    // LÓGICA PARA EL RETORNO AUTOMÁTICO
-    document.addEventListener("DOMContentLoaded", function() {
-        // Si la URL termina en #tareas
-        if (window.location.hash === "#tareas") {
-            // Simulamos un click en el botón de tareas
-            const btnTareas = document.getElementById('btn-tareas');
-            if (btnTareas) {
-                // Llamamos a la función manualmente
-                openTab(null, 'tareas');
-                // Marcamos el botón como activo
-                btnTareas.classList.add("active");
-                // Quitamos el activo al de inicio
-                document.querySelector('button[onclick*="inicio"]').classList.remove("active");
-            }
-        }
-    });
+document.addEventListener('DOMContentLoaded', function () {
+    const destino = window.location.hash === '#anuncios' ? 'anuncios' : (window.location.hash === '#tareas' ? 'tareas' : null);
+    if (!destino) return;
+    document.querySelectorAll('.tab-content').forEach((item) => item.classList.remove('active'));
+    document.querySelectorAll('.btn-nav-tab').forEach((item) => item.classList.remove('active'));
+    document.getElementById(destino).classList.add('active');
+    document.getElementById(destino === 'anuncios' ? 'btn-anuncios' : 'btn-tareas').classList.add('active');
+});
 </script>
 
 {% endblock %}

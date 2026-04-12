@@ -18,64 +18,85 @@
         <div class="header-right">
             <div class="date-capsule">
                 <i class="bi bi-calendar-event"></i>
-                <span>2026</span>
+                <span>{{ horario_data.semana_corta }}</span>
             </div>
+            <div class="week-chip">{{ horario_data.semana_label }}</div>
         </div>
     </header>
 
     <div class="tabla-glass-card">
+        {% if horario_data.filas %}
         <div class="table-responsive">
             <table class="horario-table">
                 <thead>
                     <tr>
                         <th class="col-hora">Bloque</th>
-                        <th>Lunes</th>
-                        <th>Martes</th>
-                        <th>Miércoles</th>
-                        <th>Jueves</th>
-                        <th>Viernes</th>
+                        {% for dia in horario_data.dias %}
+                        <th>
+                            <span class="day-title">{{ dia.label }}</span>
+                            <span class="day-date">{{ dia.fecha }}</span>
+                        </th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% set horas = [
-                        ('07:00 - 08:30', 'clase'),
-                        ('08:30 - 10:00', 'clase'),
-                        ('10:00 - 10:30', 'receso'),
-                        ('10:30 - 12:00', 'clase'),
-                        ('12:00 - 13:30', 'clase')
-                    ] %}
-                    
-                    {% set colores = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c'] %}
-
-                    {% for hora, tipo in horas %}
+                    {% for fila in horario_data.filas %}
                     <tr>
                         <td class="hora-cell">
-                            <div class="time-pill">{{ hora }}</div>
+                            <div class="time-pill">{{ fila.hora }}</div>
                         </td>
-                        
-                        {% if tipo == 'receso' %}
-                            <td colspan="5">
-                                <div class="receso-banner">
-                                    <i class="bi bi-cup-hot"></i> RECESO ESCOLAR
-                                </div>
-                            </td>
-                        {% else %}
-                            {% for i in range(5) %}
+                        {% for dia in horario_data.dias %}
+                            {% set bloque = fila.celdas[dia.db] %}
                             <td>
-                                <div class="materia-item" style="--accent-line: {{ colores[i] }};">
-                                    <span class="materia-name">Matemáticas</span>
+                                {% if bloque %}
+                                <div
+                                    class="materia-item {{ bloque.estado_ui.clase }}"
+                                    style="--accent-line: {{ bloque.accent }}; --estado-fondo: {{ bloque.estado_ui.fondo }}; --estado-borde: {{ bloque.estado_ui.borde }}; --estado-color: {{ bloque.estado_ui.color }};"
+                                >
+                                    <div class="materia-head">
+                                        <span class="materia-name">{{ bloque.materia }}</span>
+                                        <span class="estado-pill">
+                                            <i class="bi {{ bloque.estado_ui.icono }}"></i>
+                                            {{ bloque.estado_ui.texto }}
+                                        </span>
+                                    </div>
                                     <div class="materia-meta">
-                                        <i class="bi bi-geo-alt"></i> S-102
+                                        <i class="bi bi-clock-history"></i> {{ bloque.horario }}
+                                    </div>
+                                    <div class="materia-meta">
+                                        <i class="bi bi-person-badge"></i> {{ bloque.maestro or 'Maestro pendiente' }}
                                     </div>
                                 </div>
+                                {% else %}
+                                <div class="empty-slot">
+                                    <i class="bi bi-dash-lg"></i>
+                                    <span>Sin clase</span>
+                                </div>
+                                {% endif %}
                             </td>
-                            {% endfor %}
-                        {% endif %}
+                        {% endfor %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <div class="legend-bar">
+            <span><span class="legend-dot" style="background:#16a34a;"></span> Presente</span>
+            <span><span class="legend-dot" style="background:#dc2626;"></span> Ausente</span>
+            <span><span class="legend-dot" style="background:#ca8a04;"></span> Excusa</span>
+            <span><span class="legend-dot" style="background:#2563eb;"></span> Feriado</span>
+            <span><span class="legend-dot" style="background:#94a3b8;"></span> Sin registro</span>
+        </div>
+        {% else %}
+        <div class="empty-state-card">
+            <div class="empty-icon">
+                <i class="bi bi-calendar2-x-fill"></i>
+            </div>
+            <h3>Aún no hay horario para tu sección</h3>
+            <p>Cuando administración configure el horario de la sección {{ alumno.seccion.nombre_seccion }}, aquí verás tus bloques de clase y el estado de asistencia por día.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -90,57 +111,101 @@
         --shadow-sm: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
     }
 
-    .horario-container-principal { 
-        padding: 30px 20px; 
-        max-width: 1100px; 
-        margin: 0 auto; 
+    .horario-container-principal {
+        padding: 30px 20px;
+        max-width: 1150px;
+        margin: 0 auto;
     }
 
-    /* 2. HEADER COMPACTO */
     .header-minimal {
         position: relative;
-        overflow: hidden;  
+        overflow: hidden;
         background: #edf6f9;
-        padding: 25px 40px; 
+        padding: 25px 40px;
         border-radius: 30px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 18px;
         margin-bottom: 25px;
         border: 1px solid #e2e8f0;
         box-shadow: var(--shadow-sm);
     }
+
     .header-bg-icon {
         position: absolute;
-        right: 15%;    
+        right: 15%;
         top: 50%;
         transform: translateY(-50%) rotate(-15deg) translateX(10%);
-        font-size: 15rem; 
-        color: #83c5be; 
-        opacity: 0.2;  
+        font-size: 15rem;
+        color: #83c5be;
+        opacity: 0.2;
         pointer-events: none;
         z-index: 0;
     }
 
-    .header-left { display: flex; align-items: center; gap: 20px; }
+    .header-left,
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .header-right {
+        flex-direction: column;
+        align-items: flex-end;
+    }
 
     .btn-back-square {
-        width: 45px; height: 45px; background: var(--light-bg); border-radius: 14px;
-        display: flex; align-items: center; justify-content: center;
-        text-decoration: none; color: var(--dark); transition: 0.2s;
-    }
-    .btn-back-square:hover { background: var(--dark); color: white; transform: translateX(-4px); }
-
-    .header-text h1 { font-size: 1.6rem; font-weight: 800; color: var(--text-dark); margin: 0; letter-spacing: -0.5px; }
-    .sub-badge { font-size: 0.7rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-
-    .date-capsule {
-        padding: 8px 16px; border-radius: 12px; border: 1px solid #e2e8f0;
-        color: var(--text-dark); font-weight: 700; font-size: 0.8rem;
-        display: flex; align-items: center; gap: 8px;
+        width: 45px;
+        height: 45px;
+        background: var(--light-bg);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: var(--dark);
+        transition: 0.2s;
     }
 
-    /* 3. TABLA Y CARD */
+    .btn-back-square:hover {
+        background: var(--dark);
+        color: white;
+        transform: translateX(-4px);
+    }
+
+    .header-text h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+
+    .sub-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-sub);
+        text-transform: uppercase;
+    }
+
+    .date-capsule,
+    .week-chip {
+        padding: 8px 16px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        color: var(--text-dark);
+        font-weight: 700;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.75);
+    }
+
     .tabla-glass-card {
         background: var(--white);
         border-radius: 30px;
@@ -149,54 +214,220 @@
         box-shadow: var(--shadow-sm);
     }
 
-    .table-responsive { overflow-x: auto; }
-
-    .horario-table { width: 100%; border-collapse: separate; border-spacing: 10px; }
-    
-    .horario-table th { 
-        padding-bottom: 15px; color: var(--text-sub); font-weight: 800; font-size: 0.7rem; 
-        text-transform: uppercase; text-align: center;
+    .table-responsive {
+        overflow-x: auto;
     }
 
-    .col-hora { width: 120px; }
+    .horario-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 10px;
+    }
+
+    .horario-table th {
+        padding-bottom: 15px;
+        color: var(--text-sub);
+        font-weight: 800;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .day-title,
+    .day-date {
+        display: block;
+    }
+
+    .day-date {
+        margin-top: 4px;
+        font-size: 0.68rem;
+        color: #94a3b8;
+    }
+
+    .col-hora {
+        width: 130px;
+    }
 
     .time-pill {
-        background: #f1f5f9; color: var(--text-dark); padding: 10px;
-        border-radius: 12px; font-weight: 800; font-size: 0.7rem; text-align: center;
+        background: #f1f5f9;
+        color: var(--text-dark);
+        padding: 12px 10px;
+        border-radius: 14px;
+        font-weight: 800;
+        font-size: 0.74rem;
+        text-align: center;
     }
 
-    /* 4. ITEMS DE MATERIA (DENSIDAD ALTA) */
     .materia-item {
-        background: white; padding: 15px; border-radius: 18px;
-        border: 1px solid #f1f5f9; transition: 0.3s;
-        position: relative; overflow: hidden;
-        min-width: 140px;
+        background: white;
+        padding: 15px;
+        border-radius: 18px;
+        border: 1px solid #f1f5f9;
+        transition: 0.3s;
+        position: relative;
+        overflow: hidden;
+        min-width: 165px;
+        min-height: 118px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
     }
 
     .materia-item::before {
-        content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-        width: 4px; background-color: var(--accent-line);
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: var(--accent-line);
     }
 
-    .materia-item:hover { 
-        transform: translateY(-3px); 
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
-        border-color: var(--accent-line);
+    .materia-item::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--estado-fondo);
+        opacity: 0.85;
+        z-index: 0;
     }
 
-    .materia-name { display: block; font-weight: 800; color: var(--text-dark); font-size: 0.85rem; margin-bottom: 4px; }
-    .materia-meta { font-size: 0.7rem; color: var(--text-sub); font-weight: 700; display: flex; align-items: center; gap: 4px; }
+    .materia-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        border-color: var(--estado-borde);
+    }
 
-    /* RECESO COMPACTO */
-    .receso-banner { 
-        background: #fffbeb; color: #b45309; border: 1.5px dashed #fcd34d; 
-        border-radius: 15px; padding: 12px; text-align: center;
-        font-weight: 800; font-size: 0.7rem; letter-spacing: 2px;
+    .materia-head,
+    .materia-meta {
+        position: relative;
+        z-index: 1;
+    }
+
+    .materia-head {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .materia-name {
+        display: block;
+        font-weight: 800;
+        color: var(--text-dark);
+        font-size: 0.9rem;
+        line-height: 1.2;
+    }
+
+    .estado-pill {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: var(--estado-color);
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid var(--estado-borde);
+        padding: 6px 10px;
+        border-radius: 999px;
+    }
+
+    .materia-meta {
+        font-size: 0.72rem;
+        color: var(--text-sub);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        line-height: 1.35;
+    }
+
+    .empty-slot {
+        min-width: 150px;
+        min-height: 118px;
+        border-radius: 18px;
+        border: 1px dashed #dbe3ee;
+        background: #f8fafc;
+        color: #94a3b8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 0.78rem;
+    }
+
+    .legend-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 18px;
+        color: var(--text-sub);
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .legend-bar span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .empty-state-card {
+        padding: 40px 20px;
+        text-align: center;
+        border-radius: 24px;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+    }
+
+    .empty-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 18px;
+        border-radius: 22px;
+        display: grid;
+        place-items: center;
+        background: #ecfeff;
+        color: #0f766e;
+        font-size: 1.8rem;
+    }
+
+    .empty-state-card h3 {
+        margin: 0 0 10px;
+        color: var(--text-dark);
+        font-weight: 800;
+    }
+
+    .empty-state-card p {
+        margin: 0 auto;
+        max-width: 520px;
+        color: var(--text-sub);
+        font-weight: 600;
+        line-height: 1.6;
     }
 
     @media (max-width: 992px) {
-        .horario-container-principal { padding: 15px; }
-        .header-minimal { padding: 20px; }
+        .horario-container-principal {
+            padding: 15px;
+        }
+
+        .header-minimal {
+            padding: 20px;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .header-right {
+            align-items: flex-start;
+        }
     }
 </style>
 

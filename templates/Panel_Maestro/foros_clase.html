@@ -1,0 +1,51 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<style>
+.page-wrap { max-width: 1180px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
+.header, .panel, .foro-card { background: white; border: 1px solid #e2e8f0; border-radius: 24px; }
+.header, .panel { padding: 24px; }
+.header { margin-bottom: 22px; }
+.back-link { text-decoration: none; color: #475569; font-weight: 800; display: inline-flex; gap: 8px; align-items: center; }
+.layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 22px; }
+.list { display: grid; gap: 14px; }
+.foro-card { padding: 18px 20px; text-decoration: none; color: inherit; }
+.foro-card h4 { margin: 0 0 8px; }
+.foro-card p { margin: 0; color: #64748b; }
+form { display: grid; gap: 12px; }
+input, textarea, select { width: 100%; border: 1px solid #cbd5e1; border-radius: 14px; padding: 12px 14px; font: inherit; }
+button { border: none; background: #0891b2; color: white; border-radius: 14px; padding: 12px 16px; font-weight: 800; cursor: pointer; }
+@media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+</style>
+<div class="page-wrap">
+    <div class="header">
+        <a href="{{ url_for('gestionar_grado', id_grado=grado.id_grado) }}" class="back-link"><i class="bi bi-arrow-left"></i> Volver al grado</a>
+        <h1 style="margin:12px 0 6px;">Foros de Clase</h1>
+        <p style="margin:0; color:#64748b;">Crea temas y entra a responder a los alumnos desde el panel del maestro.</p>
+    </div>
+    <div class="layout">
+        <div class="panel">
+            <h3>Nuevo tema</h3>
+            <form method="POST">
+                <select name="id_clase" required>
+                    <option value="">Selecciona la clase</option>
+                    {% for clase in clases %}<option value="{{ clase.id_clase }}">{{ clase.nombre_clase }}</option>{% endfor %}
+                </select>
+                <input type="text" name="titulo" placeholder="Titulo del tema" required>
+                <textarea name="descripcion" rows="6" placeholder="Pregunta, guia o conversacion" required></textarea>
+                <button type="submit">Publicar tema</button>
+            </form>
+        </div>
+        <div class="list">
+            {% for foro in foros %}
+            <a href="{{ url_for('maestro_foro_detalle', id_foro=foro.id_foro) }}" class="foro-card">
+                <h4>{{ foro.titulo }} - {{ foro.clase.nombre_clase }}</h4>
+                <p>{{ foro.descripcion }}</p>
+                <p style="margin-top:10px; color:#64748b;">{{ foro.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }} - {{ foro.mensajes|length }} respuestas</p>
+            </a>
+            {% else %}
+            <div class="panel"><p style="margin:0; color:#64748b;">Todavia no hay temas creados.</p></div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

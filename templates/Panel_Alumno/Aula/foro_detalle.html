@@ -1,0 +1,25 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<style>
+.page-wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
+.thread-head, .message, .reply-box { background: white; border: 1px solid #e2e8f0; border-radius: 28px; }
+.thread-head { padding: 24px; margin-bottom: 18px; }
+.back-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.btn-back-square { width: 45px; height: 45px; background: #f1f5f9; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: #1e293b; transition: 0.2s; }
+.btn-back-square:hover { background: #1e293b; color: white; transform: translateX(-4px); }
+.thread-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: color-mix(in srgb, var(--materia-color), white 86%); color: var(--materia-color); font-size: .74rem; font-weight: 800; }
+.thread-head p, .meta { color: #64748b; font-weight: 600; }
+.message { padding: 18px; margin-bottom: 12px; display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 14px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04); }
+.avatar { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--materia-color), white 82%); color: var(--materia-color); font-weight: 900; font-size: 1rem; }
+.message strong { display: block; margin-bottom: 6px; }
+.reply-box { padding: 22px; margin-top: 18px; }
+form { display: grid; gap: 12px; }
+textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 16px; padding: 14px 16px; font: inherit; background: #f8fafc; }
+button { border: none; background: var(--materia-color); color: white; border-radius: 14px; padding: 12px 16px; font-weight: 800; cursor: pointer; justify-self: start; }
+</style>
+<div class="page-wrap" style="--materia-color: {{ materia_color }};">
+<section class="thread-head"><div class="back-row"><a href="{{ url_for('alumno_aula_categoria', id_clase=clase.id_clase, categoria='foros') }}" class="btn-back-square" title="Volver a foros"><i class="bi bi-chevron-left"></i></a><div><div class="thread-pill"><i class="bi bi-chat-square-quote"></i> Conversacion abierta</div><h1 style="margin:10px 0 6px;">{{ foro.titulo }}</h1><p style="margin:0;">{{ foro.descripcion }}</p></div></div><span class="meta">Tema creado el {{ foro.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</span></section>
+{% for mensaje in foro.mensajes|sort(attribute='fecha_publicacion') %}<article class="message"><div class="avatar">{{ (autores.get(mensaje.id_usuario_autor).nombre[0] if autores.get(mensaje.id_usuario_autor) else 'U')|upper }}</div><div><strong>{{ autores.get(mensaje.id_usuario_autor).nombre if autores.get(mensaje.id_usuario_autor) else 'Usuario' }} {{ autores.get(mensaje.id_usuario_autor).apellido if autores.get(mensaje.id_usuario_autor) else '' }}</strong><p style="margin:0 0 8px; line-height:1.65; color:#334155;">{{ mensaje.contenido }}</p><span class="meta">{{ mensaje.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</span></div></article>{% else %}<article class="message"><div class="avatar"><i class="bi bi-chat-left"></i></div><div><span class="meta">Aun no hay respuestas. Puedes iniciar la conversacion.</span></div></article>{% endfor %}
+<section class="reply-box"><h3 style="margin-top:0;">Responder al tema</h3><form method="POST"><textarea name="contenido" rows="5" placeholder="Escribe tu respuesta" required></textarea><button type="submit">Publicar respuesta</button></form></section>
+</div>
+{% endblock %}

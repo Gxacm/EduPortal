@@ -40,8 +40,15 @@
 
     .card-container { background: white; border-radius: 24px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.02); padding: 30px;}
     
+    .filters-row { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
     .month-picker-wrapper { background: #f8fafc; padding: 10px 20px; border-radius: 12px; display: inline-flex; align-items: center; gap: 15px; margin-bottom: 20px; border: 1px solid var(--border-color); }
     .month-picker-wrapper input { font-family: 'Plus Jakarta Sans', sans-serif; border: none; background: transparent; font-weight: 700; color: var(--dark-text); font-size: 1.1rem; outline: none; cursor: pointer; }
+    .class-picker-form { display: inline-flex; }
+    .class-picker {
+        min-width: 240px; border: 1px solid var(--border-color); background: #f8fafc; border-radius: 12px;
+        padding: 11px 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: var(--dark-text);
+        outline: none; cursor: pointer;
+    }
     
     .custom-table { width: 100%; border-collapse: collapse; text-align: center; }
     .custom-table th { padding: 8px 4px; background-color: #f8fafc; color: var(--muted-text); font-weight: 800; border: 1px solid var(--border-color); white-space: nowrap; line-height: 1.2; }
@@ -92,15 +99,25 @@
     </div>
 
     <div class="card-container" id="zona-impresion">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
             <div>
                 <h2 class="fw-800 text-dark m-0">Registro de Asistencia</h2>
-                <p class="text-muted fw-500 mb-0">{{ grado.nombre_grado }}</p>
+                <p class="text-muted fw-500 mb-0">{{ grado.nombre_grado }}{% if clase_asistencia %} • {{ clase_asistencia.nombre_clase }}{% endif %}</p>
             </div>
             
-            <div class="month-picker-wrapper" data-html2canvas-ignore>
-                <i class="bi bi-calendar-month text-primary fs-5"></i>
-                <input type="month" id="mes-asistencia">
+            <div class="filters-row" data-html2canvas-ignore>
+                <form method="GET" action="{{ url_for('control_asistencia', id_grado=grado.id_grado) }}" class="class-picker-form">
+                    <select name="id_clase" class="class-picker" onchange="this.form.submit()">
+                        {% for clase in clases_asistencia %}
+                        <option value="{{ clase.id_clase }}" {% if clase_asistencia and clase.id_clase == clase_asistencia.id_clase %}selected{% endif %}>{{ clase.nombre_clase }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <div class="month-picker-wrapper">
+                    <i class="bi bi-calendar-month text-primary fs-5"></i>
+                    <input type="month" id="mes-asistencia">
+                </div>
             </div>
             
             <div id="mes-pdf-label" style="display: none; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; color: var(--dark-text); font-size: 1.1rem; border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 12px;"></div>

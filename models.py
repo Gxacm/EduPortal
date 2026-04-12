@@ -104,6 +104,10 @@ class Clases(db.Model):
     tareas = db.relationship('Tareas', backref='clase', lazy=True, cascade="all, delete-orphan")
     asistencias = db.relationship('Asistencias', backref='clase', lazy=True, cascade="all, delete-orphan")
     anuncios = db.relationship('Anuncios', backref='clase', lazy=True, cascade="all, delete-orphan")
+    documentos = db.relationship('DocumentosClase', backref='clase', lazy=True, cascade="all, delete-orphan")
+    enlaces = db.relationship('EnlacesClase', backref='clase', lazy=True, cascade="all, delete-orphan")
+    videos = db.relationship('VideosClase', backref='clase', lazy=True, cascade="all, delete-orphan")
+    foros = db.relationship('ForosClase', backref='clase', lazy=True, cascade="all, delete-orphan")
 
 class Tareas(db.Model):
     __tablename__ = 'tareas'
@@ -113,6 +117,8 @@ class Tareas(db.Model):
     descripcion = db.Column(db.Text)
     periodo = db.Column(db.String(50), nullable=True)
     puntos = db.Column(db.Float, default=100.0)
+    archivo_adjunto_ruta = db.Column(db.String(255), nullable=True)
+    archivo_adjunto_nombre = db.Column(db.String(255), nullable=True)
     fecha_publicacion = db.Column(db.DateTime, default=db.func.current_timestamp())
     fecha_entrega = db.Column(db.DateTime, nullable=False)
     
@@ -126,6 +132,13 @@ class EntregasTareas(db.Model):
     id_tarea = db.Column(db.Integer, db.ForeignKey('tareas.id_tarea', ondelete='CASCADE'))
     id_alumno = db.Column(db.Integer, db.ForeignKey('alumnos.id_alumno', ondelete='CASCADE'))
     archivo_ruta = db.Column(db.String(255))
+    archivo_nombre = db.Column(db.String(255), nullable=True)
+    comentario_alumno = db.Column(db.Text, nullable=True)
+    comentario_maestro = db.Column(db.Text, nullable=True)
+    archivo_revision_ruta = db.Column(db.String(255), nullable=True)
+    archivo_revision_nombre = db.Column(db.String(255), nullable=True)
+    fecha_entrega = db.Column(db.DateTime, default=db.func.current_timestamp())
+    fecha_revision = db.Column(db.DateTime, nullable=True)
     estado = db.Column(db.String(20), default='Entregado')
 
 class Notas(db.Model):
@@ -141,6 +154,7 @@ class Notas(db.Model):
     # Opcional: Relaciones para acceder fácil desde el objeto
     tarea = db.relationship('Tareas', back_populates='notas_tarea')
     examen = db.relationship('Examenes', back_populates='notas_examen')
+    maestro_autor = db.relationship('Maestros', backref='notas_autor')
 
 class Asistencias(db.Model):
     __tablename__ = 'asistencias'
@@ -161,6 +175,55 @@ class Anuncios(db.Model):
     id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=True)
 
 # 5. MODELOS DE EXÁMENES
+class DocumentosClase(db.Model):
+    __tablename__ = 'documentos_clase'
+    id_documento = db.Column(db.Integer, primary_key=True)
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=False)
+    titulo = db.Column(db.String(150), nullable=False)
+    descripcion = db.Column(db.Text, nullable=True)
+    archivo_ruta = db.Column(db.String(255), nullable=False)
+    id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='SET NULL'), nullable=True)
+    fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+class EnlacesClase(db.Model):
+    __tablename__ = 'enlaces_clase'
+    id_enlace = db.Column(db.Integer, primary_key=True)
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=False)
+    titulo = db.Column(db.String(150), nullable=False)
+    descripcion = db.Column(db.Text, nullable=True)
+    url = db.Column(db.String(500), nullable=False)
+    id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='SET NULL'), nullable=True)
+    fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+class VideosClase(db.Model):
+    __tablename__ = 'videos_clase'
+    id_video = db.Column(db.Integer, primary_key=True)
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=False)
+    titulo = db.Column(db.String(150), nullable=False)
+    descripcion = db.Column(db.Text, nullable=True)
+    url = db.Column(db.String(500), nullable=False)
+    id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='SET NULL'), nullable=True)
+    fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ForosClase(db.Model):
+    __tablename__ = 'foros_clase'
+    id_foro = db.Column(db.Integer, primary_key=True)
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=False)
+    titulo = db.Column(db.String(150), nullable=False)
+    descripcion = db.Column(db.Text, nullable=False)
+    id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='SET NULL'), nullable=True)
+    fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+    mensajes = db.relationship('MensajesForoClase', backref='foro', lazy=True, cascade="all, delete-orphan")
+
+class MensajesForoClase(db.Model):
+    __tablename__ = 'mensajes_foro_clase'
+    id_mensaje = db.Column(db.Integer, primary_key=True)
+    id_foro = db.Column(db.Integer, db.ForeignKey('foros_clase.id_foro', ondelete='CASCADE'), nullable=False)
+    id_usuario_autor = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario', ondelete='SET NULL'), nullable=True)
+    contenido = db.Column(db.Text, nullable=False)
+    fecha_publicacion = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Examenes(db.Model):
     __tablename__ = 'examenes'
     id_examen = db.Column(db.Integer, primary_key=True)
