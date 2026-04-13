@@ -8,8 +8,21 @@ html {
     -webkit-text-size-adjust: 100%;
 }
 
+:root {
+    --app-dvh: 100dvh;
+}
+
 body {
     overflow-x: hidden;
+}
+
+.main-content,
+.viewport-wrapper,
+.dashboard-container,
+.main-viewport,
+.right-panel,
+.modal-overlay {
+    min-height: auto;
 }
 
 img,
@@ -93,6 +106,13 @@ table {
     .modal-card {
         max-width: calc(100vw - 32px);
     }
+
+    .modal-card,
+    .modal-content,
+    .notifications-panel {
+        max-height: calc(var(--app-dvh) - 32px);
+        overflow-y: auto;
+    }
 }
 
 @media (max-width: 768px) {
@@ -158,6 +178,11 @@ table {
         -webkit-overflow-scrolling: touch;
     }
 
+    #calendar,
+    .fc {
+        min-width: 640px;
+    }
+
     .custom-table,
     .m-table,
     .grade-table {
@@ -174,6 +199,11 @@ table {
         right: 0 !important;
         left: auto !important;
         width: min(360px, calc(100vw - 32px)) !important;
+    }
+
+    .modal-overlay {
+        padding: 16px;
+        align-items: center;
     }
 
     .btn-action,
@@ -240,5 +270,179 @@ table {
     .m-table,
     .grade-table {
         min-width: 560px;
+    }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+    .top-navbar {
+        position: sticky !important;
+        top: 0;
+    }
+
+    .main-content,
+    .viewport-wrapper,
+    .viewport-container,
+    .page-wrap,
+    .agenda-wrapper,
+    .clases-wrapper,
+    .aula-wrapper,
+    .main-viewport,
+    .horario-container-principal {
+        padding-top: 14px !important;
+        padding-bottom: 18px !important;
+    }
+
+    .agenda-hero,
+    .header-minimal,
+    .welcome-banner,
+    .settings-layout,
+    .dashboard-container {
+        gap: 14px;
+    }
+
+    .agenda-hero,
+    .header-minimal,
+    .welcome-banner,
+    .admin-header,
+    .settings-header,
+    .top-bar {
+        align-items: flex-start !important;
+    }
+
+    .sidebar-modern {
+        width: 230px !important;
+        padding: 20px 14px !important;
+        overflow-y: auto;
+        max-height: calc(var(--app-dvh) - 16px);
+    }
+
+    .notifications-panel,
+    .modal-card,
+    .modal-content {
+        max-height: calc(var(--app-dvh) - 24px) !important;
+    }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+    .top-navbar {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    .brand-text {
+        font-size: 1.3rem !important;
+    }
+
+    .ciclo-label,
+    .quick-status-widget,
+    .stats-mini,
+    .date-capsule,
+    .week-chip {
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+
+    .agenda-hero,
+    .header-minimal,
+    .welcome-banner,
+    .calendar-card,
+    .tabla-glass-card,
+    .bento-item,
+    .m-card,
+    .table-card,
+    .login-card {
+        padding: 18px !important;
+        border-radius: 20px !important;
+    }
+
+    .header-bg-icon {
+        font-size: clamp(6rem, 14vw, 10rem) !important;
+        right: 6% !important;
+    }
+
+    .modal-overlay {
+        align-items: flex-start !important;
+        overflow-y: auto;
+    }
+
+    .modal-card,
+    .modal-content {
+        margin: auto;
+    }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+    .agenda-wrapper,
+    .horario-container-principal,
+    .clases-wrapper,
+    .page-wrap,
+    .aula-wrapper {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .hero-left,
+    .hero-right,
+    .header-left,
+    .header-right,
+    .header-actions,
+    .profile-header {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        align-items: center !important;
+    }
+
+    .agenda-hero h1,
+    .header-text h1,
+    .welcome-text h1 {
+        font-size: clamp(1.25rem, 3vw, 1.6rem) !important;
+    }
+
+    .fc-toolbar {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .fc-toolbar-title {
+        font-size: 1.2rem !important;
+    }
+
+    .table-responsive {
+        max-height: calc(var(--app-dvh) - 220px);
+        overflow-y: auto;
+    }
+
+    .horario-table {
+        min-width: 820px;
+    }
+
+    .materia-item,
+    .empty-slot {
+        min-height: 84px !important;
+    }
+}
+
+@media (max-width: 576px) and (orientation: landscape) {
+    .top-navbar .navbar-left,
+    .top-navbar .navbar-right {
+        gap: 10px !important;
+    }
+
+    .menu-dropdown,
+    .notifications-panel {
+        width: min(320px, calc(100vw - 20px)) !important;
+    }
+
+    .modal-card,
+    .modal-content {
+        padding: 16px !important;
+    }
+
+    .login-card,
+    .calendar-card,
+    .tabla-glass-card,
+    .bento-item {
+        padding: 14px !important;
     }
 }
