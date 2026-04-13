@@ -177,8 +177,8 @@
         --accent-orange: #ffb547;
     }
     body { background-color: var(--bg); margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    .dashboard-container { display: flex; min-height: 100vh; }
-    .sidebar-modern { width: 280px; background: var(--white); border-right: 1px solid #e0e5f2; padding: 40px 20px; display: flex; flex-direction: column; }
+    .dashboard-container { display: flex; min-height: 100vh; align-items: stretch; }
+    .sidebar-modern { width: 280px; background: var(--white); border-right: 1px solid #e0e5f2; padding: 40px 20px; display: flex; flex-direction: column; flex-shrink: 0; }
     .sidebar-header-widget { margin-bottom: 40px; padding: 15px; background: #f8faff; border-radius: 16px; border: 1px solid #edf2f7; }
     .sidebar-header-widget small { color: var(--secondary); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .mini-progress-bar { height: 8px; background: #e0e5f2; border-radius: 10px; margin: 12px 0; overflow: hidden; }
@@ -188,7 +188,7 @@
     .nav-menu { flex: 1; }
     .nav-link { display: flex; align-items: center; gap: 15px; padding: 15px 20px; text-decoration: none; color: #a3aed0; font-weight: 700; border-radius: 15px; transition: 0.3s; margin-bottom: 5px; }
     .nav-link:hover, .nav-link.active { background: #f7f9ff; color: var(--primary); }
-    .main-viewport { flex: 1; padding: 40px; }
+    .main-viewport { flex: 1; min-width: 0; padding: 40px; }
     .welcome-banner { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 40px; background: #dcecf4; padding: 30px; border-radius: 30px; color: #12344d; box-shadow: 0 18px 40px rgba(31, 79, 120, 0.10); border: 1px solid #c6dcec; }
     .eyebrow { display: inline-block; padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,0.7); color: var(--primary); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
     .welcome-text h1 { margin: 0; font-weight: 800; font-size: 2rem; }
@@ -242,7 +242,27 @@
     .period-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #eef2f7; color: #334155; font-weight: 700; }
     .period-row strong { color: var(--primary); }
     .bell-badge { position: absolute; top: -4px; right: -4px; background: var(--accent-red); color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 999px; border: 2px solid white; font-weight: 800; }
-    @media (max-width: 1100px) { .bento-grid { grid-template-columns: 1fr; } .today-classes { grid-column: span 1; } .sidebar-modern { display: none; } .welcome-banner { flex-direction: column; } .header-actions { width: 100%; justify-content: space-between; } .schedule-card { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) {
+        .dashboard-container { flex-direction: column; gap: 18px; }
+        .bento-grid { grid-template-columns: 1fr; }
+        .today-classes { grid-column: span 1; }
+        .sidebar-modern { width: 100%; border-right: none; border-bottom: 1px solid #e0e5f2; padding: 22px 18px; }
+        .sidebar-header-widget { margin-bottom: 18px; }
+        .nav-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .nav-link { margin-bottom: 0; min-height: 56px; }
+        .main-viewport { padding-top: 18px; }
+        .welcome-banner { flex-direction: column; }
+        .header-actions { width: 100%; justify-content: space-between; }
+        .schedule-card { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+        .sidebar-modern { border-radius: 24px; margin: 12px 12px 0; box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06); }
+        .nav-menu { grid-template-columns: 1fr; }
+        .nav-link { padding: 14px 16px; }
+        .main-viewport { padding: 20px 16px 28px; }
+        .notifications-panel { width: min(100%, calc(100vw - 32px)); }
+        .quick-status-widget { width: 100%; justify-content: space-between; }
+    }
 </style>
 
 <script>

@@ -39,9 +39,17 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
 .badge-warning { background:var(--warning-light); color:var(--warning-main); }
 .btn-view-content { background:white; border:1px solid var(--border-color); color:var(--primary-blue); padding:8px 14px; border-radius:10px; font-size:0.85rem; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:.2s; }
 .btn-view-content:hover { background:var(--primary-blue-soft); border-color:var(--primary-blue-soft); }
-.stack-actions { display:grid; gap:8px; }
-.text-feedback { width:100%; min-height:90px; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-soft); padding:12px 14px; font:inherit; resize:vertical; box-sizing:border-box; }
-.file-input { width:100%; font:inherit; }
+.stack-actions { display:grid; gap:12px; min-width:0; }
+.stack-actions > * { min-width:0; }
+.text-feedback { width:100%; min-height:110px; border-radius:16px; border:1px solid var(--border-color); background:var(--bg-soft); padding:14px 16px; font:inherit; resize:vertical; box-sizing:border-box; line-height:1.55; }
+.feedback-card { background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); border:1px solid #dbe7f5; border-radius:18px; padding:14px; box-shadow:0 8px 18px rgba(59,130,246,.06); }
+.feedback-label { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:.76rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted-text); font-weight:800; margin-bottom:10px; }
+.feedback-label span:last-child { color:var(--primary-blue); }
+.file-upload-box { display:grid; gap:8px; }
+.file-input { position:absolute; opacity:0; pointer-events:none; width:0; height:0; }
+.file-upload-trigger { display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:46px; border-radius:14px; border:1px dashed #bfd4ee; background:#f8fbff; color:var(--primary-blue); font-weight:700; cursor:pointer; transition:.2s; padding:10px 14px; text-align:center; }
+.file-upload-trigger:hover { background:#eef6ff; border-color:#93c5fd; }
+.file-upload-name { font-size:.82rem; color:var(--muted-text); line-height:1.45; word-break:break-word; }
 .input-grade { width:90px; padding:10px; border-radius:10px; border:2px solid var(--border-color); text-align:center; font-weight:800; color:var(--dark-text); transition:.2s; background:var(--bg-soft); font-family:inherit; }
 .input-grade:focus { border-color:var(--primary-blue); outline:none; background:white; }
 .note-preview { display:grid; gap:8px; margin-top:10px; }
@@ -50,7 +58,25 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
 .btn-save:hover { background:#2563eb; transform:translateY(-2px); box-shadow:0 4px 12px rgba(59,130,246,.25); }
 .clearfix::after { content:""; clear:both; display:table; }
 .empty-state { text-align:center; padding:60px 20px; background:white; border-radius:24px; }
-@media (max-width:900px) { .grade-table, .grade-table thead, .grade-table tbody, .grade-table tr, .grade-table td { display:block; width:100%; } .grade-table thead { display:none; } .grade-table td { border:1px solid var(--border-color); border-radius:14px; margin-bottom:10px; } }
+.cell-heading { display:none; }
+@media (max-width:900px) {
+    .task-summary, .task-content { padding-left:20px; padding-right:20px; }
+    .grade-table, .grade-table thead, .grade-table tbody, .grade-table tr, .grade-table td { display:block; width:100%; }
+    .grade-table { border-spacing:0; }
+    .grade-table thead { display:none; }
+    .grade-table tr { background:#fff; border:1px solid var(--border-color); border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:0 8px 20px rgba(15,23,42,.04); }
+    .grade-table td { border:none; border-radius:0; margin:0; padding:10px 0; background:transparent; }
+    .grade-table td:first-child, .grade-table td:last-child { border:none; }
+    .cell-heading { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; font-weight:800; color:var(--muted-text); margin-bottom:8px; }
+    .input-grade { width:100%; min-height:46px; }
+}
+@media (max-width:640px) {
+    .viewport-container { padding:24px 14px; }
+    .task-summary { padding:18px; align-items:flex-start; }
+    .task-content { padding:0 18px 20px; }
+    .feedback-card { padding:12px; }
+    .text-feedback { min-height:130px; }
+}
 </style>
 
 <div class="viewport-container">
@@ -101,6 +127,7 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
                                 {% for entrega in tarea.entregas %}
                                 <tr>
                                     <td>
+                                        <div class="cell-heading">Estudiante</div>
                                         <div class="student-info">
                                             <div class="student-avatar">{{ entrega.alumno.nombre[0] }}{{ entrega.alumno.apellido[0] }}</div>
                                             <div>
@@ -110,6 +137,7 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
                                         </div>
                                     </td>
                                     <td>
+                                        <div class="cell-heading">Estado</div>
                                         {% if entrega.estado == 'Entregado' %}
                                         <span class="badge-status badge-success"><i class="bi bi-check-circle-fill"></i> Entregado</span>
                                         {% else %}
@@ -117,6 +145,7 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
                                         {% endif %}
                                     </td>
                                     <td>
+                                        <div class="cell-heading">Entrega</div>
                                         <div class="stack-actions">
                                             {% if entrega.archivo_url %}
                                             <a href="{{ entrega.archivo_url }}" target="_blank" class="btn-view-content"><i class="bi bi-file-earmark-text"></i> Ver entrega</a>
@@ -130,9 +159,20 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
                                         </div>
                                     </td>
                                     <td>
+                                        <div class="cell-heading">Retroalimentacion</div>
                                         <div class="stack-actions">
-                                            <textarea name="comentario_{{ entrega.id_alumno }}" class="text-feedback" placeholder="Comentario para el alumno">{{ entrega.comentario_maestro or '' }}</textarea>
-                                            <input type="file" name="archivo_revision_{{ entrega.id_alumno }}" class="file-input">
+                                            <div class="feedback-card">
+                                                <div class="feedback-label">
+                                                    <span>Comentario</span>
+                                                    <span>Visible para el alumno</span>
+                                                </div>
+                                                <textarea name="comentario_{{ entrega.id_alumno }}" class="text-feedback" placeholder="Escribe una observacion clara para el alumno">{{ entrega.comentario_maestro or '' }}</textarea>
+                                            </div>
+                                            <div class="file-upload-box">
+                                                <input type="file" id="archivo_revision_{{ entrega.id_alumno }}" name="archivo_revision_{{ entrega.id_alumno }}" class="file-input">
+                                                <label for="archivo_revision_{{ entrega.id_alumno }}" class="file-upload-trigger"><i class="bi bi-paperclip"></i> Adjuntar archivo de revision</label>
+                                                <span class="file-upload-name" data-file-name>Sin archivo seleccionado</span>
+                                            </div>
                                             {% if entrega.archivo_revision_url %}
                                             <a href="{{ entrega.archivo_revision_url }}" target="_blank" class="btn-view-content"><i class="bi bi-paperclip"></i> Ver revision</a>
                                             <span class="task-meta">{{ entrega.archivo_revision_nombre or 'Archivo de revision' }}</span>
@@ -140,6 +180,7 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
                                         </div>
                                     </td>
                                     <td>
+                                        <div class="cell-heading">Calificacion</div>
                                         <input type="number" name="nota_{{ entrega.id_alumno }}" class="input-grade" placeholder="--" min="0" max="{{ tarea.puntos }}" step="0.1" value="{{ entrega.nota if entrega.nota else '' }}">
                                     </td>
                                 </tr>
@@ -160,5 +201,17 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
         {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.file-input').forEach(function (input) {
+        input.addEventListener('change', function () {
+            const label = input.closest('.file-upload-box')?.querySelector('[data-file-name]');
+            if (!label) return;
+            label.textContent = input.files && input.files.length ? input.files[0].name : 'Sin archivo seleccionado';
+        });
+    });
+});
+</script>
 
 {% endblock %}
