@@ -18,7 +18,7 @@
             <span class="semester-tag">{{ alumno.seccion.grado.nombre_grado }} - "{{ alumno.seccion.nombre_seccion }}"</span>
         </div>
 
-        <button class="mobile-nav-toggle" type="button" id="mobileNavToggle" aria-expanded="false" aria-controls="studentNavMenu">
+        <button class="mobile-nav-toggle student-mobile-nav-toggle" type="button" id="studentMobileNavToggle" aria-expanded="false" aria-controls="studentNavMenu">
             <span><i class="bi bi-list"></i> Menú del alumno</span>
             <i class="bi bi-chevron-down toggle-chevron"></i>
         </button>
@@ -191,7 +191,7 @@
     .cycle-progress-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 0.73rem; color: #64748b; font-weight: 700; margin-bottom: 8px; }
     .semester-tag { font-size: 0.85rem; font-weight: 700; color: var(--dark); }
     .nav-menu { flex: 1; }
-    .mobile-nav-toggle { display: none; }
+    .student-mobile-nav-toggle { display: none; }
     .nav-link { display: flex; align-items: center; gap: 15px; padding: 15px 20px; text-decoration: none; color: #a3aed0; font-weight: 700; border-radius: 15px; transition: 0.3s; margin-bottom: 5px; }
     .nav-link:hover, .nav-link.active { background: #f7f9ff; color: var(--primary); }
     .main-viewport { flex: 1; min-width: 0; padding: 40px; }
@@ -268,8 +268,8 @@
         .cycle-progress-meta,
         .semester-tag { font-size: 0.75rem; }
         .cycle-progress-meta { flex-direction: row; align-items: center; gap: 8px; }
-        .mobile-nav-toggle { width: 100%; margin-top: 14px; border: 1px solid #dbe5f1; border-radius: 16px; background: #f7f9ff; color: var(--primary); display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; font-weight: 800; cursor: pointer; }
-        .mobile-nav-toggle span { display: inline-flex; align-items: center; gap: 10px; }
+        .student-mobile-nav-toggle { width: 100%; margin-top: 14px; border: 1px solid #dbe5f1; border-radius: 16px; background: #f7f9ff; color: var(--primary); display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; font-weight: 800; cursor: pointer; }
+        .student-mobile-nav-toggle span { display: inline-flex; align-items: center; gap: 10px; }
         .toggle-chevron { transition: transform 0.25s ease; }
         .sidebar-modern.is-open .toggle-chevron { transform: rotate(180deg); }
         .nav-menu { display: none; flex: none; margin-top: 12px; }
@@ -287,7 +287,7 @@
         .cycle-progress-meta,
         .semester-tag { font-size: 0.68rem; }
         .cycle-progress-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
-        .mobile-nav-toggle { padding: 12px 14px; font-size: 0.9rem; }
+        .student-mobile-nav-toggle { padding: 12px 14px; font-size: 0.9rem; }
         .nav-link { padding: 12px 14px; font-size: 0.85rem; }
         .nav-link i { font-size: 1rem; }
         .main-viewport { padding: 16px 12px 22px; }
@@ -349,7 +349,7 @@
 
     function syncMobileStudentMenu() {
         const sidebar = document.querySelector('.sidebar-modern');
-        const toggle = document.getElementById('mobileNavToggle');
+        const toggle = document.getElementById('studentMobileNavToggle');
         if (!sidebar || !toggle) return;
 
         if (window.innerWidth > 768) {
@@ -362,7 +362,7 @@
         actualizarBadgeAnuncios();
 
         const sidebar = document.querySelector('.sidebar-modern');
-        const toggle = document.getElementById('mobileNavToggle');
+        const toggle = document.getElementById('studentMobileNavToggle');
 
         if (sidebar && toggle) {
             toggle.addEventListener('click', function() {
