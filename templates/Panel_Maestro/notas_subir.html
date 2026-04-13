@@ -61,6 +61,13 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
 .cell-heading { display:none; }
 @media (max-width:900px) {
     .task-summary, .task-content { padding-left:20px; padding-right:20px; }
+    .task-summary { gap: 14px; align-items: flex-start; }
+    .task-icon-title { min-width: 0; flex: 1; }
+    .task-icon-title > div:last-child { min-width: 0; }
+    .task-title, .task-meta { overflow-wrap: anywhere; word-break: break-word; }
+    .material-box { flex-direction: column; align-items: stretch; }
+    .material-box > div { min-width: 0; }
+    .btn-view-content { width: 100%; justify-content: center; text-align: center; }
     .grade-table, .grade-table thead, .grade-table tbody, .grade-table tr, .grade-table td { display:block; width:100%; }
     .grade-table { border-spacing:0; }
     .grade-table thead { display:none; }
@@ -69,13 +76,39 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
     .grade-table td:first-child, .grade-table td:last-child { border:none; }
     .cell-heading { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; font-weight:800; color:var(--muted-text); margin-bottom:8px; }
     .input-grade { width:100%; min-height:46px; }
+    .student-info { align-items: flex-start; }
+    .student-info > div:last-child { min-width: 0; }
+    .stack-actions { gap: 10px; }
+    .feedback-label { flex-direction: column; align-items: flex-start; }
+    .btn-save { width: 100%; justify-content: center; float: none; margin-top: 24px; }
 }
 @media (max-width:640px) {
     .viewport-container { padding:24px 14px; }
-    .task-summary { padding:18px; align-items:flex-start; }
+    .top-bar { align-items: flex-start; gap: 14px; }
+    .header-text { min-width: 0; }
+    .header-text h1 { font-size: 1.45rem; line-height: 1.15; }
+    .header-text p { font-size: 0.88rem; }
+    .task-item { border-radius: 20px; }
+    .task-summary { padding:18px; align-items:flex-start; flex-direction: column; }
+    .chevron-icon { align-self: flex-end; }
     .task-content { padding:0 18px 20px; }
+    .task-desc { padding: 14px 16px; font-size: 0.9rem; }
+    .grade-table tr { padding: 14px; border-radius: 16px; }
+    .student-avatar { width: 34px; height: 34px; border-radius: 10px; font-size: 0.8rem; }
     .feedback-card { padding:12px; }
     .text-feedback { min-height:130px; }
+    .file-upload-trigger { min-height: 44px; padding: 10px 12px; font-size: 0.88rem; }
+}
+@media (max-width:420px) {
+    .viewport-container { padding: 18px 10px; }
+    .top-bar { gap: 12px; margin-bottom: 22px; }
+    .btn-back-circle { width: 42px; height: 42px; border-radius: 12px; }
+    .task-summary { padding: 16px; }
+    .task-content { padding: 0 16px 18px; }
+    .task-title { font-size: 0.98rem; }
+    .task-meta { font-size: 0.8rem; }
+    .badge-status { width: 100%; justify-content: center; }
+    .feedback-card { padding: 10px; border-radius: 16px; }
 }
 </style>
 
