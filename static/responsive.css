@@ -1,0 +1,244 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+    max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+    font: inherit;
+}
+
+textarea {
+    max-width: 100%;
+}
+
+table {
+    width: 100%;
+}
+
+.table-responsive,
+.table-card,
+.custom-table,
+.grade-table,
+.m-table {
+    max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+    .viewport-wrapper,
+    .viewport-container,
+    .page-wrap,
+    .agenda-wrapper,
+    .clases-wrapper,
+    .aula-wrapper,
+    .main-viewport,
+    .dashboard-container {
+        max-width: 100%;
+    }
+
+    .main-dashboard-grid,
+    .settings-grid,
+    .grid-config,
+    .layout,
+    .aula-content-grid,
+    .content-grid,
+    .summary-grid,
+    .hero-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .quick-actions-grid,
+    .options-grid,
+    .launcher-grid,
+    .capsulas-grid,
+    .info-grid,
+    .form-row,
+    .grid-inputs {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-header,
+    .settings-header,
+    .top-bar,
+    .header-row,
+    .welcome-banner,
+    .top-action-bar,
+    .header-actions,
+    .task-row,
+    .folder-actions {
+        flex-wrap: wrap;
+    }
+
+    .notifications-panel,
+    .menu-dropdown,
+    .modal-card {
+        max-width: calc(100vw - 32px);
+    }
+}
+
+@media (max-width: 768px) {
+    .viewport-wrapper,
+    .viewport-container,
+    .page-wrap,
+    .agenda-wrapper,
+    .clases-wrapper,
+    .aula-wrapper,
+    .main-viewport {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .quick-actions-grid,
+    .options-grid,
+    .launcher-grid,
+    .capsulas-grid,
+    .info-grid,
+    .form-row,
+    .grid-inputs,
+    .secciones-grid,
+    .meta-grid,
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .profile-header,
+    .header-row,
+    .admin-header,
+    .settings-header,
+    .top-bar,
+    .welcome-banner,
+    .header-actions,
+    .task-row,
+    .material-box,
+    .folder-actions,
+    .student-info {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .welcome-banner,
+    .main-content-box,
+    .settings-container,
+    .login-card,
+    .modal-card {
+        width: 100% !important;
+    }
+
+    .notifications-panel,
+    .modal-card,
+    .login-card {
+        max-width: calc(100vw - 32px) !important;
+    }
+
+    .table-responsive,
+    .table-card,
+    .horario-scroll,
+    .calendar-scroll,
+    .grades-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .custom-table,
+    .m-table,
+    .grade-table {
+        min-width: 640px;
+    }
+
+    .schedule-card,
+    .folder summary,
+    .message {
+        grid-template-columns: 1fr !important;
+    }
+
+    .notifications-panel {
+        right: 0 !important;
+        left: auto !important;
+        width: min(360px, calc(100vw - 32px)) !important;
+    }
+
+    .btn-action,
+    .m-btn,
+    .btn-save,
+    .btn-login {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    h1 {
+        font-size: clamp(1.5rem, 6vw, 2rem);
+    }
+
+    h2 {
+        font-size: clamp(1.25rem, 5vw, 1.6rem);
+    }
+
+    .viewport-wrapper,
+    .viewport-container,
+    .page-wrap,
+    .agenda-wrapper,
+    .clases-wrapper,
+    .aula-wrapper,
+    .main-viewport,
+    .main-content {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .bento-item,
+    .m-card,
+    .card-panel,
+    .login-card,
+    .student-card,
+    .table-card {
+        border-radius: 18px !important;
+        padding: 18px !important;
+    }
+
+    .quick-status-widget,
+    .sidebar-header-widget,
+    .folder-count,
+    .ciclo-label {
+        width: 100%;
+    }
+
+    .input-group,
+    .btn-group-flex {
+        flex-direction: column;
+    }
+
+    .upload-box,
+    .task-summary,
+    .notification-item,
+    .period-row {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .custom-table,
+    .m-table,
+    .grade-table {
+        min-width: 560px;
+    }
+}
