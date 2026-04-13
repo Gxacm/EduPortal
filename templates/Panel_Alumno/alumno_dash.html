@@ -18,7 +18,12 @@
             <span class="semester-tag">{{ alumno.seccion.grado.nombre_grado }} - "{{ alumno.seccion.nombre_seccion }}"</span>
         </div>
 
-        <nav class="nav-menu">
+        <button class="mobile-nav-toggle" type="button" id="mobileNavToggle" aria-expanded="false" aria-controls="studentNavMenu">
+            <span><i class="bi bi-list"></i> Menú del alumno</span>
+            <i class="bi bi-chevron-down toggle-chevron"></i>
+        </button>
+
+        <nav class="nav-menu" id="studentNavMenu">
             <a href="{{ url_for('alumno_dashboard') }}" class="nav-link active"><i class="bi bi-house"></i> Inicio</a>
             <a href="{{ url_for('alumno_clases') }}" class="nav-link"><i class="bi bi-journals"></i> Mis Clases</a>
             <a href="{{ url_for('alumno_agenda') }}" class="nav-link"><i class="bi bi-calendar"></i> Agenda</a>
@@ -186,6 +191,7 @@
     .cycle-progress-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 0.73rem; color: #64748b; font-weight: 700; margin-bottom: 8px; }
     .semester-tag { font-size: 0.85rem; font-weight: 700; color: var(--dark); }
     .nav-menu { flex: 1; }
+    .mobile-nav-toggle { display: none; }
     .nav-link { display: flex; align-items: center; gap: 15px; padding: 15px 20px; text-decoration: none; color: #a3aed0; font-weight: 700; border-radius: 15px; transition: 0.3s; margin-bottom: 5px; }
     .nav-link:hover, .nav-link.active { background: #f7f9ff; color: var(--primary); }
     .main-viewport { flex: 1; min-width: 0; padding: 40px; }
@@ -255,26 +261,34 @@
         .schedule-card { grid-template-columns: 1fr; }
     }
     @media (max-width: 768px) {
-        .dashboard-container { align-items: stretch; }
-        .sidebar-modern { width: 118px; padding: 18px 10px; }
+        .dashboard-container { flex-direction: column; align-items: stretch; }
+        .sidebar-modern { width: 100%; padding: 18px 14px; border-right: none; border-bottom: 1px solid #e0e5f2; }
         .sidebar-header-widget { padding: 12px 10px; border-radius: 18px; }
         .sidebar-header-widget small,
         .cycle-progress-meta,
-        .semester-tag { font-size: 0.68rem; }
-        .cycle-progress-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
-        .nav-link { flex-direction: column; justify-content: center; gap: 8px; padding: 14px 8px; text-align: center; font-size: 0.82rem; line-height: 1.2; }
-        .nav-link i { font-size: 1.1rem; }
+        .semester-tag { font-size: 0.75rem; }
+        .cycle-progress-meta { flex-direction: row; align-items: center; gap: 8px; }
+        .mobile-nav-toggle { width: 100%; margin-top: 14px; border: 1px solid #dbe5f1; border-radius: 16px; background: #f7f9ff; color: var(--primary); display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; font-weight: 800; cursor: pointer; }
+        .mobile-nav-toggle span { display: inline-flex; align-items: center; gap: 10px; }
+        .toggle-chevron { transition: transform 0.25s ease; }
+        .sidebar-modern.is-open .toggle-chevron { transform: rotate(180deg); }
+        .nav-menu { display: none; flex: none; margin-top: 12px; }
+        .sidebar-modern.is-open .nav-menu { display: block; }
+        .nav-link { justify-content: flex-start; gap: 12px; padding: 14px 16px; text-align: left; font-size: 0.92rem; line-height: 1.2; }
+        .nav-link i { font-size: 1.05rem; }
         .main-viewport { padding: 18px 14px 24px; }
         .notifications-panel { width: min(360px, calc(100vw - 24px)); }
         .quick-status-widget { width: 100%; justify-content: space-between; }
     }
     @media (max-width: 480px) {
-        .sidebar-modern { width: 104px; padding: 14px 8px; }
+        .sidebar-modern { padding: 14px 10px; }
         .sidebar-header-widget { padding: 10px 8px; }
         .sidebar-header-widget small,
         .cycle-progress-meta,
-        .semester-tag { font-size: 0.62rem; }
-        .nav-link { padding: 12px 6px; font-size: 0.76rem; }
+        .semester-tag { font-size: 0.68rem; }
+        .cycle-progress-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+        .mobile-nav-toggle { padding: 12px 14px; font-size: 0.9rem; }
+        .nav-link { padding: 12px 14px; font-size: 0.85rem; }
         .nav-link i { font-size: 1rem; }
         .main-viewport { padding: 16px 12px 22px; }
     }
@@ -333,7 +347,34 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', actualizarBadgeAnuncios);
+    function syncMobileStudentMenu() {
+        const sidebar = document.querySelector('.sidebar-modern');
+        const toggle = document.getElementById('mobileNavToggle');
+        if (!sidebar || !toggle) return;
+
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        actualizarBadgeAnuncios();
+
+        const sidebar = document.querySelector('.sidebar-modern');
+        const toggle = document.getElementById('mobileNavToggle');
+
+        if (sidebar && toggle) {
+            toggle.addEventListener('click', function() {
+                const isOpen = sidebar.classList.toggle('is-open');
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+        }
+
+        syncMobileStudentMenu();
+    });
+
+    window.addEventListener('resize', syncMobileStudentMenu);
 </script>
 
 {% endblock %}
