@@ -114,16 +114,6 @@
         border: 1px solid var(--border-color);
     }
 
-    .search-input {
-        background: var(--bg-input);
-        border: 1px solid var(--border-color);
-        padding: 10px 15px 10px 40px;
-        border-radius: 12px;
-        width: 200px;
-        color: var(--text-main);
-        outline: none;
-    }
-
     .avatar {
         width: 40px; height: 40px;
         border-radius: 10px;
@@ -219,11 +209,7 @@
         </div>
 
         <div class="navbar-right">
-            <div class="search-container" style="position: relative;">
-                <i class="bi bi-search" style="position: absolute; left: 15px; top: 12px; color: var(--text-muted);"></i>
-                <input type="text" class="search-input" placeholder="Buscar...">
-            </div>
-
+        
             <div class="profile-trigger" id="profileBtn">
                 <div class="user-info">
                     <span class="user-name">{{ session.nombre }}</span>
