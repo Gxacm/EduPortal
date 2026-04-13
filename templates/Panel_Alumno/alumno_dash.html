@@ -243,25 +243,40 @@
     .period-row strong { color: var(--primary); }
     .bell-badge { position: absolute; top: -4px; right: -4px; background: var(--accent-red); color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 999px; border: 2px solid white; font-weight: 800; }
     @media (max-width: 1100px) {
-        .dashboard-container { flex-direction: column; gap: 18px; }
+        .dashboard-container { flex-direction: row; gap: 0; }
         .bento-grid { grid-template-columns: 1fr; }
         .today-classes { grid-column: span 1; }
-        .sidebar-modern { width: 100%; border-right: none; border-bottom: 1px solid #e0e5f2; padding: 22px 18px; }
-        .sidebar-header-widget { margin-bottom: 18px; }
-        .nav-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-        .nav-link { margin-bottom: 0; min-height: 56px; }
-        .main-viewport { padding-top: 18px; }
+        .sidebar-modern { width: 232px; padding: 26px 16px; }
+        .sidebar-header-widget { margin-bottom: 22px; padding: 14px; }
+        .nav-link { padding: 14px 16px; min-height: 52px; }
+        .main-viewport { padding: 24px 20px; }
         .welcome-banner { flex-direction: column; }
         .header-actions { width: 100%; justify-content: space-between; }
         .schedule-card { grid-template-columns: 1fr; }
     }
-    @media (max-width: 640px) {
-        .sidebar-modern { border-radius: 24px; margin: 12px 12px 0; box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06); }
-        .nav-menu { grid-template-columns: 1fr; }
-        .nav-link { padding: 14px 16px; }
-        .main-viewport { padding: 20px 16px 28px; }
-        .notifications-panel { width: min(100%, calc(100vw - 32px)); }
+    @media (max-width: 768px) {
+        .dashboard-container { align-items: stretch; }
+        .sidebar-modern { width: 118px; padding: 18px 10px; }
+        .sidebar-header-widget { padding: 12px 10px; border-radius: 18px; }
+        .sidebar-header-widget small,
+        .cycle-progress-meta,
+        .semester-tag { font-size: 0.68rem; }
+        .cycle-progress-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+        .nav-link { flex-direction: column; justify-content: center; gap: 8px; padding: 14px 8px; text-align: center; font-size: 0.82rem; line-height: 1.2; }
+        .nav-link i { font-size: 1.1rem; }
+        .main-viewport { padding: 18px 14px 24px; }
+        .notifications-panel { width: min(360px, calc(100vw - 24px)); }
         .quick-status-widget { width: 100%; justify-content: space-between; }
+    }
+    @media (max-width: 480px) {
+        .sidebar-modern { width: 104px; padding: 14px 8px; }
+        .sidebar-header-widget { padding: 10px 8px; }
+        .sidebar-header-widget small,
+        .cycle-progress-meta,
+        .semester-tag { font-size: 0.62rem; }
+        .nav-link { padding: 12px 6px; font-size: 0.76rem; }
+        .nav-link i { font-size: 1rem; }
+        .main-viewport { padding: 16px 12px 22px; }
     }
 </style>
 
