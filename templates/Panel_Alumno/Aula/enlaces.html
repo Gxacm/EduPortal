@@ -1,29 +1,86 @@
 ﻿{% extends 'base.html' %}
 {% block content %}
 <style>
-.page-wrap { max-width: 1180px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
-.header-band { background: white; border: 1px solid #e2e8f0; border-radius: 28px; padding: 24px; margin-bottom: 22px; display: flex; justify-content: space-between; gap: 18px; align-items: center; box-shadow: 0 14px 30px rgba(15, 23, 42, 0.04); }
-.back-cluster { display: flex; align-items: center; gap: 16px; }
-.btn-back-square { width: 45px; height: 45px; background: #f1f5f9; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: #1e293b; transition: 0.2s; }
+.page-wrap { max-width: 1100px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
+.header-card, .folder, .empty { background: white; border: 1px solid #e2e8f0; border-radius: 28px; }
+.header-card { padding: 24px; margin-bottom: 22px; background: color-mix(in srgb, var(--materia-color), white 93%); border-color: color-mix(in srgb, var(--materia-color), white 80%); }
+.header-row { display: flex; justify-content: space-between; gap: 18px; align-items: center; }
+.hero-copy { display: flex; align-items: center; gap: 16px; }
+.btn-back-square { width: 45px; height: 45px; background: #f1f5f9; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: #1e293b; transition: .2s; }
 .btn-back-square:hover { background: #1e293b; color: white; transform: translateX(-4px); }
-.title-chip { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 12px; border-radius: 999px; background: color-mix(in srgb, var(--materia-color), white 86%); color: var(--materia-color); font-size: .74rem; font-weight: 800; }
-.header-side { padding: 14px 16px; border-radius: 20px; background: linear-gradient(135deg, color-mix(in srgb, var(--materia-color), white 88%), #ffffff); border: 1px solid color-mix(in srgb, var(--materia-color), white 72%); }
-.header-side strong { display: block; font-size: 1.5rem; font-weight: 900; }
-.header-side span { color: #64748b; font-size: .78rem; font-weight: 800; text-transform: uppercase; }
-.resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-.link-card { position: relative; overflow: hidden; border-radius: 26px; padding: 22px; background: radial-gradient(circle at top right, color-mix(in srgb, var(--materia-color), white 82%), transparent 28%), white; border: 1px solid #e2e8f0; min-height: 240px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 14px 32px rgba(15, 23, 42, 0.05); }
-.link-top { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
-.link-icon { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: #0f172a; color: white; font-size: 1.3rem; }
-.site-pill { max-width: 52%; padding: 8px 12px; border-radius: 999px; text-align: right; background: rgba(255,255,255,.84); border: 1px solid #e2e8f0; color: #475569; font-size: .72rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.link-card h3 { margin: 18px 0 8px; font-size: 1.05rem; font-weight: 800; line-height: 1.35; }
-.link-card p { margin: 0; color: #64748b; line-height: 1.6; }
-.link-url { margin-top: 14px; display: block; color: #475569; font-size: .82rem; font-weight: 700; word-break: break-all; }
-.link-action { margin-top: 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: var(--materia-color); color: white; padding: 12px 16px; border-radius: 14px; font-weight: 800; }
-.empty { padding: 56px 20px; text-align: center; border-radius: 28px; background: white; border: 1px dashed color-mix(in srgb, var(--materia-color), white 55%); color: #64748b; font-weight: 700; }
-@media (max-width: 900px) { .header-band { flex-direction: column; align-items: flex-start; } .header-side { width: 100%; } }
+.folder-count { min-width: 150px; padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,.92); border: 1px solid color-mix(in srgb, var(--materia-color), white 76%); }
+.folder-count strong { display: block; font-size: 1.6rem; font-weight: 900; }
+.folder-count span { color: #64748b; font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.folder-stack { display: grid; gap: 14px; }
+.folder { overflow: hidden; }
+.folder summary { list-style: none; cursor: pointer; padding: 18px 20px; display: flex; justify-content: space-between; gap: 16px; align-items: center; background: color-mix(in srgb, var(--materia-color), white 94%); }
+.folder summary::-webkit-details-marker { display: none; }
+.folder[open] summary { background: color-mix(in srgb, var(--materia-color), white 90%); }
+.folder-main { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.folder-icon { width: 54px; height: 54px; border-radius: 18px; background: color-mix(in srgb, var(--materia-color), white 82%); color: var(--materia-color); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; }
+.folder-title { font-weight: 800; margin-bottom: 5px; }
+.folder-meta { color: #64748b; font-size: .83rem; font-weight: 700; }
+.folder-toggle { color: #475569; font-size: 1.05rem; transition: transform .2s ease; }
+.folder[open] .folder-toggle { transform: rotate(90deg); }
+.folder-body { padding: 20px; border-top: 1px solid #e2e8f0; display: grid; gap: 16px; }
+.folder-body p, .folder-body a.inline-url { margin: 0; color: #475569; line-height: 1.7; word-break: break-word; }
+.folder-actions { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: color-mix(in srgb, var(--materia-color), white 86%); color: var(--materia-color); font-size: .74rem; font-weight: 800; }
+.btn-main { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--materia-color); color: white; padding: 12px 16px; border-radius: 14px; font-weight: 800; }
+.empty { padding: 56px 20px; text-align: center; color: #64748b; font-weight: 700; }
+@media (max-width: 900px) { .header-row { flex-direction: column; align-items: flex-start; } .folder-count { width: 100%; } .folder summary { align-items: flex-start; } }
 </style>
+
 <div class="page-wrap" style="--materia-color: {{ materia_color }};">
-<section class="header-band"><div class="back-cluster"><a href="{{ url_for('alumno_aula', id_clase=clase.id_clase) }}" class="btn-back-square" title="Volver al aula"><i class="bi bi-chevron-left"></i></a><div><span class="title-chip"><i class="bi bi-compass"></i> Recursos externos</span><h1 style="margin:0 0 6px;">{{ categoria_titulo }}</h1><p style="margin:0; color:#64748b; font-weight:600;">Un tablero de referencias, laboratorios y lecturas recomendadas para {{ clase.nombre_clase }}</p></div></div><div class="header-side"><strong>{{ enlaces|length }}</strong><span>sitios sugeridos</span></div></section>
-<section class="resource-grid">{% for enlace in enlaces %}<article class="link-card"><div><div class="link-top"><div class="link-icon"><i class="bi bi-link-45deg"></i></div><span class="site-pill">{{ enlace.url }}</span></div><h3>{{ enlace.titulo }}</h3><p>{{ enlace.descripcion or 'Recurso externo compartido para esta materia.' }}</p><span class="link-url">{{ enlace.url }}</span></div><a class="link-action" href="{{ enlace.url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Visitar enlace</a></article>{% else %}<div class="empty">No hay enlaces publicados para esta clase.</div>{% endfor %}</section>
+    <section class="header-card">
+        <div class="header-row">
+            <div class="hero-copy">
+                <a href="{{ url_for('alumno_aula', id_clase=clase.id_clase) }}" class="btn-back-square" title="Volver al aula">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <div>
+                    <h1 style="margin:0 0 6px;">{{ categoria_titulo }}</h1>
+                    <p style="margin:0; color:#64748b; font-weight:600;">Referencias externas organizadas como carpetas para navegar con calma.</p>
+                </div>
+            </div>
+            <div class="folder-count">
+                <strong>{{ enlaces|length }}</strong>
+                <span>enlaces sugeridos</span>
+            </div>
+        </div>
+    </section>
+
+    {% if enlaces %}
+    <section class="folder-stack">
+        {% for enlace in enlaces %}
+        <details class="folder">
+            <summary>
+                <div class="folder-main">
+                    <div class="folder-icon"><i class="bi bi-folder-symlink"></i></div>
+                    <div>
+                        <div class="folder-title">{{ enlace.titulo }}</div>
+                        <div class="folder-meta">Publicado el {{ enlace.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</div>
+                    </div>
+                </div>
+                <i class="bi bi-chevron-right folder-toggle"></i>
+            </summary>
+            <div class="folder-body">
+                <span class="chip"><i class="bi bi-link-45deg"></i> Enlace de interes</span>
+                <p>{{ enlace.descripcion or 'Recurso externo compartido para reforzar esta clase.' }}</p>
+                <a class="inline-url" href="{{ enlace.url }}" target="_blank" rel="noopener noreferrer">{{ enlace.url }}</a>
+                <div class="folder-actions">
+                    <span class="folder-meta">{{ clase.nombre_clase }}</span>
+                    <a class="btn-main" href="{{ enlace.url }}" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-box-arrow-up-right"></i> Abrir enlace
+                    </a>
+                </div>
+            </div>
+        </details>
+        {% endfor %}
+    </section>
+    {% else %}
+    <div class="empty">No hay enlaces publicados para esta clase.</div>
+    {% endif %}
 </div>
 {% endblock %}
+

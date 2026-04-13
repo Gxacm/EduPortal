@@ -1,171 +1,593 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-
-<style>
-    :root {
-        --success-main: #10b981;
-        --dark-text: #1e293b;
-        --muted-text: #64748b;
-        --bg-soft: #f8fafc;
-    }
-
-    body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; }
-    .viewport-wrapper { padding: 20px; }
-    .main-content-box { max-width: 1000px; margin: 0 auto; }
-
-    /* PERFIL SUPERIOR */
-    .top-nav-custom { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; }
-    .user-profile-badge {
-        display: flex; align-items: center; background: white; padding: 6px 14px;
-        border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid #e2e8f0;
-    }
-    .user-avatar {
-        width: 30px; height: 30px; background: var(--success-main); color: white;
-        border-radius: 8px; display: flex; align-items: center; justify-content: center;
-        font-weight: 800; margin-right: 10px; font-size: 0.8rem;
-    }
-
-    /* BIENVENIDA */
-    .welcome-card-glass {
-        background: white; border-radius: 20px; padding: 1.5rem 2rem;
-        display: flex; align-items: center; justify-content: space-between;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #fff;
-        margin-bottom: 25px;
-    }
-
-    /* GRID DE CUADROS COMPACTOS */
-    .cards-grid { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-        gap: 15px; 
-    }
-    .announcements-panel {
-        margin-top: 24px; background: white; border-radius: 20px; padding: 1.4rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #e2e8f0;
-    }
-    .announcements-panel h3 { margin: 0 0 14px 0; font-size: 1.05rem; font-weight: 800; color: var(--dark-text); }
-    .announcement-row {
-        padding: 12px 0; border-top: 1px solid #eef2f7;
-        display: flex; justify-content: space-between; gap: 16px;
-    }
-    .announcement-row:first-of-type { border-top: 0; padding-top: 0; }
-    .announcement-row strong { display: block; color: var(--dark-text); }
-    .announcement-row p { margin: 4px 0 0 0; color: var(--muted-text); font-size: 0.92rem; }
-    .announcement-meta { color: var(--muted-text); font-size: 0.8rem; white-space: nowrap; }
-
-    .m-card {
-        padding: 1.2rem; border-radius: 20px;
-        transition: all 0.3s ease;
-        border: 1px solid rgba(0,0,0,0.03);
-        display: flex; flex-direction: column;
-        justify-content: space-between;
-        min-height: 180px;
-        position: relative;
-    }
-    .m-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.08); }
-
-    /* FONDOS DISTINTIVOS */
-    .bg-math { background: #eff6ff; border-left: 6px solid #3b82f6; } 
-    .bg-lang { background: #fdf2f8; border-left: 6px solid #db2777; } 
-    .bg-science { background: #ecfdf5; border-left: 6px solid #10b981; } 
-    .bg-hist { background: #fffbeb; border-left: 6px solid #f59e0b; } 
-    .bg-default { background: white; border-left: 6px solid #64748b; }
-
-    .m-btn-open {
-        background: rgba(255,255,255,0.8); color: var(--dark-text); padding: 8px;
-        border-radius: 10px; font-weight: 700; display: block;
-        text-align: center; text-decoration: none; transition: 0.2s;
-        font-size: 0.8rem; border: 1px solid rgba(0,0,0,0.05);
-        backdrop-filter: blur(4px);
-    }
-    .m-btn-open:hover { background: var(--dark-text); color: white; border-color: var(--dark-text); }
-
-    .subject-title {
-        font-weight: 800; color: var(--dark-text);
-        font-size: 1.1rem; margin: 5px 0;
-        letter-spacing: -0.3px;
-    }
-    
-    .grade-text {
-        font-size: 0.75rem; color: var(--muted-text);
-        font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-</style>
-
-<div class="viewport-wrapper">
-    <div class="main-content-box">
-        
-        <nav class="top-nav-custom">
-            <div class="user-profile-badge">
-                <div class="user-avatar">{{ maestro.nombre[0] }}</div>
-            </div>
-        </nav>
-
-        <section class="welcome-card-glass">
-            <div>
-                <h2 class="fw-800 text-dark m-0" id="saludo-maestro" style="font-size: 1.4rem;">¡Bienvenido!</h2>
-                <p class="text-muted fw-500 m-0 small">Tus materias para hoy.</p>
-            </div>
-            <div class="text-end border-start ps-3">
-                <span class="fw-800 fs-3 text-success d-block" style="line-height:1">{{ total_clases }}</span>
-                <span class="text-muted fw-bold" style="font-size: 0.5rem; text-transform: uppercase;">Total</span>
-            </div>
-        </section>
-
-        <div class="cards-grid">
-            {% for item in grados_data %}
-                {% set clase_nombre = item.clases[0].nombre_clase %}
-                {% set bg_class = 'bg-default' %}
-                {% if 'Mat' in clase_nombre %}{% set bg_class = 'bg-math' %}
-                {% elif 'Leng' in clase_nombre %}{% set bg_class = 'bg-lang' %}
-                {% elif 'Ciencia' in clase_nombre %}{% set bg_class = 'bg-science' %}
-                {% elif 'Hist' in clase_nombre %}{% set bg_class = 'bg-hist' %}{% endif %}
-
-            <div class="m-card {{ bg_class }}">
-                <div>
-                    <span class="grade-text">
-                        {{ item.grado.nombre_grado | replace('Grado', '') | trim }} Grado
-                    </span>
-                    <h3 class="subject-title">{{ clase_nombre }}</h3>
-                </div>
-
-                <a href="{{ url_for('gestionar_grado', id_grado=item.grado.id_grado) }}" class="m-btn-open">
-                    Gestionar Materia
-                </a>
-            </div>
-            {% endfor %}
+<div class="teacher-dashboard">
+    <section class="teacher-hero">
+        <div class="teacher-hero-copy">
+            <span class="teacher-eyebrow">Panel docente</span>
+            <h1 id="saludo-maestro">Bienvenido, {{ maestro.nombre }}</h1>
+            <p>Accede a tus materias y da seguimiento a la comunicacion academica desde un panel mas limpio y directo.</p>
         </div>
 
-        <section class="announcements-panel">
-            <h3>Anuncios Recientes</h3>
-            {% for anuncio in anuncios %}
-            <div class="announcement-row">
+        <div class="teacher-hero-stats">
+            <article class="hero-stat-card">
+                <span class="hero-stat-label">Materias</span>
+                <strong>{{ total_clases }}</strong>
+            </article>
+            <article class="hero-stat-card">
+                <span class="hero-stat-label">Anuncios</span>
+                <strong>{{ anuncios_recibidos|length + anuncios_enviados|length }}</strong>
+            </article>
+        </div>
+    </section>
+
+    <div class="teacher-layout">
+        <section class="teacher-panel teacher-grades-panel" id="grados-docente">
+            <div class="section-heading">
                 <div>
-                    <strong>{{ anuncio.titulo }}</strong>
-                    <p>{{ anuncio.contenido }}</p>
+                    <span class="section-kicker">Gestion academica</span>
+                    <h2>Grados y materias asignadas</h2>
                 </div>
-                <span class="announcement-meta">{{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') if anuncio.fecha_publicacion else 'Reciente' }}</span>
             </div>
-            {% else %}
-            <p class="text-muted m-0">No hay anuncios recientes para tus grados.</p>
-            {% endfor %}
+
+            <div class="teacher-grade-grid">
+                {% for item in grados_data %}
+                    {% set clase_nombre = item.clases[0].nombre_clase %}
+                    {% set accent_class = 'accent-slate' %}
+                    {% set accent_icon = 'bi-grid-1x2-fill' %}
+                    {% if 'Mat' in clase_nombre %}
+                        {% set accent_class = 'accent-blue' %}
+                        {% set accent_icon = 'bi-calculator-fill' %}
+                    {% elif 'Leng' in clase_nombre %}
+                        {% set accent_class = 'accent-rose' %}
+                        {% set accent_icon = 'bi-chat-square-text-fill' %}
+                    {% elif 'Ciencia' in clase_nombre %}
+                        {% set accent_class = 'accent-green' %}
+                        {% set accent_icon = 'bi-flask-fill' %}
+                    {% elif 'Hist' in clase_nombre %}
+                        {% set accent_class = 'accent-amber' %}
+                        {% set accent_icon = 'bi-bank2' %}
+                    {% endif %}
+
+                <article class="teacher-grade-card {{ accent_class }}">
+                    <div class="grade-card-top">
+                        <div class="grade-icon">
+                            <i class="bi {{ accent_icon }}"></i>
+                        </div>
+                        <span class="grade-badge">
+                            {{ item.grado.nombre_grado | replace('Grado', '') | trim }} Grado
+                        </span>
+                    </div>
+
+                    <div class="grade-card-body">
+                        <h3>{{ clase_nombre }}</h3>
+                        <p>
+                            Accede a tareas, examenes, asistencia, anuncios y recursos del aula
+                            desde un solo punto de gestion.
+                        </p>
+                    </div>
+
+                    <div class="grade-card-footer">
+                        <a href="{{ url_for('gestionar_grado', id_grado=item.grado.id_grado) }}" class="grade-action">
+                            Gestionar materia
+                            <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    </div>
+                </article>
+                {% else %}
+                <div class="teacher-empty-state">
+                    <i class="bi bi-journal-x"></i>
+                    <div>
+                        <strong>No hay materias asignadas</strong>
+                        <p>Cuando tengas clases registradas, apareceran aqui con acceso directo a cada grado.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </section>
+
+        <aside class="teacher-panel teacher-announcements-panel">
+            <div class="section-heading stacked">
+                <div>
+                    <span class="section-kicker">Comunicacion</span>
+                    <h2>Anuncios</h2>
+                </div>
+            </div>
+
+            <div class="announcement-tabs" role="tablist" aria-label="Tabs de anuncios">
+                <button type="button" class="announcement-tab is-active" data-tab-target="recibidos-panel" aria-selected="true">Recibidos</button>
+                <button type="button" class="announcement-tab" data-tab-target="enviados-panel" aria-selected="false">Enviados</button>
+            </div>
+
+            <div id="recibidos-panel" class="announcement-panel is-active">
+                <div class="announcement-stack">
+                    {% for anuncio in anuncios_recibidos %}
+                    <article class="announcement-card">
+                        <div class="announcement-icon">
+                            <i class="bi bi-inbox-fill"></i>
+                        </div>
+                        <div class="announcement-body">
+                            <div class="announcement-header">
+                                <strong>{{ anuncio.titulo }}</strong>
+                                <span>{{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') if anuncio.fecha_publicacion else 'Reciente' }}</span>
+                            </div>
+                            <p>{{ anuncio.contenido }}</p>
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="teacher-empty-state compact">
+                        <i class="bi bi-bell-slash"></i>
+                        <div>
+                            <strong>Sin anuncios recibidos</strong>
+                            <p>No hay comunicados recientes para tus grados.</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div id="enviados-panel" class="announcement-panel">
+                <div class="announcement-stack">
+                    {% for anuncio in anuncios_enviados %}
+                    <article class="announcement-card sent-card">
+                        <div class="announcement-icon">
+                            <i class="bi bi-send-fill"></i>
+                        </div>
+                        <div class="announcement-body">
+                            <div class="announcement-header">
+                                <strong>{{ anuncio.titulo }}</strong>
+                                <span>{{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') if anuncio.fecha_publicacion else 'Reciente' }}</span>
+                            </div>
+                            <p>{{ anuncio.contenido }}</p>
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="teacher-empty-state compact">
+                        <i class="bi bi-send-slash"></i>
+                        <div>
+                            <strong>Sin anuncios enviados</strong>
+                            <p>Todavia no has publicado comunicados desde tu panel docente.</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </aside>
     </div>
 </div>
+
+<style>
+    .teacher-dashboard {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+    }
+
+    .teacher-hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 28px 30px;
+        border-radius: 28px;
+        background: #ffffff;
+        border: 1px solid #e7edf5;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .teacher-hero-copy,
+    .teacher-hero-stats,
+    .teacher-panel,
+    .teacher-grade-card,
+    .announcement-card {
+        position: relative;
+        z-index: 1;
+    }
+
+    .teacher-eyebrow,
+    .section-kicker,
+    .hero-stat-label,
+    .grade-badge,
+    .announcement-tab {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .teacher-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(var(--brand-color-rgb), 0.10);
+        color: var(--brand-color);
+        margin-bottom: 14px;
+    }
+
+    .teacher-hero-copy h1 {
+        margin: 0;
+        font-size: clamp(2rem, 3vw, 2.6rem);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+        color: var(--text-main);
+    }
+
+    .teacher-hero-copy p {
+        margin: 12px 0 0;
+        color: #64748b;
+        font-size: 0.98rem;
+        line-height: 1.7;
+        font-weight: 600;
+    }
+
+    .teacher-hero-stats {
+        display: flex;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .hero-stat-card {
+        min-width: 122px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #f8fbff;
+        border: 1px solid #dbe5f0;
+    }
+
+    .hero-stat-card strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--text-main);
+        font-size: 1.5rem;
+        line-height: 1;
+    }
+
+    .hero-stat-label { color: #64748b; }
+
+    .teacher-layout {
+        display: grid;
+        grid-template-columns: minmax(340px, 0.92fr) minmax(0, 1.28fr);
+        gap: 22px;
+        align-items: start;
+    }
+
+    .teacher-panel {
+        padding: 24px;
+        border-radius: 28px;
+        background: #ffffff;
+        border: 1px solid #e7edf5;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+    }
+
+    .section-heading {
+        margin-bottom: 20px;
+    }
+
+    .section-heading h2 {
+        margin: 6px 0 0;
+        color: var(--text-main);
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
+    }
+
+    .section-kicker {
+        color: var(--brand-color);
+    }
+
+    .announcement-tabs {
+        display: inline-flex;
+        gap: 8px;
+        padding: 6px;
+        border-radius: 16px;
+        background: #f4f7fb;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 18px;
+    }
+
+    .announcement-tab {
+        border: none;
+        background: transparent;
+        color: #64748b;
+        padding: 10px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .announcement-tab.is-active {
+        background: #ffffff;
+        color: var(--text-main);
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+    }
+
+    .announcement-panel {
+        display: none;
+    }
+
+    .announcement-panel.is-active {
+        display: block;
+    }
+
+    .teacher-grade-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .teacher-grade-card {
+        min-height: 228px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 22px;
+        border-radius: 24px;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .grade-card-top,
+    .grade-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .grade-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.22);
+        color: #ffffff;
+        font-size: 1.3rem;
+    }
+
+    .grade-badge {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .grade-card-body {
+        flex: 1;
+    }
+
+    .grade-card-body h3 {
+        margin: 0 0 10px;
+        color: #ffffff;
+        font-size: 1.2rem;
+        line-height: 1.2;
+        letter-spacing: -0.03em;
+    }
+
+    .grade-card-body p {
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+        line-height: 1.65;
+        font-weight: 600;
+    }
+
+    .grade-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 14px;
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+        font-size: 0.88rem;
+        font-weight: 800;
+        transition: 0.2s;
+    }
+
+    .grade-action:hover {
+        background: rgba(255, 255, 255, 0.22);
+        transform: translateY(-1px);
+    }
+
+    .accent-blue {
+        background: #2563eb;
+    }
+
+    .accent-rose {
+        background: #be185d;
+    }
+
+    .accent-green {
+        background: #059669;
+    }
+
+    .accent-amber {
+        background: #d97706;
+    }
+
+    .accent-slate {
+        background: #1f4f78;
+    }
+
+    .announcement-stack {
+        display: grid;
+        gap: 12px;
+    }
+
+    .announcement-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        border-radius: 18px;
+        background: #f8fbff;
+        border: 1px solid #dde6f1;
+    }
+
+    .sent-card {
+        background: #f9fafb;
+    }
+
+    .announcement-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(var(--brand-color-rgb), 0.10);
+        color: var(--brand-color);
+        font-size: 1rem;
+    }
+
+    .announcement-body {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .announcement-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .announcement-header strong {
+        color: var(--text-main);
+        font-size: 0.95rem;
+    }
+
+    .announcement-header span {
+        color: #7c8ca5;
+        font-size: 0.74rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .announcement-body p {
+        margin: 8px 0 0;
+        color: #5f7088;
+        font-size: 0.9rem;
+        line-height: 1.65;
+        word-break: break-word;
+    }
+
+    .teacher-empty-state {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 20px;
+        border-radius: 22px;
+        border: 1px dashed #cbd5e1;
+        background: #f8fafc;
+        color: #64748b;
+    }
+
+    .teacher-empty-state.compact {
+        padding: 18px;
+    }
+
+    .teacher-empty-state i {
+        font-size: 1.5rem;
+        color: var(--brand-color);
+    }
+
+    .teacher-empty-state strong {
+        display: block;
+        color: var(--text-main);
+        margin-bottom: 4px;
+    }
+
+    .teacher-empty-state p {
+        margin: 0;
+        line-height: 1.6;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 1120px) {
+        .teacher-layout,
+        .teacher-grade-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 780px) {
+        .teacher-hero,
+        .teacher-hero-stats,
+        .announcement-header,
+        .grade-card-top {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .teacher-hero-stats {
+            width: 100%;
+        }
+
+        .hero-stat-card {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .teacher-dashboard {
+            gap: 18px;
+        }
+
+        .teacher-hero,
+        .teacher-panel {
+            padding: 20px;
+            border-radius: 24px;
+        }
+    }
+</style>
 
 <script>
     function updateGreeting() {
         const hour = new Date().getHours();
         const el = document.getElementById('saludo-maestro');
         const name = "{{ maestro.nombre }}";
-        if (hour < 12) el.innerHTML = `¡Buen día, <span class="text-success">${name}</span>! ☕`;
-        else if (hour < 18) el.innerHTML = `¡Buenas Tardes, <span class="text-success">${name}</span>! 📝`;
-        else el.innerHTML = `¡Buenas Noches, <span class="text-success">${name}</span>! 🌙`;
+        let greeting = "Bienvenido";
+
+        if (hour < 12) greeting = "Buenos dias";
+        else if (hour < 18) greeting = "Buenas tardes";
+        else greeting = "Buenas noches";
+
+        el.textContent = `${greeting}, ${name}`;
     }
-    updateGreeting();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateGreeting();
+
+        const tabs = document.querySelectorAll('.announcement-tab');
+        const panels = document.querySelectorAll('.announcement-panel');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const targetId = tab.dataset.tabTarget;
+
+                tabs.forEach(item => {
+                    item.classList.remove('is-active');
+                    item.setAttribute('aria-selected', 'false');
+                });
+
+                panels.forEach(panel => panel.classList.remove('is-active'));
+
+                tab.classList.add('is-active');
+                tab.setAttribute('aria-selected', 'true');
+
+                const targetPanel = document.getElementById(targetId);
+                if (targetPanel) targetPanel.classList.add('is-active');
+            });
+        });
+    });
 </script>
 {% endblock %}

@@ -1,33 +1,88 @@
 ﻿{% extends 'base.html' %}
 {% block content %}
 <style>
-.page-wrap { max-width: 1180px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
-.hero, .exam-table, .empty { background: white; border: 1px solid #e2e8f0; border-radius: 28px; }
-.hero { padding: 24px; margin-bottom: 22px; display: flex; justify-content: space-between; gap: 18px; align-items: center; background: linear-gradient(135deg, color-mix(in srgb, var(--materia-color), white 91%), #ffffff); border-color: color-mix(in srgb, var(--materia-color), white 75%); }
+.page-wrap { max-width: 1100px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
+.header-card, .folder, .empty { background: white; border: 1px solid #e2e8f0; border-radius: 28px; }
+.header-card { padding: 24px; margin-bottom: 22px; background: color-mix(in srgb, var(--materia-color), white 93%); border-color: color-mix(in srgb, var(--materia-color), white 80%); }
+.header-row { display: flex; justify-content: space-between; gap: 18px; align-items: center; }
 .hero-copy { display: flex; align-items: center; gap: 16px; }
-.btn-back-square { width: 45px; height: 45px; background: #f1f5f9; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: #1e293b; transition: 0.2s; }
+.btn-back-square { width: 45px; height: 45px; background: #f1f5f9; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: #1e293b; transition: .2s; }
 .btn-back-square:hover { background: #1e293b; color: white; transform: translateX(-4px); }
-.hero-icon { width: 62px; height: 62px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--materia-color), white 82%); color: var(--materia-color); font-size: 1.55rem; }
-.hero-box { min-width: 160px; padding: 15px 16px; border-radius: 20px; background: rgba(255,255,255,.86); border: 1px solid #e2e8f0; }
-.hero-box strong { display:block; font-size:1.55rem; font-weight:900; }
-.hero-box span { color:#64748b; font-size:.78rem; font-weight:800; text-transform:uppercase; }
-.exam-table { overflow: hidden; }
-.table-head, .exam-row { display: grid; grid-template-columns: minmax(0, 2fr) 160px 180px 170px; gap: 16px; align-items: center; }
-.table-head { padding: 16px 20px; background: #f8fafc; color: #64748b; font-size: .76rem; font-weight: 800; text-transform: uppercase; }
-.exam-row { padding: 18px 20px; border-top: 1px solid #eef2f7; }
-.exam-row:nth-child(even) { background: rgba(248, 250, 252, .58); }
-.exam-title { font-weight: 800; margin-bottom: 6px; }
-.exam-desc { color: #64748b; line-height: 1.55; }
-.mode-pill, .status-pill { display: inline-flex; justify-content: center; padding: 8px 12px; border-radius: 999px; font-size: .74rem; font-weight: 800; }
-.mode-pill { background: color-mix(in srgb, var(--materia-color), white 86%); color: var(--materia-color); }
-.status-pill.ok { background: #dcfce7; color: #15803d; }
-.status-pill.wait { background: #fee2e2; color: #dc2626; }
-.action-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: var(--materia-color); color: white; padding: 12px 14px; border-radius: 14px; font-weight: 800; }
+.folder-count { min-width: 150px; padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,.92); border: 1px solid color-mix(in srgb, var(--materia-color), white 76%); }
+.folder-count strong { display: block; font-size: 1.6rem; font-weight: 900; }
+.folder-count span { color: #64748b; font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.folder-stack { display: grid; gap: 14px; }
+.folder { overflow: hidden; }
+.folder summary { list-style: none; cursor: pointer; padding: 18px 20px; display: flex; justify-content: space-between; gap: 16px; align-items: center; background: color-mix(in srgb, var(--materia-color), white 94%); }
+.folder summary::-webkit-details-marker { display: none; }
+.folder[open] summary { background: color-mix(in srgb, var(--materia-color), white 90%); }
+.folder-main { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.folder-icon { width: 54px; height: 54px; border-radius: 18px; background: color-mix(in srgb, var(--materia-color), white 82%); color: var(--materia-color); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0; }
+.folder-title { font-weight: 800; margin-bottom: 5px; }
+.folder-meta { color: #64748b; font-size: .83rem; font-weight: 700; }
+.folder-toggle { color: #475569; font-size: 1.05rem; transition: transform .2s ease; }
+.folder[open] .folder-toggle { transform: rotate(90deg); }
+.folder-body { padding: 20px; border-top: 1px solid #e2e8f0; display: grid; gap: 16px; }
+.folder-body p { margin: 0; color: #475569; line-height: 1.7; }
+.folder-actions { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: color-mix(in srgb, var(--materia-color), white 86%); color: var(--materia-color); font-size: .74rem; font-weight: 800; }
+.status-chip { display: inline-flex; padding: 8px 12px; border-radius: 999px; font-size: .74rem; font-weight: 800; }
+.status-chip.ok { background: #dcfce7; color: #15803d; }
+.status-chip.wait { background: #fee2e2; color: #dc2626; }
+.btn-main { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--materia-color); color: white; padding: 12px 16px; border-radius: 14px; font-weight: 800; }
 .empty { padding: 56px 20px; text-align: center; color: #64748b; font-weight: 700; }
-@media (max-width: 980px) { .hero { flex-direction: column; align-items: flex-start; } .hero-box { width: 100%; } .table-head { display: none; } .exam-row { grid-template-columns: 1fr; background: white !important; border-top: 1px solid #eef2f7; } }
+@media (max-width: 900px) { .header-row { flex-direction: column; align-items: flex-start; } .folder-count { width: 100%; } .folder summary { align-items: flex-start; } }
 </style>
+
 <div class="page-wrap" style="--materia-color: {{ materia_color }};">
-<section class="hero"><div class="hero-copy"><a href="{{ url_for('alumno_aula', id_clase=clase.id_clase) }}" class="btn-back-square" title="Volver al aula"><i class="bi bi-chevron-left"></i></a><div class="hero-icon"><i class="bi bi-patch-check-fill"></i></div><div><h1 style="margin:0 0 6px;">{{ categoria_titulo }}</h1><p style="margin:0; color:#64748b; font-weight:600;">Un panel mas academico para revisar evaluaciones y entregar a tiempo en {{ clase.nombre_clase }}</p></div></div><div class="hero-box"><strong>{{ examenes|length }}</strong><span>evaluaciones activas</span></div></section>
-{% if examenes %}<section class="exam-table"><div class="table-head"><div>Examen</div><div>Modalidad</div><div>Estado</div><div>Accion</div></div>{% for examen in examenes %}<div class="exam-row"><div><div class="exam-title">{{ examen.titulo }}</div><div class="exam-desc">{{ examen.descripcion or 'Evaluacion disponible en el aula.' }}</div><div style="margin-top:8px; color:#64748b; font-size:.82rem; font-weight:700;">Limite: {{ examen.fecha_limite.strftime('%d/%m/%Y %H:%M') if examen.fecha_limite else 'Sin fecha' }}</div></div><div><span class="mode-pill">{{ examen.modalidad }}</span></div><div><span class="status-pill {% if examen.id_examen in examenes_entregados_ids %}ok{% else %}wait{% endif %}">{% if examen.id_examen in examenes_entregados_ids %}Entregado{% else %}Pendiente{% endif %}</span></div><div><a class="action-btn" href="{{ url_for('alumno_examen_detalle', id_examen=examen.id_examen) }}"><i class="bi bi-box-arrow-in-right"></i> Abrir examen</a></div></div>{% endfor %}</section>{% else %}<div class="empty">No hay examenes creados para esta clase.</div>{% endif %}
+    <section class="header-card">
+        <div class="header-row">
+            <div class="hero-copy">
+                <a href="{{ url_for('alumno_aula', id_clase=clase.id_clase) }}" class="btn-back-square" title="Volver al aula">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <div>
+                    <h1 style="margin:0 0 6px;">{{ categoria_titulo }}</h1>
+                    <p style="margin:0; color:#64748b; font-weight:600;">Las evaluaciones ahora se ven como carpetas desplegables para revisar modalidad, fecha y accion antes de entrar.</p>
+                </div>
+            </div>
+            <div class="folder-count">
+                <strong>{{ examenes|length }}</strong>
+                <span>evaluaciones activas</span>
+            </div>
+        </div>
+    </section>
+
+    {% if examenes %}
+    <section class="folder-stack">
+        {% for examen in examenes %}
+        <details class="folder">
+            <summary>
+                <div class="folder-main">
+                    <div class="folder-icon"><i class="bi bi-folder-check"></i></div>
+                    <div>
+                        <div class="folder-title">{{ examen.titulo }}</div>
+                        <div class="folder-meta">Limite: {{ examen.fecha_limite.strftime('%d/%m/%Y %H:%M') if examen.fecha_limite else 'Sin fecha' }}</div>
+                    </div>
+                </div>
+                <i class="bi bi-chevron-right folder-toggle"></i>
+            </summary>
+            <div class="folder-body">
+                <span class="chip"><i class="bi bi-journal-check"></i> Modalidad {{ examen.modalidad }}</span>
+                <p>{{ examen.descripcion or 'Evaluacion disponible en el aula.' }}</p>
+                <div class="folder-actions">
+                    <span class="status-chip {% if examen.id_examen in examenes_entregados_ids %}ok{% else %}wait{% endif %}">{% if examen.id_examen in examenes_entregados_ids %}Entregado{% else %}Pendiente{% endif %}</span>
+                    <a class="btn-main" href="{{ url_for('alumno_examen_detalle', id_examen=examen.id_examen) }}">
+                        <i class="bi bi-box-arrow-in-right"></i> Abrir examen
+                    </a>
+                </div>
+            </div>
+        </details>
+        {% endfor %}
+    </section>
+    {% else %}
+    <div class="empty">No hay examenes creados para esta clase.</div>
+    {% endif %}
 </div>
 {% endblock %}
+

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify, send_from_directory, abort
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, timedelta
 from sqlalchemy import inspect, text
@@ -112,7 +112,33 @@ def guardar_archivo_subido(file_storage, carpeta_relativa, prefijo='archivo'):
     os.makedirs(carpeta_absoluta, exist_ok=True)
     ruta_absoluta = os.path.join(carpeta_absoluta, nombre_final)
     file_storage.save(ruta_absoluta)
-    return os.path.join('static', 'uploads', carpeta_relativa, nombre_final), filename
+    return normalizar_ruta_archivo(os.path.join('static', 'uploads', carpeta_relativa, nombre_final)), filename
+
+def normalizar_ruta_archivo(ruta):
+    if not ruta:
+        return None
+    return ruta.replace('\\', '/').lstrip('/')
+
+def url_archivo_subido(ruta):
+    ruta_normalizada = normalizar_ruta_archivo(ruta)
+    if not ruta_normalizada:
+        return None
+    return url_for('ver_archivo_subido', ruta=ruta_normalizada)
+
+app.jinja_env.globals['url_archivo_subido'] = url_archivo_subido
+
+@app.route('/archivo/<path:ruta>')
+def ver_archivo_subido(ruta):
+    ruta_normalizada = normalizar_ruta_archivo(ruta)
+    prefijo = 'static/uploads/'
+    if not ruta_normalizada or not ruta_normalizada.startswith(prefijo):
+        abort(404)
+
+    ruta_relativa = ruta_normalizada[len(prefijo):]
+    carpeta_relativa, nombre_archivo = os.path.split(ruta_relativa)
+    carpeta_base = os.path.join(app.root_path, 'static', 'uploads')
+    carpeta_objetivo = os.path.join(carpeta_base, carpeta_relativa) if carpeta_relativa else carpeta_base
+    return send_from_directory(carpeta_objetivo, nombre_archivo, as_attachment=False)
 
 def alumno_tiene_acceso_clase(alumno, clase):
     return bool(alumno and alumno.seccion and clase and clase.id_grado == alumno.seccion.id_grado)
@@ -610,9 +636,12 @@ def maestro_dashboard():
     
     clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all() if perfil else []
     ids_grados_maestro = list({clase.id_grado for clase in clases})
-    anuncios = Anuncios.query.filter(
+    anuncios_recibidos = Anuncios.query.filter(
         (Anuncios.dirigido_a.in_(['Todos', 'Maestros'])) |
         (Anuncios.dirigido_a.in_([f'Grado_{id_grado}' for id_grado in ids_grados_maestro]))
+    ).order_by(Anuncios.fecha_publicacion.desc()).limit(5).all()
+    anuncios_enviados = Anuncios.query.filter_by(
+        id_usuario_autor=user_id
     ).order_by(Anuncios.fecha_publicacion.desc()).limit(5).all()
     
     grados_data = []
@@ -625,7 +654,8 @@ def maestro_dashboard():
             
     return render_template('Panel_Maestro/maestro_dash.html', 
                            maestro=maestro_usuario, clases=clases, 
-                           total_clases=len(clases), grados_data=grados_data, anuncios=anuncios)
+                           total_clases=len(clases), grados_data=grados_data,
+                           anuncios_recibidos=anuncios_recibidos, anuncios_enviados=anuncios_enviados)
 
 # --- GESTIÓN DE TAREAS CORREGIDA ---
 
@@ -811,14 +841,8 @@ def registrar_notas(id_grado):
             nota_registro = Notas.query.filter_by(id_alumno=alumno_perfil.id_alumno, id_tarea=tarea.id_tarea).first()
             
             estado_entrega = entrega_registro.estado if entrega_registro else 'Pendiente'
-            archivo_url = (
-                url_for('static', filename=entrega_registro.archivo_ruta.replace('static/', ''))
-                if (entrega_registro and entrega_registro.archivo_ruta) else None
-            )
-            archivo_revision_url = (
-                url_for('static', filename=entrega_registro.archivo_revision_ruta.replace('static/', ''))
-                if (entrega_registro and entrega_registro.archivo_revision_ruta) else None
-            )
+            archivo_url = url_archivo_subido(entrega_registro.archivo_ruta) if (entrega_registro and entrega_registro.archivo_ruta) else None
+            archivo_revision_url = url_archivo_subido(entrega_registro.archivo_revision_ruta) if (entrega_registro and entrega_registro.archivo_revision_ruta) else None
             
             entregas.append({
                 'alumno': usuario_al,
@@ -840,10 +864,7 @@ def registrar_notas(id_grado):
             'periodo': tarea.periodo or 'Sin periodo',
             'puntos': float(tarea.puntos or 0),
             'fecha_entrega': tarea.fecha_entrega.strftime('%d/%m/%Y %H:%M') if tarea.fecha_entrega else 'Sin fecha',
-            'archivo_adjunto_url': (
-                url_for('static', filename=tarea.archivo_adjunto_ruta.replace('static/', ''))
-                if tarea.archivo_adjunto_ruta else None
-            ),
+            'archivo_adjunto_url': url_archivo_subido(tarea.archivo_adjunto_ruta) if tarea.archivo_adjunto_ruta else None,
             'archivo_adjunto_nombre': tarea.archivo_adjunto_nombre,
             'entregas': entregas
         })
@@ -890,10 +911,11 @@ def maestro_contenidos_clase(id_grado):
                     flash('Debes seleccionar un archivo para el documento.', 'warning')
                     return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
 
-                filename = secure_filename(archivo.filename)
-                os.makedirs('static/uploads/documentos_clase', exist_ok=True)
-                ruta_guardado = os.path.join('static/uploads/documentos_clase', filename)
-                archivo.save(ruta_guardado)
+                ruta_guardado, _ = guardar_archivo_subido(
+                    archivo,
+                    'documentos_clase',
+                    f'documento_clase_{clase.id_clase}'
+                )
 
                 item = DocumentosClase(
                     id_clase=clase.id_clase,
@@ -1203,11 +1225,11 @@ def examen_archivo(id_grado):
             archivo = request.files.get('archivo')
             archivo_ruta = None
             if archivo and archivo.filename != '':
-                filename = secure_filename(archivo.filename)
-                # Crea la carpeta si no existe y guarda el archivo
-                os.makedirs('static/uploads/examenes', exist_ok=True)
-                archivo_ruta = os.path.join('static/uploads/examenes', filename)
-                archivo.save(archivo_ruta)
+                archivo_ruta, _ = guardar_archivo_subido(
+                    archivo,
+                    'examenes',
+                    f'examen_{request.form.get("id_clase") or "archivo"}'
+                )
 
             nuevo_examen = Examenes(
                 id_clase=request.form.get('id_clase'),
@@ -2058,10 +2080,11 @@ def alumno_examen_detalle(id_examen):
             respuestas_json = {'respuesta_texto': respuesta_texto}
 
         if archivo and archivo.filename:
-            filename = secure_filename(archivo.filename)
-            os.makedirs('static/uploads/respuestas_examenes', exist_ok=True)
-            archivo_ruta = os.path.join('static/uploads/respuestas_examenes', f'examen_{id_examen}_alu_{alumno.id_alumno}_{filename}')
-            archivo.save(archivo_ruta)
+            archivo_ruta, _ = guardar_archivo_subido(
+                archivo,
+                'respuestas_examenes',
+                f'examen_{id_examen}_alu_{alumno.id_alumno}'
+            )
 
         if not archivo_ruta and not respuestas_json:
             flash('Debes adjuntar una respuesta antes de entregar.', 'warning')
@@ -2115,18 +2138,9 @@ def ver_detalle_tarea(id_tarea):
         id_alumno=alumno.id_alumno
     ).first()
 
-    archivo_tarea_url = (
-        url_for('static', filename=tarea.archivo_adjunto_ruta.replace('static/', ''))
-        if tarea.archivo_adjunto_ruta else None
-    )
-    archivo_revision_url = (
-        url_for('static', filename=entrega.archivo_revision_ruta.replace('static/', ''))
-        if entrega and entrega.archivo_revision_ruta else None
-    )
-    entrega_url = (
-        url_for('static', filename=entrega.archivo_ruta.replace('static/', ''))
-        if entrega and entrega.archivo_ruta else None
-    )
+    archivo_tarea_url = url_archivo_subido(tarea.archivo_adjunto_ruta) if tarea.archivo_adjunto_ruta else None
+    archivo_revision_url = url_archivo_subido(entrega.archivo_revision_ruta) if entrega and entrega.archivo_revision_ruta else None
+    entrega_url = url_archivo_subido(entrega.archivo_ruta) if entrega and entrega.archivo_ruta else None
 
     return render_template('/Panel_Alumno/Aula/Detalle_Tarea.html', 
                            tarea=tarea, 

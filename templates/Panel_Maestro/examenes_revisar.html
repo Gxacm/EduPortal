@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block content %}
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
     body { background-color: var(--bg-soft); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--dark-text); }
     .viewport-container { padding: 40px 20px; max-width: 1100px; margin: 0 auto; }
 
-    /* NAVEGACIÓN SUPERIOR */
+    /* NAVEGACIÃ“N SUPERIOR */
     .top-bar { display: flex; align-items: center; gap: 20px; margin-bottom: 35px; }
     
     .btn-back-circle {
@@ -36,7 +36,7 @@
     .header-text h1 { font-weight: 800; margin: 0; font-size: 1.8rem; letter-spacing: -0.5px; }
     .header-text p { color: var(--muted-text); margin: 4px 0 0 0; font-weight: 500; font-size: 0.95rem; }
 
-    /* ACORDEÓN DE TAREAS (LISTA) */
+    /* ACORDEÃ“N DE TAREAS (LISTA) */
     .task-list { display: flex; flex-direction: column; gap: 16px; }
     
     .task-item {
@@ -124,7 +124,7 @@
                         <div class="task-icon"><i class="bi bi-journal-check"></i></div>
                         <div>
                             <h3 class="task-title">{{ item.info.titulo }}</h3>
-                            <span class="task-meta" style="text-transform: capitalize;">Modalidad: {{ item.info.modalidad }} &nbsp;•&nbsp; Valor total: {{ item.info.puntos_maximos }} pts</span>
+                            <span class="task-meta" style="text-transform: capitalize;">Modalidad: {{ item.info.modalidad }} &nbsp;â€¢&nbsp; Valor total: {{ item.info.puntos_maximos }} pts</span>
                         </div>
                     </div>
                     <i class="bi bi-chevron-down chevron-icon"></i>
@@ -163,7 +163,7 @@
                                     
                                     <td>
                                         {% if item.info.modalidad == 'archivo' and entrega.archivo %}
-                                            <a href="{{ url_for('static', filename=entrega.archivo.replace('static/', '')) }}" target="_blank" class="btn-view-content">
+                                            <a href="{{ url_archivo_subido(entrega.archivo) }}" target="_blank" class="btn-view-content">
                                                 <i class="bi bi-file-earmark-pdf"></i> Ver PDF
                                             </a>
                                         {% elif item.info.modalidad == 'formulario' and entrega.respuestas %}
@@ -223,8 +223,8 @@
         {% else %}
             <div class="empty-state">
                 <i class="bi bi-inbox text-muted" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
-                <h3 style="font-weight: 800; color: var(--dark-text);">No hay exámenes registrados</h3>
-                <p style="color: var(--muted-text);">Aún no se han asignado evaluaciones para este grado.</p>
+                <h3 style="font-weight: 800; color: var(--dark-text);">No hay exÃ¡menes registrados</h3>
+                <p style="color: var(--muted-text);">AÃºn no se han asignado evaluaciones para este grado.</p>
             </div>
         {% endif %}
     </div>
