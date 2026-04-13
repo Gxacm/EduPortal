@@ -142,13 +142,71 @@
             .left-panel { display: none; } 
             .corner-logo span { color: #1e3c72; text-shadow: none; }
             .corner-logo { position: static; padding: 24px 24px 0; }
-            .right-panel { min-height: 100dvh; align-items: flex-start; padding-top: 20px; }
+            .right-panel { min-height: 100dvh; align-items: flex-start; justify-content: flex-start; padding-top: 20px; }
         }
 
         @media (max-width: 576px) {
-            .right-panel { padding: 16px; }
-            .login-card { padding: 24px; border-radius: 18px; }
+            .corner-logo {
+                padding: 18px 16px 0;
+            }
+
+            .corner-logo img {
+                width: 34px;
+                margin-right: 10px;
+            }
+
+            .corner-logo span {
+                font-size: 1.1rem;
+            }
+
+            .right-panel {
+                width: 100%;
+                padding: 16px;
+            }
+
+            .login-card {
+                width: 100%;
+                max-width: 100%;
+                padding: 24px;
+                border-radius: 18px;
+                margin: 0 auto;
+            }
+
             .login-title { font-size: 1.4rem; margin-bottom: 24px; }
+
+            .login-card .input-group {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: stretch;
+            }
+
+            .login-card .input-group-text,
+            .login-card .btn-outline-secondary {
+                flex: 0 0 auto;
+                height: auto;
+            }
+
+            .login-card .form-control {
+                min-width: 0;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) and (orientation: portrait) {
+            body {
+                background: #f8fafc;
+            }
+
+            .right-panel {
+                min-height: auto;
+                padding-top: 12px;
+                padding-bottom: 20px;
+            }
+
+            .login-card {
+                box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+            }
         }
     </style>
 </head>
