@@ -60,6 +60,18 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
 .empty-state { text-align:center; padding:60px 20px; background:white; border-radius:24px; }
 .cell-heading { display:none; }
 @media (max-width:900px) {
+    .viewport-container,
+    .task-list,
+    .task-item,
+    .task-content,
+    .grade-table,
+    .grade-table tbody,
+    .grade-table tr,
+    .grade-table td,
+    .student-info,
+    .stack-actions,
+    .feedback-card,
+    .file-upload-box { min-width: 0; max-width: 100%; }
     .task-summary, .task-content { padding-left:20px; padding-right:20px; }
     .task-summary { gap: 14px; align-items: flex-start; }
     .task-icon-title { min-width: 0; flex: 1; }
@@ -67,20 +79,23 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
     .task-title, .task-meta { overflow-wrap: anywhere; word-break: break-word; }
     .material-box { flex-direction: column; align-items: stretch; }
     .material-box > div { min-width: 0; }
-    .btn-view-content { width: 100%; justify-content: center; text-align: center; }
+    .btn-view-content { width: 100%; justify-content: center; text-align: center; white-space: normal; overflow-wrap: anywhere; }
     .grade-table, .grade-table thead, .grade-table tbody, .grade-table tr, .grade-table td { display:block; width:100%; }
     .grade-table { border-spacing:0; }
     .grade-table thead { display:none; }
-    .grade-table tr { background:#fff; border:1px solid var(--border-color); border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:0 8px 20px rgba(15,23,42,.04); }
+    .grade-table tr { background:#fff; border:1px solid var(--border-color); border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:0 8px 20px rgba(15,23,42,.04); overflow:hidden; }
     .grade-table td { border:none; border-radius:0; margin:0; padding:10px 0; background:transparent; }
     .grade-table td:first-child, .grade-table td:last-child { border:none; }
     .cell-heading { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; font-weight:800; color:var(--muted-text); margin-bottom:8px; }
-    .input-grade { width:100%; min-height:46px; }
+    .input-grade { width:100%; min-height:46px; max-width:100%; }
     .student-info { align-items: flex-start; }
     .student-info > div:last-child { min-width: 0; }
     .stack-actions { gap: 10px; }
     .feedback-label { flex-direction: column; align-items: flex-start; }
     .btn-save { width: 100%; justify-content: center; float: none; margin-top: 24px; }
+    .badge-status { max-width: 100%; flex-wrap: wrap; white-space: normal; }
+    .text-feedback,
+    .file-upload-trigger { max-width: 100%; }
 }
 @media (max-width:640px) {
     .viewport-container { padding:24px 14px; }
@@ -98,6 +113,8 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
     .feedback-card { padding:12px; }
     .text-feedback { min-height:130px; }
     .file-upload-trigger { min-height: 44px; padding: 10px 12px; font-size: 0.88rem; }
+    .student-info { flex-direction: column; gap: 10px; }
+    .badge-status { justify-content: center; }
 }
 @media (max-width:420px) {
     .viewport-container { padding: 18px 10px; }
@@ -109,6 +126,9 @@ details[open] .chevron-icon { transform:rotate(180deg); color:var(--primary-blue
     .task-meta { font-size: 0.8rem; }
     .badge-status { width: 100%; justify-content: center; }
     .feedback-card { padding: 10px; border-radius: 16px; }
+    .text-feedback { padding: 12px; }
+    .file-upload-trigger { font-size: 0.82rem; }
+    .input-grade { padding: 10px 12px; }
 }
 </style>
 
