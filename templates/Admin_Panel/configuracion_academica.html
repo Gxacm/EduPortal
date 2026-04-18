@@ -1384,6 +1384,166 @@
             justify-content: flex-end;
         }
     }
+
+    @media (max-width: 768px) {
+        html,
+        body {
+            overflow-x: hidden;
+        }
+
+        .viewport-wrapper {
+            width: 100%;
+            max-width: 100%;
+            padding: 20px 0 28px;
+            overflow-x: hidden;
+        }
+
+        .main-content-box {
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .top-action-bar {
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .chip-back {
+            width: 100%;
+            max-width: 260px;
+            justify-content: center;
+        }
+
+        .header-minimal {
+            margin-bottom: 1.75rem;
+            padding: 0 4px;
+        }
+
+        .logo-container {
+            width: 62px;
+            height: 62px;
+            margin-bottom: 0.85rem;
+        }
+
+        .main-title {
+            font-size: clamp(1.9rem, 8vw, 2.5rem);
+            line-height: 1.08;
+            margin-bottom: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .badge-group {
+            justify-content: center;
+        }
+
+        .chip-glass {
+            max-width: 100%;
+            text-align: center;
+            white-space: normal;
+        }
+
+        .tabs-container {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            padding: 8px;
+            margin-bottom: 1.25rem;
+            border-radius: 20px;
+        }
+
+        .tab-btn {
+            min-width: 0;
+            width: 100%;
+            padding: 12px 10px;
+            font-size: 0.86rem;
+            line-height: 1.2;
+            white-space: normal;
+        }
+
+        .grid-config,
+        .grid-config-materias {
+            gap: 16px;
+        }
+
+        .m-card,
+        .m-card-materia-form,
+        .m-card-materia-list {
+            width: 100%;
+            min-width: 0;
+            padding: 1.25rem;
+            border-radius: 22px;
+        }
+
+        .m-section-title {
+            margin-bottom: 1rem;
+        }
+
+        .m-input,
+        .m-btn-config {
+            min-height: 50px;
+        }
+
+        .materias-header,
+        .materias-toolbar,
+        .materias-search,
+        .materias-browser,
+        .materias-grade-grid,
+        .materias-detail-panels,
+        .materia-group,
+        .materia-group-body,
+        .materia-items,
+        .materia-item,
+        .materia-item-main {
+            min-width: 0;
+        }
+
+        .materias-search-input {
+            width: 100%;
+        }
+
+        .table-responsive {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .m-table {
+            min-width: 100% !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .tabs-container {
+            grid-template-columns: 1fr;
+        }
+
+        .tab-btn {
+            justify-content: flex-start;
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .top-action-bar {
+            justify-content: stretch;
+        }
+
+        .chip-back {
+            max-width: none;
+        }
+
+        .main-title {
+            font-size: clamp(1.7rem, 9vw, 2.1rem);
+        }
+
+        .m-card,
+        .m-card-materia-form,
+        .m-card-materia-list {
+            padding: 1.1rem;
+        }
+    }
 </style>
 
 <script>
