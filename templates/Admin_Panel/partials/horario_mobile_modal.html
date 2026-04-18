@@ -1,0 +1,26 @@
+<div id="modalHorarioMobile" class="modal-overlay horario-mobile-overlay">
+    <div class="modal-card horario-mobile-modal">
+        <div class="horario-mobile-head">
+            <div>
+                <h3 class="m-section-title" style="margin-bottom: 6px;" id="horarioMobileTitulo">Horario por grado</h3>
+                <p class="text-muted" id="horarioMobileSubtitulo" style="margin: 0;">Vista rapida del horario por seccion.</p>
+            </div>
+            <button type="button" onclick="cerrarHorarioMobile()" class="btn-icon" style="background: var(--bg); color: var(--dark);">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="horario-mobile-tabs" id="horarioMobileTabs"></div>
+
+        <div class="horario-mobile-body">
+            <div class="horario-mobile-grid-shell">
+                <div id="horarioMobileGrid" class="horario-editor-grid"></div>
+            </div>
+        </div>
+
+        <div class="horario-mobile-footer">
+            <div class="text-muted" id="horarioMobileFooterMensaje">Vista de solo lectura para telefono.</div>
+            <button type="button" class="btn-cancel" onclick="cerrarHorarioMobile()">Cerrar</button>
+        </div>
+    </div>
+</div>

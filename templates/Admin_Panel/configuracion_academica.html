@@ -312,7 +312,7 @@
                     {% for g in grados %}
                     {% set total_secciones = secciones|selectattr('id_grado', 'equalto', g.id_grado)|list|length %}
                     {% set total_materias = clases|selectattr('id_grado', 'equalto', g.id_grado)|list|length %}
-                    <button type="button" class="horario-grade-card" onclick="abrirEditorHorario('{{ g.id_grado }}')">
+                    <button type="button" class="horario-grade-card" onclick="abrirHorarioPorDispositivo('{{ g.id_grado }}')">
                         <span class="horario-grade-icon"><i class="bi bi-journal-richtext"></i></span>
                         <span class="horario-grade-main">
                             <strong>{{ g.nombre_grado }}</strong>
@@ -501,6 +501,8 @@
             </div>
         </div>
     </div>
+
+    {% include 'Admin_Panel/partials/horario_mobile_modal.html' %}
 
     <div id="modalHorarioEditor" class="modal-overlay">
         <div class="modal-card horario-editor-modal">
@@ -936,33 +938,6 @@
         display: flex;
         flex-direction: column;
     }
-    .horario-editor-modal.is-readonly-mobile .horario-toolbar,
-    .horario-editor-modal.is-readonly-mobile .horario-selection-bar,
-    .horario-editor-modal.is-readonly-mobile .horario-editor-side,
-    .horario-editor-modal.is-readonly-mobile .horario-footer-actions .m-btn-config {
-        display: none !important;
-    }
-    .horario-editor-modal.is-readonly-mobile .horario-editor-footer {
-        gap: 10px;
-    }
-    .horario-editor-modal.is-readonly-mobile .horario-footer-actions {
-        width: 100%;
-    }
-    .horario-editor-modal.is-readonly-mobile .horario-footer-actions .btn-cancel {
-        width: 100%;
-    }
-    .horario-editor-modal.is-readonly-mobile .horario-grid-shell {
-        max-height: none;
-        height: 100%;
-    }
-    .horario-editor-modal.is-readonly-mobile .horario-grid-cell,
-    .horario-editor-modal.is-readonly-mobile .horario-grid-time {
-        cursor: default;
-    }
-    .horario-editor-modal.is-readonly-mobile .horario-grid-cell:hover {
-        transform: none;
-        border-color: #d7e3ef;
-    }
     .horario-editor-head,
     .horario-editor-footer {
         padding: 22px 24px;
@@ -975,6 +950,58 @@
     .horario-editor-footer {
         border-bottom: none;
         border-top: 1px solid #edf2f7;
+    }
+    .horario-mobile-modal {
+        width: min(720px, 96vw);
+        max-height: 92vh;
+        text-align: left;
+        padding: 0;
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+    .horario-mobile-head,
+    .horario-mobile-footer {
+        padding: 20px 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        background: white;
+    }
+    .horario-mobile-head {
+        border-bottom: 1px solid #edf2f7;
+    }
+    .horario-mobile-footer {
+        border-top: 1px solid #edf2f7;
+    }
+    .horario-mobile-tabs {
+        padding: 0 22px 14px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        border-bottom: 1px solid #edf2f7;
+        background: white;
+        -webkit-overflow-scrolling: touch;
+    }
+    .horario-mobile-body {
+        min-height: 0;
+        overflow: auto;
+        padding: 16px 22px;
+        background: white;
+        -webkit-overflow-scrolling: touch;
+    }
+    .horario-mobile-grid-shell {
+        border: 1px solid #edf2f7;
+        border-radius: 18px;
+        padding: 10px;
+        background: #fbfdff;
+        overflow: auto;
+        max-height: 100%;
+    }
+    .horario-mobile-footer .btn-cancel {
+        width: auto;
+        min-width: 140px;
     }
     .horario-editor-head-actions,
     .horario-footer-actions {
@@ -1540,170 +1567,57 @@
         .m-table {
             min-width: 100% !important;
         }
-    }
 
-    @media (max-width: 768px) {
-        #modalHorarioEditor {
-            padding: 8px !important;
-            align-items: stretch !important;
-            justify-content: stretch !important;
+        .horario-mobile-overlay {
+            padding: 8px;
+            align-items: stretch;
+            justify-content: stretch;
         }
 
-        #modalHorarioEditor .horario-editor-modal {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: calc(100dvh - 16px) !important;
-            max-height: calc(100dvh - 16px) !important;
-            min-height: calc(100dvh - 16px) !important;
-            border-radius: 26px !important;
-            display: grid !important;
-            grid-template-rows: auto auto minmax(0, 1fr) auto !important;
-            overflow: hidden !important;
+        .horario-mobile-modal {
+            width: 100%;
+            max-width: 100%;
+            min-height: calc(100dvh - 16px);
+            max-height: calc(100dvh - 16px);
+            border-radius: 24px;
         }
 
-        #modalHorarioEditor .horario-editor-head {
-            padding: 18px 16px 12px !important;
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            align-items: start !important;
-            gap: 12px !important;
-            background: white !important;
+        .horario-mobile-head,
+        .horario-mobile-footer {
+            padding: 16px 14px;
+            flex-direction: column;
+            align-items: stretch;
         }
 
-        #modalHorarioEditor .horario-editor-head-actions {
-            width: 100% !important;
-            display: grid !important;
-            grid-template-columns: minmax(0, 1fr) 52px !important;
-            gap: 10px !important;
-            align-items: stretch !important;
+        .horario-mobile-head {
+            gap: 12px;
         }
 
-        #modalHorarioEditor #horarioEditorEstado {
-            width: 100% !important;
-            min-width: 0 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            text-align: center !important;
-            white-space: normal !important;
+        .horario-mobile-head .btn-icon {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            align-self: flex-end;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        #modalHorarioEditor .horario-editor-head-actions .btn-icon {
-            width: 52px !important;
-            height: 52px !important;
-            padding: 0 !important;
-            border-radius: 16px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+        .horario-mobile-tabs {
+            padding: 0 14px 12px;
         }
 
-        #modalHorarioEditor .horario-editor-tabs {
-            padding: 0 16px 12px !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            flex-wrap: nowrap !important;
-            gap: 8px !important;
-            border-bottom: 1px solid #edf2f7 !important;
-            background: white !important;
-            -webkit-overflow-scrolling: touch !important;
+        .horario-mobile-body {
+            padding: 12px 14px;
         }
 
-        #modalHorarioEditor .horario-editor-tab {
-            flex: 0 0 auto !important;
-            min-width: max-content !important;
-            padding: 10px 14px !important;
-            font-size: 0.9rem !important;
+        .horario-mobile-grid-shell {
+            max-height: none;
         }
 
-        #modalHorarioEditor .horario-editor-layout {
-            padding: 14px 16px !important;
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 14px !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            min-height: 0 !important;
-            align-content: start !important;
-            align-items: start !important;
-            padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
-            scroll-padding-bottom: 24px !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-
-        #modalHorarioEditor .horario-toolbar,
-        #modalHorarioEditor .horario-toolbar-times,
-        #modalHorarioEditor .horario-toolbar-actions,
-        #modalHorarioEditor .horario-side-actions,
-        #modalHorarioEditor .horario-footer-actions {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 10px !important;
-            width: 100% !important;
-        }
-
-        #modalHorarioEditor .horario-toolbar-times > div,
-        #modalHorarioEditor .horario-toolbar button,
-        #modalHorarioEditor .horario-side-actions button,
-        #modalHorarioEditor .horario-editor-footer button {
-            width: 100% !important;
-        }
-
-        #modalHorarioEditor .horario-editor-main,
-        #modalHorarioEditor .horario-editor-side {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-            align-content: start !important;
-            min-width: 0 !important;
-        }
-
-        #modalHorarioEditor .horario-selection-bar,
-        #modalHorarioEditor .horario-side-card,
-        #modalHorarioEditor .horario-grid-shell {
-            width: 100% !important;
-            min-width: 0 !important;
-        }
-
-        #modalHorarioEditor .horario-selection-bar {
-            margin-bottom: 0 !important;
-        }
-
-        #modalHorarioEditor .horario-grid-shell {
-            padding: 10px !important;
-            border-radius: 18px !important;
-            max-height: 34vh !important;
-            overflow: auto !important;
-        }
-
-        #modalHorarioEditor .horario-editor-side {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-        }
-
-        #modalHorarioEditor .horario-side-card {
-            padding: 15px !important;
-            border-radius: 18px !important;
-        }
-
-        #modalHorarioEditor .horario-editor-footer {
-            padding: 14px 16px 16px !important;
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-            align-items: stretch !important;
-            background: white !important;
-            border-top: 1px solid #edf2f7 !important;
-            position: relative !important;
-            z-index: 2 !important;
-        }
-
-        #modalHorarioEditor #horarioFooterMensaje {
-            width: 100% !important;
-            margin: 0 !important;
-            font-size: 0.9rem !important;
-            line-height: 1.4 !important;
+        .horario-mobile-footer .btn-cancel {
+            width: 100%;
+            min-width: 0;
         }
     }
 
@@ -1736,66 +1650,19 @@
             padding: 1.1rem;
         }
 
-        #modalHorarioEditor {
-            padding: 6px !important;
+        .horario-mobile-overlay {
+            padding: 6px;
         }
 
-        #modalHorarioEditor .horario-editor-modal {
-            height: calc(100dvh - 12px) !important;
-            max-height: calc(100dvh - 12px) !important;
-            min-height: calc(100dvh - 12px) !important;
-            border-radius: 22px !important;
+        .horario-mobile-modal {
+            min-height: calc(100dvh - 12px);
+            max-height: calc(100dvh - 12px);
+            border-radius: 22px;
         }
 
-        #modalHorarioEditor .horario-editor-head,
-        #modalHorarioEditor .horario-editor-tabs,
-        #modalHorarioEditor .horario-editor-layout,
-        #modalHorarioEditor .horario-editor-footer {
-            padding-left: 14px !important;
-            padding-right: 14px !important;
-        }
-
-        #modalHorarioEditor .horario-editor-head {
-            padding-top: 16px !important;
-            padding-bottom: 10px !important;
-        }
-
-        #modalHorarioEditor .horario-editor-head .m-section-title {
-            font-size: clamp(1.35rem, 7.5vw, 1.7rem) !important;
-            line-height: 1.1 !important;
-        }
-
-        #modalHorarioEditor #horarioEditorSubtitulo {
-            font-size: 0.9rem !important;
-        }
-
-        #modalHorarioEditor .horario-editor-head-actions {
-            grid-template-columns: minmax(0, 1fr) 48px !important;
-        }
-
-        #modalHorarioEditor .horario-editor-head-actions .btn-icon {
-            width: 48px !important;
-            height: 48px !important;
-            border-radius: 14px !important;
-        }
-
-        #modalHorarioEditor .horario-editor-tab {
-            padding: 9px 12px !important;
-            font-size: 0.85rem !important;
-        }
-
-        #modalHorarioEditor .horario-grid-shell {
-            max-height: 30vh !important;
-        }
-
-        #modalHorarioEditor .horario-side-card {
-            padding: 14px !important;
-        }
-
-        #modalHorarioEditor .horario-editor-layout {
-            gap: 12px !important;
-            padding-top: 12px !important;
-            padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+        .horario-mobile-head .m-section-title {
+            font-size: clamp(1.35rem, 7.5vw, 1.7rem);
+            line-height: 1.1;
         }
     }
 </style>
@@ -1854,11 +1721,15 @@
         let modalDelete = document.getElementById('modalDelete');
         let modalVisor = document.getElementById('modalVisor');
         let modalHorarioEditor = document.getElementById('modalHorarioEditor');
+        let modalHorarioMobile = document.getElementById('modalHorarioMobile');
         if (event.target == modalDelete) {
             cerrarModal();
         }
         if (event.target == modalVisor) {
             cerrarVisor();
+        }
+        if (event.target == modalHorarioMobile) {
+            cerrarHorarioMobile();
         }
         if (event.target == modalHorarioEditor) {
             cerrarEditorHorario();
@@ -2208,6 +2079,128 @@ const bloquesIniciales = horarioAdminData.horarios
 
     function esVistaMovilHorario() {
         return window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    function abrirHorarioPorDispositivo(idGrado) {
+        if (esVistaMovilHorario()) {
+            abrirHorarioMobile(idGrado);
+            return;
+        }
+        abrirEditorHorario(idGrado);
+    }
+
+    function abrirHorarioMobile(idGrado) {
+        const grado = horarioAdminData.grados.find(g => normalizarId(g.id_grado) === normalizarId(idGrado));
+        const secciones = obtenerSeccionesDeGrado(idGrado);
+
+        if (!grado || secciones.length === 0) {
+            alert('Este grado no tiene secciones registradas todavia.');
+            return;
+        }
+
+        horarioEditorState.currentGradeId = normalizarId(idGrado);
+        secciones.forEach(seccion => asegurarDraftSeccion(seccion.id_seccion));
+
+        if (!secciones.some(seccion => normalizarId(seccion.id_seccion) === horarioEditorState.activeSectionId)) {
+            horarioEditorState.activeSectionId = normalizarId(secciones[0].id_seccion);
+        }
+
+        document.getElementById('horarioMobileTitulo').textContent = `Horario de ${grado.nombre_grado}`;
+        document.getElementById('horarioMobileSubtitulo').textContent = 'Vista rapida del horario por seccion.';
+        document.getElementById('horarioMobileFooterMensaje').textContent = 'Vista de solo lectura para telefono.';
+        document.getElementById('modalHorarioMobile').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        renderTabsHorarioMobile();
+        renderGridHorarioMobile();
+    }
+
+    function cerrarHorarioMobile() {
+        const modal = document.getElementById('modalHorarioMobile');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        document.body.style.overflow = '';
+    }
+
+    function renderTabsHorarioMobile() {
+        const contenedor = document.getElementById('horarioMobileTabs');
+        const secciones = obtenerSeccionesDeGrado(horarioEditorState.currentGradeId);
+        if (!contenedor) return;
+
+        contenedor.innerHTML = secciones.map(seccion => `
+            <button type="button"
+                    class="horario-editor-tab ${normalizarId(seccion.id_seccion) === horarioEditorState.activeSectionId ? 'active' : ''}"
+                    onclick="activarSeccionHorarioMobile('${seccion.id_seccion}')">
+                Seccion ${seccion.nombre_seccion}
+            </button>
+        `).join('');
+    }
+
+    function activarSeccionHorarioMobile(idSeccion) {
+        horarioEditorState.activeSectionId = normalizarId(idSeccion);
+        renderTabsHorarioMobile();
+        renderGridHorarioMobile();
+    }
+
+    function renderGridHorarioMobile() {
+        const contenedor = document.getElementById('horarioMobileGrid');
+        const slots = obtenerSlotsDraft(horarioEditorState.activeSectionId);
+        const seccion = horarioAdminData.secciones.find(s => normalizarId(s.id_seccion) === horarioEditorState.activeSectionId);
+        if (!contenedor) return;
+
+        if (!slots.length) {
+            contenedor.innerHTML = `
+                <div class="horario-empty-grid">
+                    La seccion ${seccion ? seccion.nombre_seccion : ''} aun no tiene bloques configurados.
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="horario-grid-head">Bloque</div>';
+        HORARIO_DIAS.forEach(dia => {
+            html += `<div class="horario-grid-head">${dia}</div>`;
+        });
+
+        slots.forEach(slot => {
+            html += `
+                <div class="horario-grid-time">
+                    <span>${slot.hora_inicio} - ${slot.hora_fin}</span>
+                </div>
+            `;
+
+            HORARIO_DIAS.forEach(dia => {
+                const bloque = obtenerBloqueEnCelda(horarioEditorState.activeSectionId, dia, slot.hora_inicio, slot.hora_fin);
+                const clase = bloque
+                    ? horarioAdminData.clases.find(item => normalizarId(item.id_clase) === normalizarId(bloque.id_clase))
+                    : null;
+                const semestreInfo = clase && clase.label !== clase.nombre_clase
+                    ? clase.label.replace(`${clase.nombre_clase} - `, '')
+                    : '';
+                const tituloBloque = bloque && bloque.es_recreo ? (bloque.nombre_bloque || 'Recreo') : '';
+
+                html += `
+                    <div class="horario-grid-cell ${bloque ? '' : 'empty'}">
+                        ${bloque && clase ? `
+                            <span class="horario-cell-block">
+                                <strong>${clase.nombre_clase}</strong>
+                                <small>${clase.maestro}</small>
+                                ${semestreInfo ? `<small>${semestreInfo}</small>` : ''}
+                            </span>
+                        ` : bloque && bloque.es_recreo ? `
+                            <span class="horario-cell-block">
+                                <strong>${tituloBloque}</strong>
+                                <small>Bloque especial</small>
+                                <small>Sin asistencia</small>
+                            </span>
+                        ` : '<span>Libre</span>'}
+                    </div>
+                `;
+            });
+        });
+
+        contenedor.innerHTML = html;
     }
 
     function abrirEditorHorario(idGrado) {
@@ -2872,6 +2865,7 @@ const bloquesIniciales = horarioAdminData.horarios
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 cerrarPopupMaterias();
+                cerrarHorarioMobile();
                 cerrarEditorHorario();
             }
         });
