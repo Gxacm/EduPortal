@@ -14,8 +14,10 @@
             </div>
         </div>
         <div class="hero-right">
-            {% if entrega %}
+            {% if entrega and not tarea_expirada %}
             <div class="badge-status delivered"><i class="bi bi-check-all"></i> Entregada</div>
+            {% elif tarea_expirada %}
+            <div class="badge-status expired"><i class="bi bi-hourglass-split"></i> Tarea expirada</div>
             {% else %}
             <div class="badge-status pending"><i class="bi bi-clock-history"></i> Pendiente</div>
             {% endif %}
@@ -38,7 +40,45 @@
 
                 <div class="section-title"><i class="bi bi-cloud-arrow-up-fill"></i><h2>Tu Entrega</h2></div>
 
-                {% if not entrega %}
+                {% if tarea_expirada %}
+                <div class="expired-card">
+                    <div class="expired-icon"><i class="bi bi-hourglass-bottom"></i></div>
+                    <div>
+                        <h3>Tarea expirada</h3>
+                        <p>La fecha limite ya paso y esta actividad ya no acepta entregas ni reenvios.</p>
+                    </div>
+                </div>
+                {% if entrega %}
+                <div class="submission-stack">
+                    <article class="submission-card">
+                        <div class="submission-icon success"><i class="bi bi-file-earmark-check-fill"></i></div>
+                        <div class="submission-body">
+                            <h3>{{ entrega.archivo_nombre or entrega.archivo_ruta }}</h3>
+                            <p>Entregado el {{ entrega.fecha_entrega.strftime('%d/%m/%Y a las %H:%M') if entrega.fecha_entrega else 'recientemente' }}</p>
+                            {% if entrega.comentario_alumno %}
+                            <div class="note-box"><strong>Tu comentario</strong><span>{{ entrega.comentario_alumno }}</span></div>
+                            {% endif %}
+                        </div>
+                        <a href="{{ entrega_url }}" target="_blank" class="btn-icon-action"><i class="bi bi-eye-fill"></i></a>
+                    </article>
+
+                    {% if entrega.comentario_maestro or archivo_revision_url %}
+                    <article class="feedback-card">
+                        <div class="section-title" style="margin-bottom:16px;"><i class="bi bi-chat-left-text-fill"></i><h2>Retroalimentacion del Maestro</h2></div>
+                        {% if entrega.comentario_maestro %}
+                        <div class="note-box teacher"><strong>Comentario del maestro</strong><span>{{ entrega.comentario_maestro }}</span></div>
+                        {% endif %}
+                        {% if archivo_revision_url %}
+                        <div class="resource-card">
+                            <div><strong>{{ entrega.archivo_revision_nombre or 'Archivo de revision' }}</strong><p>Archivo devuelto por tu maestro con observaciones o correcciones.</p></div>
+                            <a href="{{ archivo_revision_url }}" target="_blank" class="btn-primary-soft"><i class="bi bi-download"></i> Ver revision</a>
+                        </div>
+                        {% endif %}
+                    </article>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% elif not entrega %}
                 <form action="{{ url_for('subir_tarea', id_tarea=tarea.id_tarea) }}" method="POST" enctype="multipart/form-data" class="delivery-form">
                     <label class="upload-drop-zone" for="archivo_tarea" id="drop-area">
                         <div class="icon-panel"><i class="bi bi-file-earmark-arrow-up"></i></div>
@@ -123,6 +163,7 @@
 .badge-status { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 14px; font-weight: 800; }
 .badge-status.pending { background: #fee2e2; color: #dc2626; }
 .badge-status.delivered { background: #dcfce7; color: #15803d; }
+.badge-status.expired { background: #e2e8f0; color: #475569; }
 .content-section, .side-card { background: white; padding: 28px; border-radius: 28px; border: 1px solid #eef2f7; box-shadow: 0 16px 35px rgba(15, 23, 42, 0.04); }
 .section-title, .side-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .section-title i, .side-card-header i { color: var(--materia-color); font-size: 1.2rem; }
@@ -134,6 +175,10 @@
 .resource-card p, .submission-body p { margin: 0; color: #64748b; line-height: 1.55; }
 .btn-primary-soft { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--materia-color); color: white; padding: 12px 16px; border-radius: 14px; font-weight: 800; }
 .delivery-form { margin-top: 8px; }
+.expired-card { display: flex; gap: 16px; align-items: center; padding: 22px; border-radius: 22px; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 8px; }
+.expired-card h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 800; }
+.expired-card p { margin: 0; color: #64748b; line-height: 1.55; }
+.expired-icon { width: 56px; height: 56px; border-radius: 18px; background: #e2e8f0; color: #475569; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
 .upload-drop-zone { display: flex; align-items: center; gap: 16px; padding: 24px; border: 2px dashed #cbd5e1; background: #f8fafc; border-radius: 24px; cursor: pointer; transition: .25s; margin-bottom: 16px; }
 .upload-drop-zone:hover { border-color: var(--materia-color); background: white; transform: translateY(-2px); }
 .upload-drop-zone.compact { padding: 18px 20px; }

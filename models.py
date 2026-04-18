@@ -34,6 +34,7 @@ class CiclosLectivos(db.Model):
     fecha_inicio = db.Column(db.Date, nullable=True)
     fecha_fin = db.Column(db.Date, nullable=True)
     estado = db.Column(db.String(15), default='INACTIVO') 
+    semestre_actual = db.Column(db.String(20), nullable=False, default='1')
 
     clases = db.relationship('Clases', backref='ciclo', lazy=True)
     periodos = db.relationship('Periodos', backref='ciclo_periodo', lazy=True)
@@ -70,7 +71,10 @@ class Horarios(db.Model):
     hora_inicio = db.Column(db.Time, nullable=False)
     hora_fin = db.Column(db.Time, nullable=False)
 
-    clase = db.relationship('Clases', backref=db.backref('bloques_horario', lazy=True))
+    clase = db.relationship(
+        'Clases',
+        backref=db.backref('bloques_horario', lazy=True, cascade="all, delete-orphan", passive_deletes=True)
+    )
     seccion = db.relationship('Secciones', backref=db.backref('horarios_seccion', lazy=True))
 
 # 3. PERFILES
@@ -99,6 +103,7 @@ class Clases(db.Model):
     id_maestro = db.Column(db.Integer, db.ForeignKey('maestros.id_maestro', ondelete='SET NULL'), nullable=True)
     id_ciclo = db.Column(db.Integer, db.ForeignKey('ciclos_lectivos.id_cycle'))
     id_grado = db.Column(db.Integer, db.ForeignKey('grados.id_grado', ondelete='CASCADE'))
+    semestre = db.Column(db.String(20), nullable=True, default='ANUAL')
     
     # Si borras la clase, se borra TODO su rastro operativo
     tareas = db.relationship('Tareas', backref='clase', lazy=True, cascade="all, delete-orphan")

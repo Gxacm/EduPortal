@@ -32,12 +32,31 @@
         min-width: 240px; border: 1px solid var(--border-color); background: #f8fafc; border-radius: 12px;
         padding: 11px 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; color: var(--dark-text); outline: none; cursor: pointer;
     }
-    .table-wrap { overflow-x: auto; border-radius: 18px; }
-    .custom-table { width: 100%; border-collapse: collapse; text-align: center; }
-    .custom-table th { padding: 8px 4px; background-color: #f8fafc; color: var(--muted-text); font-weight: 800; border: 1px solid var(--border-color); white-space: nowrap; line-height: 1.2; }
-    .custom-table th.student-col { text-align: left; position: sticky; left: 0; z-index: 2; min-width: 250px; padding: 12px; font-size: 0.85rem; }
-    .custom-table td { padding: 8px; border: 1px solid var(--border-color); vertical-align: middle; }
-    .custom-table td.student-col { text-align: left; background: white; position: sticky; left: 0; z-index: 1; }
+    .section-tabs {
+        display: flex; flex-wrap: wrap; gap: 10px;
+        margin: 0 0 18px; padding-bottom: 6px;
+    }
+    .section-tab {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 11px 18px; border-radius: 999px; background: #f8fafc; color: var(--muted-text);
+        border: 1px solid var(--border-color); font-weight: 800; font-size: 0.84rem; transition: 0.22s ease;
+        cursor: pointer; font-family: inherit;
+    }
+    .section-tab:hover { border-color: #bfdbfe; color: var(--info-main); transform: translateY(-1px); }
+    .section-tab.active { background: #eff6ff; color: var(--info-main); border-color: #bfdbfe; box-shadow: 0 10px 20px -16px rgba(59, 130, 246, 0.8); }
+    .section-count { background: white; color: inherit; border-radius: 999px; padding: 2px 8px; font-size: 0.72rem; border: 1px solid currentColor; }
+    .table-wrap {
+        overflow-x: auto; overflow-y: hidden; border-radius: 18px;
+        border: 1px solid var(--border-color);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55);
+    }
+    .custom-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; text-align: center; table-layout: fixed; }
+    .custom-table th { padding: 8px 4px; background-color: #f8fafc; color: var(--muted-text); font-weight: 800; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); white-space: nowrap; line-height: 1.2; }
+    .custom-table th.student-col { text-align: left; position: sticky; left: 0; z-index: 3; min-width: 390px; width: 390px; padding: 12px 20px; font-size: 0.85rem; border-right: 1px solid var(--border-color); }
+    .custom-table td { padding: 8px; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); vertical-align: middle; background: white; }
+    .custom-table td.student-col { text-align: left; background: white; position: sticky; left: 0; z-index: 2; width: 390px; min-width: 390px; padding: 12px 20px; }
+    .custom-table tr:last-child td { border-bottom: none; }
+    .custom-table th:last-child, .custom-table td:last-child { border-right: none; }
     .weekend-cell { background-color: #f1f5f9 !important; color: #94a3b8; font-weight: 800; }
     .day-name { display: block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; margin-bottom: 2px; }
     .day-number { display: block; font-size: 0.9rem; }
@@ -114,11 +133,12 @@
         <div class="section-head">
             <div>
                 <h2 class="fw-800 text-dark m-0">Registro de Asistencia</h2>
-                <p class="text-muted fw-500 mb-0">{{ grado.nombre_grado }}{% if clase_asistencia %} • {{ clase_asistencia.nombre_clase }}{% endif %}</p>
+                <p class="text-muted fw-500 mb-0" id="attendance-subtitle">{{ grado.nombre_grado }}{% if clase_asistencia %} • {{ clase_asistencia.nombre_clase }}{% endif %}{% if seccion_activa %} • Sección {{ seccion_activa.nombre_seccion }}{% endif %}</p>
             </div>
 
             <div class="filters-row" data-html2canvas-ignore>
                 <form method="GET" action="{{ url_for('control_asistencia', id_grado=grado.id_grado) }}" class="class-picker-form">
+                    <input type="hidden" name="id_seccion" id="active-section-input" value="{{ seccion_activa.id_seccion if seccion_activa else '' }}">
                     <select name="id_clase" class="class-picker" onchange="this.form.submit()">
                         {% for clase in clases_asistencia %}
                         <option value="{{ clase.id_clase }}" {% if clase_asistencia and clase.id_clase == clase_asistencia.id_clase %}selected{% endif %}>{{ clase.nombre_clase }}</option>
@@ -134,6 +154,17 @@
 
             <div id="mes-pdf-label" style="display: none; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; color: var(--dark-text); font-size: 1.1rem; border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 12px;"></div>
         </div>
+
+        {% if secciones_data %}
+        <div class="section-tabs" data-html2canvas-ignore>
+            {% for seccion in secciones_data %}
+            <button type="button" class="section-tab {% if seccion_activa and seccion.id_seccion == seccion_activa.id_seccion %}active{% elif not seccion_activa and loop.first %}active{% endif %}" data-section-id="{{ seccion.id_seccion }}" data-section-name="{{ seccion.nombre_seccion }}">
+                Sección {{ seccion.nombre_seccion }}
+                <span class="section-count">{{ seccion.alumnos|length }}</span>
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <div class="table-wrap">
             <table class="custom-table" id="tabla-asistencia">
@@ -161,25 +192,35 @@
 </div>
 
 <script>
-    const ALUMNOS = [
-        {% for data in alumnos %}
-        {
-            id: "{{ data.id_alumno }}",
-            nombre: "{{ data.usuario.nombre }}",
-            apellido: "{{ data.usuario.apellido }}",
-            inicial: "{{ data.usuario.nombre[0]|upper }}"
-        }{% if not loop.last %},{% endif %}
+    const ALUMNOS_POR_SECCION = {
+        {% for seccion in secciones_data %}
+        "{{ seccion.id_seccion }}": [
+            {% for data in seccion.alumnos %}
+            {
+                id: "{{ data.id_alumno }}",
+                nombre: "{{ data.usuario.nombre }}",
+                apellido: "{{ data.usuario.apellido }}",
+                inicial: "{{ data.usuario.nombre[0]|upper }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]{% if not loop.last %},{% endif %}
         {% endfor %}
-    ];
+    };
     const ID_GRADO = "{{ grado.id_grado }}";
     const ID_CLASE = "{{ clase_asistencia.id_clase if clase_asistencia else '' }}";
     const ASISTENCIA_GUARDADA = JSON.parse('{{ asistencia_guardada|tojson|safe }}');
+    let activeSectionId = "{{ seccion_activa.id_seccion if seccion_activa else (secciones_data[0].id_seccion if secciones_data else '') }}";
 
     document.addEventListener('DOMContentLoaded', () => {
         const inputMes = document.getElementById('mes-asistencia');
         const cabecera = document.getElementById('tabla-cabecera');
         const cuerpo = document.getElementById('tabla-cuerpo');
         const mobileContainer = document.getElementById('asistencia-mobile');
+        const subtitle = document.getElementById('attendance-subtitle');
+        const sectionTabs = document.querySelectorAll('.section-tab');
+        const activeSectionInput = document.getElementById('active-section-input');
+        const classLabel = "{{ clase_asistencia.nombre_clase if clase_asistencia else '' }}";
+        const gradeLabel = "{{ grado.nombre_grado }}";
 
         const hoy = new Date();
         const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
@@ -269,6 +310,7 @@
             const anio = parseInt(partes[0], 10);
             const mes = parseInt(partes[1], 10);
             const diasTotales = obtenerDiasDelMes(anio, mes);
+            const alumnosActivos = ALUMNOS_POR_SECCION[activeSectionId] || [];
 
             cabecera.innerHTML = '<th class="student-col">Estudiante</th>';
             cuerpo.innerHTML = '';
@@ -287,7 +329,7 @@
                 cabecera.appendChild(th);
             }
 
-            ALUMNOS.forEach((alumno) => {
+            alumnosActivos.forEach((alumno) => {
                 const tr = document.createElement('tr');
                 const tdNombre = document.createElement('td');
                 tdNombre.className = 'student-col';
@@ -345,12 +387,24 @@
                 mobileContainer.appendChild(card);
             });
 
-            if (!ALUMNOS.length) {
+            if (!alumnosActivos.length) {
                 mobileContainer.innerHTML = '<div class="attendance-empty">No hay alumnos registrados para esta clase.</div>';
             }
         }
 
+        function actualizarTabSeccion(button) {
+            sectionTabs.forEach(tab => tab.classList.remove('active'));
+            button.classList.add('active');
+            activeSectionId = button.dataset.sectionId;
+            if (activeSectionInput) activeSectionInput.value = activeSectionId;
+            subtitle.textContent = `${gradeLabel}${classLabel ? ' • ' + classLabel : ''} • Sección ${button.dataset.sectionName}`;
+            construirTabla();
+        }
+
         inputMes.addEventListener('change', construirTabla);
+        sectionTabs.forEach(tab => {
+            tab.addEventListener('click', () => actualizarTabSeccion(tab));
+        });
         construirTabla();
     });
 

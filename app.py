@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, f
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, timedelta
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import IntegrityError
 from collections import defaultdict
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
@@ -22,6 +23,8 @@ def asegurar_columnas_panel_maestro():
     columnas_tareas = {col['name'] for col in inspector.get_columns('tareas')}
     columnas_examenes = {col['name'] for col in inspector.get_columns('examenes')}
     columnas_entregas_tareas = {col['name'] for col in inspector.get_columns('entregas_tareas')}
+    columnas_clases = {col['name'] for col in inspector.get_columns('clases')}
+    columnas_ciclos = {col['name'] for col in inspector.get_columns('ciclos_lectivos')}
 
     with db.engine.begin() as conn:
         if 'periodo' not in columnas_tareas:
@@ -48,6 +51,12 @@ def asegurar_columnas_panel_maestro():
             conn.execute(text("ALTER TABLE entregas_tareas ADD COLUMN IF NOT EXISTS fecha_entrega TIMESTAMP"))
         if 'fecha_revision' not in columnas_entregas_tareas:
             conn.execute(text("ALTER TABLE entregas_tareas ADD COLUMN IF NOT EXISTS fecha_revision TIMESTAMP"))
+        if 'semestre' not in columnas_clases:
+            conn.execute(text("ALTER TABLE clases ADD COLUMN IF NOT EXISTS semestre VARCHAR(20) DEFAULT 'ANUAL'"))
+        conn.execute(text("UPDATE clases SET semestre = 'ANUAL' WHERE semestre IS NULL"))
+        if 'semestre_actual' not in columnas_ciclos:
+            conn.execute(text("ALTER TABLE ciclos_lectivos ADD COLUMN IF NOT EXISTS semestre_actual VARCHAR(20) DEFAULT '1'"))
+        conn.execute(text("UPDATE ciclos_lectivos SET semestre_actual = '1' WHERE semestre_actual IS NULL"))
 
 
 with app.app_context():
@@ -103,6 +112,67 @@ def obtener_video_embed_url(url):
         return url
     return None
 
+def alias_visual_grado(nombre_grado):
+    if not nombre_grado:
+        return ''
+
+    alias_map = {
+        'primer grado': '1ro',
+        'primero grado': '1ro',
+        'segundo grado': '2do',
+        'tercer grado': '3ro',
+        'tercero grado': '3ro',
+        'cuarto grado': '4to',
+        'quinto grado': '5to',
+        'sexto grado': '6to',
+        'septimo grado': '7mo',
+        'séptimo grado': '7mo',
+        'octavo grado': '8vo',
+        'noveno grado': '9no',
+        'decimo grado': '10mo',
+        'décimo grado': '10mo',
+        'undecimo grado': '11vo',
+        'undécimo grado': '11vo',
+        'duodecimo grado': '12vo',
+        'duodécimo grado': '12vo',
+    }
+    clave = ' '.join((nombre_grado or '').strip().lower().split())
+    return alias_map.get(clave, nombre_grado)
+
+GRADOS_CON_SEMESTRES = {'décimo grado', 'decimo grado', 'undécimo grado', 'undecimo grado'}
+SEMESTRES_DISPONIBLES = (
+    ('1', 'Semestre 1'),
+    ('2', 'Semestre 2'),
+    ('ANUAL', 'Anual')
+)
+
+def grado_usa_semestres(grado):
+    if not grado:
+        return False
+    nombre_grado = grado.nombre_grado if hasattr(grado, 'nombre_grado') else str(grado)
+    return ' '.join((nombre_grado or '').strip().lower().split()) in GRADOS_CON_SEMESTRES
+
+def obtener_semestre_activo():
+    ciclo_activo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
+    return ((ciclo_activo.semestre_actual if ciclo_activo else '1') or '1').strip().upper()
+
+def etiqueta_semestre(semestre):
+    mapa = {'1': 'Semestre 1', '2': 'Semestre 2', 'ANUAL': 'Anual'}
+    return mapa.get((semestre or 'ANUAL').strip().upper(), 'Anual')
+
+def clases_visibles_para_alumno_query(alumno):
+    if not alumno or not alumno.seccion:
+        return Clases.query.filter(text("1=0"))
+
+    query = Clases.query.filter_by(id_grado=alumno.seccion.id_grado)
+    if grado_usa_semestres(alumno.seccion.grado):
+        semestre_activo = obtener_semestre_activo()
+        query = query.filter(Clases.semestre.in_(['ANUAL', semestre_activo]))
+    return query
+
+def clases_visibles_para_alumno(alumno):
+    return clases_visibles_para_alumno_query(alumno).all()
+
 def guardar_archivo_subido(file_storage, carpeta_relativa, prefijo='archivo'):
     if not file_storage or file_storage.filename == '':
         return None, None
@@ -141,7 +211,11 @@ def ver_archivo_subido(ruta):
     return send_from_directory(carpeta_objetivo, nombre_archivo, as_attachment=False)
 
 def alumno_tiene_acceso_clase(alumno, clase):
-    return bool(alumno and alumno.seccion and clase and clase.id_grado == alumno.seccion.id_grado)
+    if not alumno or not alumno.seccion or not clase or clase.id_grado != alumno.seccion.id_grado:
+        return False
+    if grado_usa_semestres(alumno.seccion.grado):
+        return (clase.semestre or 'ANUAL').strip().upper() in {'ANUAL', obtener_semestre_activo()}
+    return True
 
 def maestro_posee_clase(perfil_maestro, id_clase, id_grado=None):
     if not perfil_maestro or not id_clase:
@@ -161,8 +235,20 @@ def construir_resumen_aula(clase_obj, alumno=None):
     entregadas_ids = []
     examenes_entregados_ids = []
     if alumno:
-        entregadas_ids = [e.id_tarea for e in EntregasTareas.query.filter_by(id_alumno=alumno.id_alumno).all()]
-        examenes_entregados_ids = [e.id_examen for e in EntregasExamenes.query.filter_by(id_alumno=alumno.id_alumno).all()]
+        entregadas_ids = [
+            entrega.id_tarea
+            for entrega in EntregasTareas.query.join(Tareas, Tareas.id_tarea == EntregasTareas.id_tarea).filter(
+                EntregasTareas.id_alumno == alumno.id_alumno,
+                Tareas.id_clase == clase_obj.id_clase
+            ).all()
+        ]
+        examenes_entregados_ids = [
+            entrega.id_examen
+            for entrega in EntregasExamenes.query.join(Examenes, Examenes.id_examen == EntregasExamenes.id_examen).filter(
+                EntregasExamenes.id_alumno == alumno.id_alumno,
+                Examenes.id_clase == clase_obj.id_clase
+            ).all()
+        ]
 
     return {
         'documentos': documentos,
@@ -426,9 +512,11 @@ def construir_matriz_horario_alumno(alumno):
         }
 
     lunes, dias_semana = obtener_semana_actual()
+    clases_permitidas = {clase.id_clase for clase in clases_visibles_para_alumno(alumno)}
     bloques = Horarios.query.options(
         joinedload(Horarios.clase).joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
     ).filter_by(id_seccion=alumno.id_seccion).all()
+    bloques = [bloque for bloque in bloques if bloque.id_clase in clases_permitidas]
 
     dias = []
     for fecha in dias_semana:
@@ -508,9 +596,15 @@ def inject_ciclo_activo():
     ciclo_activo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
     
     if ciclo_activo:
-        return dict(ciclo_actual_global=ciclo_activo.nombre_ciclo)
+        return dict(
+            ciclo_actual_global=ciclo_activo.nombre_ciclo,
+            alias_visual_grado=alias_visual_grado
+        )
         
-    return dict(ciclo_actual_global="Sin Ciclo Activo")
+    return dict(
+        ciclo_actual_global="Sin Ciclo Activo",
+        alias_visual_grado=alias_visual_grado
+    )
 
 # ==============================================================================
 # ----------------------------- RUTA RAÍZ Y LOGIN ------------------------------
@@ -881,11 +975,51 @@ def ver_grados():
 @app.route('/maestro/grado/<int:id_grado>')
 def gestionar_grado(id_grado):
     if session.get('rol') != 2: return redirect(url_for('login'))
-    secciones = Secciones.query.filter_by(id_grado=id_grado).all()
-    ids_secciones = [s.id_seccion for s in secciones]
-    alumnos = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
     grado = Grados.query.get_or_404(id_grado)
-    return render_template('Panel_Maestro/maestro_gestion_grado.html', grado=grado, alumnos=alumnos)
+    secciones = Secciones.query.filter_by(id_grado=id_grado).order_by(Secciones.nombre_seccion.asc()).all()
+    id_seccion_seleccionada = request.args.get('id_seccion', type=int)
+    seccion_activa = next(
+        (seccion for seccion in secciones if seccion.id_seccion == id_seccion_seleccionada),
+        secciones[0] if secciones else None
+    )
+
+    alumnos_db = Alumnos.query.options(
+        joinedload(Alumnos.usuario),
+        joinedload(Alumnos.seccion)
+    ).filter(
+        Alumnos.id_seccion.in_([seccion.id_seccion for seccion in secciones] or [0])
+    ).all()
+
+    alumnos_por_seccion = defaultdict(list)
+    for alumno in alumnos_db:
+        if alumno.id_seccion and alumno.usuario:
+            alumnos_por_seccion[alumno.id_seccion].append(alumno.usuario)
+
+    secciones_data = []
+    for seccion in secciones:
+        alumnos_seccion = sorted(
+            alumnos_por_seccion.get(seccion.id_seccion, []),
+            key=lambda usuario: ((usuario.nombre or '').lower(), (usuario.apellido or '').lower())
+        )
+        secciones_data.append({
+            'id_seccion': seccion.id_seccion,
+            'nombre_seccion': seccion.nombre_seccion,
+            'alumnos': alumnos_seccion
+        })
+
+    alumnos = next(
+        (seccion['alumnos'] for seccion in secciones_data if seccion['id_seccion'] == (seccion_activa.id_seccion if seccion_activa else None)),
+        []
+    )
+
+    return render_template(
+        'Panel_Maestro/maestro_gestion_grado.html',
+        grado=grado,
+        alumnos=alumnos,
+        secciones_data=secciones_data,
+        seccion_activa=seccion_activa,
+        total_alumnos=len(alumnos_db)
+    )
 
 @app.route('/maestro/grado/<int:id_grado>/contenidos', methods=['GET', 'POST'])
 def maestro_contenidos_clase(id_grado):
@@ -1373,6 +1507,8 @@ def control_asistencia(id_grado):
         id_grado=id_grado
     ).order_by(Clases.nombre_clase.asc()).all() if perfil else []
     id_clase_seleccionada = request.args.get('id_clase', type=int)
+    secciones = Secciones.query.filter_by(id_grado=id_grado).order_by(Secciones.nombre_seccion.asc()).all()
+    id_seccion_seleccionada = request.args.get('id_seccion', type=int)
 
     clase_asistencia = None
     if clases_asistencia:
@@ -1380,24 +1516,52 @@ def control_asistencia(id_grado):
             (clase for clase in clases_asistencia if clase.id_clase == id_clase_seleccionada),
             clases_asistencia[0]
         )
+    seccion_activa = next(
+        (seccion for seccion in secciones if seccion.id_seccion == id_seccion_seleccionada),
+        secciones[0] if secciones else None
+    )
     
-    # Obtener alumnos del grado
-    secciones = Secciones.query.filter_by(id_grado=id_grado).all()
-    ids_secciones = [s.id_seccion for s in secciones]
-    alumnos_usuarios = Usuarios.query.join(Alumnos).filter(Alumnos.id_seccion.in_(ids_secciones)).all()
+    alumnos_db = Alumnos.query.options(
+        joinedload(Alumnos.usuario),
+        joinedload(Alumnos.seccion)
+    ).filter(
+        Alumnos.id_seccion.in_([seccion.id_seccion for seccion in secciones] or [0])
+    ).all()
     
-    # Preparamos la lista de alumnos
-    alumnos_data = []
-    for au in alumnos_usuarios:
-        perfil_alumno = Alumnos.query.filter_by(id_usuario=au.id_usuario).first()
-        alumnos_data.append({
-            'usuario': au,
-            'id_alumno': perfil_alumno.id_alumno
+    secciones_data = []
+    for seccion in secciones:
+        alumnos_seccion = sorted(
+            [
+                {
+                    'usuario': alumno.usuario,
+                    'id_alumno': alumno.id_alumno
+                }
+                for alumno in alumnos_db
+                if alumno.id_seccion == seccion.id_seccion and alumno.usuario
+            ],
+            key=lambda item: (
+                (item['usuario'].nombre or '').lower(),
+                (item['usuario'].apellido or '').lower()
+            )
+        )
+        secciones_data.append({
+            'id_seccion': seccion.id_seccion,
+            'nombre_seccion': seccion.nombre_seccion,
+            'alumnos': alumnos_seccion
         })
 
+    alumnos_data = next(
+        (seccion['alumnos'] for seccion in secciones_data if seccion['id_seccion'] == (seccion_activa.id_seccion if seccion_activa else None)),
+        []
+    )
+
     asistencia_guardada = {}
-    if clase_asistencia and alumnos_data:
-        ids_alumnos = [alumno['id_alumno'] for alumno in alumnos_data]
+    ids_alumnos = [
+        alumno['id_alumno']
+        for seccion in secciones_data
+        for alumno in seccion['alumnos']
+    ]
+    if clase_asistencia and ids_alumnos:
         asistencias_db = Asistencias.query.filter(
             Asistencias.id_clase == clase_asistencia.id_clase,
             Asistencias.id_alumno.in_(ids_alumnos)
@@ -1417,6 +1581,8 @@ def control_asistencia(id_grado):
         'Panel_Maestro/asistencia.html',
         grado=grado,
         alumnos=alumnos_data,
+        secciones_data=secciones_data,
+        seccion_activa=seccion_activa,
         clases_asistencia=clases_asistencia,
         clase_asistencia=clase_asistencia,
         asistencia_guardada=asistencia_guardada
@@ -1501,9 +1667,9 @@ def alumno_dashboard():
         return "Perfil de alumno no encontrado", 404
 
     ciclo_activo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
-    clases_alumno = Clases.query.options(
+    clases_alumno = clases_visibles_para_alumno_query(alumno).options(
         joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
-    ).filter_by(id_grado=alumno.seccion.id_grado).all()
+    ).all()
     ids_clases = [c.id_clase for c in clases_alumno]
 
     ahora = datetime.utcnow()
@@ -1540,6 +1706,7 @@ def alumno_dashboard():
                            progreso_ciclo=progreso_ciclo,
                            clases_hoy=clases_hoy,
                            ciclo_activo=ciclo_activo,
+                           semestre_activo=obtener_semestre_activo(),
                            total_materias=len(clases_alumno),
                            datetime=datetime)
 
@@ -1554,17 +1721,18 @@ def alumno_clases():
     if not alumno:
         return "Perfil no encontrado", 404
 
-    clases = Clases.query.filter_by(id_grado=alumno.seccion.id_grado).all()
+    clases = clases_visibles_para_alumno(alumno)
 
     return render_template('Panel_Alumno/mis_clases.html', 
                            clases=clases, 
-                           alumno=alumno)
+                           alumno=alumno,
+                           semestre_activo=obtener_semestre_activo())
 
 # --- FUNCIÓN AUXILIAR (Para evitar redundancia) ---
 def obtener_color_materia(alumno, id_clase):
     colors = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c', '#00bcd4']
     # Buscamos las clases del mismo grado del alumno para que el índice coincida
-    todas_las_clases_grado = Clases.query.filter_by(id_grado=alumno.seccion.id_grado).all()
+    todas_las_clases_grado = clases_visibles_para_alumno(alumno)
     
     for index, c in enumerate(todas_las_clases_grado):
         if c.id_clase == id_clase:
@@ -1633,9 +1801,9 @@ def calcular_componente_periodo(registros):
 
 
 def construir_resumen_notas_alumno(alumno):
-    clases = Clases.query.options(
+    clases = clases_visibles_para_alumno_query(alumno).options(
         joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
-    ).filter_by(id_grado=alumno.seccion.id_grado).all()
+    ).all()
 
     notas = Notas.query.options(
         joinedload(Notas.tarea).joinedload(Tareas.clase),
@@ -1810,12 +1978,14 @@ def construir_clases_hoy_alumno(alumno):
         }
 
     dia_actual = DIA_ORDEN[hoy.weekday()]
+    clases_permitidas = {clase.id_clase for clase in clases_visibles_para_alumno(alumno)}
     bloques = Horarios.query.options(
         joinedload(Horarios.clase).joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
     ).filter_by(
         id_seccion=alumno.id_seccion,
         dia_semana=dia_actual
     ).order_by(Horarios.hora_inicio.asc()).all()
+    bloques = [bloque for bloque in bloques if bloque.id_clase in clases_permitidas]
 
     asistencias_hoy = Asistencias.query.filter(
         Asistencias.id_alumno == alumno.id_alumno,
@@ -1861,6 +2031,7 @@ def construir_rendimiento_dashboard(resumen_notas):
 
 
 def construir_comunicados_alumno(alumno):
+    clases_ids = [clase.id_clase for clase in clases_visibles_para_alumno(alumno)]
     anuncios = Anuncios.query.options(
         joinedload(Anuncios.clase)
     ).filter(
@@ -1873,7 +2044,7 @@ def construir_comunicados_alumno(alumno):
         ) |
         (
             Anuncios.id_clase.in_(
-                db.session.query(Clases.id_clase).filter_by(id_grado=alumno.seccion.id_grado)
+                clases_ids or [0]
             )
         )
     ).order_by(Anuncios.fecha_publicacion.desc()).limit(12).all()
@@ -1927,10 +2098,17 @@ def alumno_aula(id_clase):
     # Tareas y validación de entregas
     tareas_clase = Tareas.query.filter_by(id_clase=id_clase).order_by(Tareas.fecha_entrega.asc()).all()
     resumen_aula = construir_resumen_aula(clase_obj, alumno)
+    ahora = datetime.utcnow()
+    tareas_pendientes_count = len([
+        tarea for tarea in tareas_clase
+        if tarea.id_tarea not in resumen_aula['entregadas_ids'] and (not tarea.fecha_entrega or tarea.fecha_entrega >= ahora)
+    ])
 
     return render_template('/Panel_Alumno/Aula/Aula.html', 
                            clase=clase_obj, 
                            tareas=tareas_clase, 
+                           tareas_pendientes_count=tareas_pendientes_count,
+                           now=ahora,
                            entregadas_ids=resumen_aula['entregadas_ids'],
                            alumno=alumno,
                            materia_color=materia_color,
@@ -2137,6 +2315,7 @@ def ver_detalle_tarea(id_tarea):
         id_tarea=id_tarea, 
         id_alumno=alumno.id_alumno
     ).first()
+    tarea_expirada = bool(tarea.fecha_entrega and datetime.utcnow() > tarea.fecha_entrega)
 
     archivo_tarea_url = url_archivo_subido(tarea.archivo_adjunto_ruta) if tarea.archivo_adjunto_ruta else None
     archivo_revision_url = url_archivo_subido(entrega.archivo_revision_ruta) if entrega and entrega.archivo_revision_ruta else None
@@ -2148,6 +2327,7 @@ def ver_detalle_tarea(id_tarea):
                            archivo_tarea_url=archivo_tarea_url,
                            archivo_revision_url=archivo_revision_url,
                            entrega_url=entrega_url,
+                           tarea_expirada=tarea_expirada,
                            materia_color=materia_color,
                            alumno=alumno)
 
@@ -2167,17 +2347,20 @@ def subir_tarea(id_tarea):
         flash('No tienes acceso a esta tarea.', 'danger')
         return redirect(url_for('alumno_clases'))
 
+    entrega_existente = EntregasTareas.query.filter_by(
+        id_tarea=id_tarea,
+        id_alumno=alumno.id_alumno
+    ).first()
+    if tarea.fecha_entrega and datetime.utcnow() > tarea.fecha_entrega:
+        flash('La fecha de entrega ya expiro para esta tarea.', 'warning')
+        return redirect(url_for('ver_detalle_tarea', id_tarea=id_tarea))
+
     archivo_ruta, archivo_nombre = guardar_archivo_subido(
         file,
         'tareas_entregas',
         f'tarea_{id_tarea}_alu_{alumno.id_alumno}'
     )
     comentario_alumno = (request.form.get('comentario_alumno') or '').strip()
-
-    entrega_existente = EntregasTareas.query.filter_by(
-        id_tarea=id_tarea,
-        id_alumno=alumno.id_alumno
-    ).first()
 
     if entrega_existente:
         entrega_existente.archivo_ruta = archivo_ruta
@@ -2215,7 +2398,7 @@ def alumno_agenda():
     if not alumno:
         return "Perfil no encontrado", 404
 
-    clases_ids = [c.id_clase for c in alumno.seccion.grado.clases]
+    clases_ids = [c.id_clase for c in clases_visibles_para_alumno(alumno)]
     tareas = Tareas.query.filter(Tareas.id_clase.in_(clases_ids)).all()
     notas_alumno = Notas.query.filter_by(id_alumno=alumno.id_alumno).all()
     tareas_entregadas_ids = [n.id_tarea for n in notas_alumno]
@@ -2237,8 +2420,9 @@ def alumno_notas():
     resumen_notas = construir_resumen_notas_alumno(alumno)
 
     return render_template('Panel_Alumno/notas.html', 
-                           alumno=alumno, 
-                           resumen_notas=resumen_notas)
+                           alumno=alumno,
+                           resumen_notas=resumen_notas,
+                           semestre_activo=obtener_semestre_activo())
 
 @app.route('/alumno/horario')
 def alumno_horario():
@@ -2252,8 +2436,9 @@ def alumno_horario():
     horario_data = construir_matriz_horario_alumno(alumno)
     
     return render_template('Panel_Alumno/horario.html', 
-                           alumno=alumno, 
-                           horario_data=horario_data)
+                           alumno=alumno,
+                           horario_data=horario_data,
+                           semestre_activo=obtener_semestre_activo())
 
 
 # ==============================================================================
@@ -2719,8 +2904,8 @@ def gestion_usuarios():
     ).all()
     
     maestros = Maestros.query.options(
-        joinedload(Maestros.usuario), 
-        joinedload(Maestros.clases)
+        joinedload(Maestros.usuario),
+        joinedload(Maestros.clases).joinedload(Clases.grado)
     ).all()
     
     return render_template(
@@ -2806,12 +2991,22 @@ def configuracion_academica():
         elif 'guardar_clase' in request.form:
             tab_actual = 'tab-materias'
             id_ciclo_actual = obtener_id_ciclo_activo()
+            grado_destino = Grados.query.get(request.form.get('id_grado'))
+            semestre_clase = (request.form.get('semestre_clase') or 'ANUAL').strip().upper()
+
+            if grado_usa_semestres(grado_destino):
+                if semestre_clase not in {'1', '2'}:
+                    flash("Debes seleccionar un semestre válido para este grado.", "warning")
+                    return redirect(url_for('configuracion_academica', tab=tab_actual))
+            else:
+                semestre_clase = 'ANUAL'
             
             nueva_clase = Clases(
                 nombre_clase=request.form.get('nombre_clase'), 
                 id_maestro=request.form.get('id_maestro') or None, 
                 id_ciclo=id_ciclo_actual, # 👈 Ya no es estático
-                id_grado=request.form.get('id_grado')
+                id_grado=request.form.get('id_grado'),
+                semestre=semestre_clase
             )
             db.session.add(nueva_clase)
         
@@ -2867,6 +3062,24 @@ def configuracion_academica():
             else:
                 flash("Error: No se pudo encontrar el ciclo para activar.", "danger")
                 
+            return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+        elif 'actualizar_semestre_activo' in request.form:
+            tab_actual = 'tab-ciclos'
+            ciclo_activo = CiclosLectivos.query.filter_by(estado='ACTIVO').first()
+            nuevo_semestre = (request.form.get('semestre_actual') or '1').strip().upper()
+
+            if not ciclo_activo:
+                flash("No hay un ciclo activo para cambiar el semestre.", "warning")
+                return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+            if nuevo_semestre not in {'1', '2'}:
+                flash("Selecciona un semestre válido.", "warning")
+                return redirect(url_for('configuracion_academica', tab=tab_actual))
+
+            ciclo_activo.semestre_actual = nuevo_semestre
+            db.session.commit()
+            flash(f"Semestre activo actualizado a {etiqueta_semestre(nuevo_semestre)}.", "success")
             return redirect(url_for('configuracion_academica', tab=tab_actual))
 
         # 🔥 AGREGADO: FINALIZAR CICLO MANUALMENTE SIN ABRIR OTRO
@@ -2986,17 +3199,26 @@ def configuracion_academica():
         return redirect(url_for('configuracion_academica', tab=tab_actual))
 
     # --- LÓGICA PARA PETICIONES GET ---
-    maestros_para_select = Maestros.query.all()
+    maestros_para_select = Maestros.query.options(joinedload(Maestros.usuario)).all()
     todos_los_horarios = Horarios.query.order_by(Horarios.dia_semana, Horarios.hora_inicio).all()
+    clases_config = Clases.query.options(
+        joinedload(Clases.grado),
+        joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
+    ).order_by(Clases.id_grado.asc(), Clases.nombre_clase.asc()).all()
     
     # Aquí pasamos la variable 'tab_activa' al HTML
     return render_template('Admin_Panel/configuracion_academica.html', 
                            grados=Grados.query.all(), 
-                           clases=Clases.query.all(), 
+                           clases=clases_config, 
                            secciones=Secciones.query.all(), 
                            maestros=maestros_para_select,
                            horarios=todos_los_horarios,
                            ciclos=CiclosLectivos.query.all(),
+                           ciclo_activo=CiclosLectivos.query.filter_by(estado='ACTIVO').first(),
+                           semestre_activo=obtener_semestre_activo(),
+                           semestres_disponibles=SEMESTRES_DISPONIBLES,
+                           grado_usa_semestres=grado_usa_semestres,
+                           etiqueta_semestre=etiqueta_semestre,
                            tab_activa=tab_actual)
 
 #----------------------- LOGICA DE ELIMINACION -----------------------
@@ -3024,12 +3246,16 @@ def eliminar_materia(id_clase):
     
     materia = Clases.query.get_or_404(id_clase)
     try:
+        Horarios.query.filter_by(id_clase=id_clase).delete(synchronize_session=False)
         db.session.delete(materia)
         db.session.commit()
         flash("Materia eliminada correctamente.", "success")
+    except IntegrityError:
+        db.session.rollback()
+        flash("No se puede eliminar la materia porque tiene registros vinculados, como tareas, exámenes, notas o asistencia.", "error")
     except Exception as e:
         db.session.rollback()
-        flash("No se puede eliminar la materia: tiene registros vinculados (notas o tareas).", "error")
+        flash(f"No se pudo eliminar la materia. Detalle: {str(e)}", "error")
     
     return redirect(url_for('configuracion_academica', tab=tab_actual))
 

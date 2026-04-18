@@ -47,9 +47,9 @@
             <div class="grid-config">
                 <div class="m-card">
                     <h3 class="m-section-title">Nuevo Grado</h3>
-                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-grados" method="POST">
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-grados" method="POST" data-academic-form>
                         <label class="m-label">Nombre del Grado</label>
-                        <input type="text" name="nombre_grado" class="m-input" placeholder="Ej. Séptimo Grado" required>
+                        <input type="text" name="nombre_grado" class="m-input" placeholder="Ej. Séptimo Grado" required data-label="Nombre del Grado">
                         <button type="submit" name="guardar_grado" class="m-btn-config">Registrar Grado</button>
                     </form>
                 </div>
@@ -84,22 +84,31 @@
         </div>
 
         <div id="tab-materias" class="tab-content">
-            <div class="grid-config">
-                <div class="m-card">
+            <div class="grid-config grid-config-materias">
+                <div class="m-card m-card-materia-form">
                     <h3 class="m-section-title">Nueva Materia</h3>
-                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-materias" method="POST">
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-materias" method="POST" data-academic-form>
                         <label class="m-label">Nombre de la Materia</label>
-                        <input type="text" name="nombre_clase" class="m-input" placeholder="Ej. Matemáticas" required>
+                        <input type="text" name="nombre_clase" class="m-input" placeholder="Ej. Matemáticas" required data-label="Nombre de la Materia">
                         <label class="m-label">Grado Destino</label>
-                        <select name="id_grado" class="m-input" required>
+                        <select name="id_grado" id="select-grado-materia" class="m-input" required data-label="Grado Destino" onchange="toggleSemestreMateria()">
                             <option value="" disabled selected>Seleccione un grado...</option>
                             {% for g in grados %}
-                                <option value="{{ g.id_grado }}">{{ g.nombre_grado }}</option>
+                                <option value="{{ g.id_grado }}" data-usa-semestres="{{ 'true' if grado_usa_semestres(g) else 'false' }}">{{ g.nombre_grado }}</option>
                             {% endfor %}
                         </select>
+                        <div id="semestre-materia-wrapper" style="display:none;">
+                            <label class="m-label">Semestre de la Materia</label>
+                            <select name="semestre_clase" id="select-semestre-materia" class="m-input" data-label="Semestre de la Materia">
+                                <option value="" disabled selected>Seleccione un semestre...</option>
+                                {% for valor, etiqueta in semestres_disponibles if valor != 'ANUAL' %}
+                                    <option value="{{ valor }}">{{ etiqueta }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <label class="m-label">Maestro Encargado</label>
-                        <select name="id_maestro" class="m-input">
-                            <option value="">Sin asignar</option>
+                        <select name="id_maestro" class="m-input" required data-label="Maestro Encargado">
+                            <option value="" disabled selected>Seleccione un maestro...</option>
                             {% for m in maestros %}
                                 <option value="{{ m.id_maestro }}">{{ m.usuario.nombre }} {{ m.usuario.apellido }}</option>
                             {% endfor %}
@@ -107,31 +116,133 @@
                         <button type="submit" name="guardar_clase" class="m-btn-config">Registrar Materia</button>
                     </form>
                 </div>
-                <div class="m-card">
-                    <h3 class="m-section-title">Materias Registradas</h3>
-                    <div class="table-responsive">
-                        <table class="m-table">
-                            <thead>
-                                <tr>
-                                    <th>Materia</th>
-                                    <th>Grado</th>
-                                    <th style="text-align: right;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for c in clases %}
-                                <tr>
-                                    <td><strong>{{ c.nombre_clase }}</strong></td>
-                                    <td><span class="badge-grado">{{ c.grado.nombre_grado }}</span></td>
-                                    <td style="text-align: right;">
-                                        <button type="button" class="btn-icon delete" onclick="abrirModal('{{ c.id_clase }}', '{{ c.nombre_clase }}', 'materia')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
+                <div class="m-card m-card-materia-list">
+                    <div class="materias-header">
+                        <div>
+                            <h3 class="m-section-title" style="margin-bottom: 6px;">Materias Registradas</h3>
+                            <p class="text-muted materias-help">Agrupadas por grado para evitar una lista infinita y facilitar la navegación.</p>
+                        </div>
+                        <span class="chip-glass">{{ clases|length }} materias</span>
+                    </div>
+
+                    <div class="materias-toolbar">
+                        <div class="materias-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="buscadorMaterias" class="m-input materias-search-input" placeholder="Buscar materia, maestro o grado..." onkeyup="filtrarMateriasRegistradas()">
+                        </div>
+                    </div>
+
+                    <div class="materias-browser" id="materiasBrowser">
+                        {% if clases %}
+                            <div class="materias-grade-grid" id="materiasGradeGrid">
+                                {% for g in grados %}
+                                    {% set grupo = namespace(total=0) %}
+                                    {% for c in clases if c.id_grado == g.id_grado %}
+                                        {% set grupo.total = grupo.total + 1 %}
+                                    {% endfor %}
+                                    {% if grupo.total > 0 %}
+                                    <button
+                                        type="button"
+                                        class="materia-grade-card"
+                                        data-grade-card
+                                        data-grade-id="{{ g.id_grado }}"
+                                        data-search="{{ (g.nombre_grado ~ ' ' ~ alias_visual_grado(g.nombre_grado))|lower }}"
+                                    >
+                                        <span class="materia-grade-card-icon"><i class="bi bi-collection"></i></span>
+                                        <span class="materia-grade-card-main">
+                                            <strong>{{ g.nombre_grado }}</strong>
+                                            <small>{{ grupo.total }} materia{% if grupo.total != 1 %}s{% endif %} registradas</small>
+                                        </span>
+                                        <span class="materia-grade-card-meta">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </span>
+                                    </button>
+                                    {% endif %}
                                 {% endfor %}
-                            </tbody>
-                        </table>
+                            </div>
+
+                            <div class="materias-detail-panels" id="materiasGroups" style="display:none;">
+                                {% for g in grados %}
+                                    {% set grupo = namespace(total=0) %}
+                                    {% for c in clases if c.id_grado == g.id_grado %}
+                                        {% set grupo.total = grupo.total + 1 %}
+                                    {% endfor %}
+                                    {% if grupo.total > 0 %}
+                                    <section
+                                        class="materia-group"
+                                        data-group-name="{{ g.nombre_grado|lower }}"
+                                        data-grade-panel
+                                        data-grade-id="{{ g.id_grado }}"
+                                    >
+                                        <div class="materia-group-header">
+                                            <div class="materia-group-title-wrap">
+                                                <span class="materia-group-title">
+                                                    <i class="bi bi-grid-1x2"></i>
+                                                    {{ g.nombre_grado }}
+                                                </span>
+                                                <p class="materia-group-subtitle">
+                                                    Haz clic en una materia para gestionarla mejor sin saturar la pantalla.
+                                                </p>
+                                            </div>
+                                            <span class="materia-group-meta">
+                                                <span class="badge-grado">{{ alias_visual_grado(g.nombre_grado) }}</span>
+                                                <span class="chip-glass">{{ grupo.total }} materia{% if grupo.total != 1 %}s{% endif %}</span>
+                                            </span>
+                                        </div>
+                                        <div class="materia-group-body">
+                                            <div class="materia-items">
+                                                {% for c in clases if c.id_grado == g.id_grado %}
+                                                {% set maestro_nombre = (c.maestro_titular.usuario.nombre ~ ' ' ~ c.maestro_titular.usuario.apellido) if c.maestro_titular and c.maestro_titular.usuario else 'Sin asignar' %}
+                                                <article class="materia-item" data-search="{{ (c.nombre_clase ~ ' ' ~ maestro_nombre ~ ' ' ~ g.nombre_grado ~ ' ' ~ alias_visual_grado(g.nombre_grado))|lower }}">
+                                                    <div class="materia-item-main">
+                                                        <div class="materia-item-top">
+                                                            <strong>{{ c.nombre_clase }}</strong>
+                                                        </div>
+                                                        <div class="materia-item-meta">
+                                                            <span><i class="bi bi-person-badge"></i> {{ maestro_nombre }}</span>
+                                                            {% if grado_usa_semestres(g) %}
+                                                            <span><i class="bi bi-calendar2-week"></i> {{ etiqueta_semestre(c.semestre) }}</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="materia-item-footer">
+                                                        <div class="materia-item-actions">
+                                                            <button type="button" class="btn-icon delete" onclick="abrirModal('{{ c.id_clase }}', '{{ c.nombre_clase }}', 'materia')">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </article>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </section>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="materias-empty-detail" id="materiasEmptyDetail" style="display:none;">
+                                No hay grados o materias que coincidan con tu búsqueda.
+                            </div>
+                            <div id="materiasPopup" class="materias-popup-overlay" style="display:none;">
+                                <div class="materias-popup-card">
+                                    <div class="materias-popup-head">
+                                        <div>
+                                            <h3 id="materiasPopupTitulo" class="m-section-title" style="margin-bottom: 6px;">Materias</h3>
+                                            <p id="materiasPopupSubtitulo" class="text-muted materias-help">Materias asociadas al grado seleccionado.</p>
+                                        </div>
+                                        <div class="materias-popup-actions">
+                                            <span id="materiasPopupCount" class="chip-glass"></span>
+                                            <button type="button" class="materias-popup-close" onclick="cerrarPopupMaterias()">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="materiasPopupContenido" class="materias-popup-content"></div>
+                                </div>
+                            </div>
+                        {% else %}
+                        <div class="materias-empty">No hay materias registradas.</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -141,11 +252,11 @@
             <div class="grid-config">
                 <div class="m-card">
                     <h3 class="m-section-title">Nueva Sección</h3>
-                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-secciones" method="POST">
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-secciones" method="POST" data-academic-form>
                         <label class="m-label">Nombre de la Sección</label>
-                        <input type="text" name="nombre_seccion" class="m-input" placeholder="Ej. Sección A" required>
+                        <input type="text" name="nombre_seccion" class="m-input" placeholder="Ej. Sección A" required data-label="Nombre de la Sección">
                         <label class="m-label" style="margin-top: 15px;">Asignar a Grado</label>
-                        <select name="id_grado" class="m-input" required>
+                        <select name="id_grado" class="m-input" required data-label="Grado">
                             <option value="" disabled selected>Seleccione...</option>
                             {% for g in grados %}
                             <option value="{{ g.id_grado }}">{{ g.nombre_grado }}</option>
@@ -169,7 +280,7 @@
                                 {% for s in secciones %}
                                 <tr>
                                     <td><span class="badge-count">{{ s.nombre_seccion }}</span></td>
-                                    <td>{{ s.grado.nombre_grado }}</td>
+                                    <td><span class="badge-grado">{{ alias_visual_grado(s.grado.nombre_grado) }}</span></td>
                                     <td style="text-align: right;">
                                         <button type="button" class="btn-icon delete" onclick="abrirModal('{{ s.id_seccion }}', '{{ s.nombre_seccion }}', 'seccion')">
                                             <i class="bi bi-trash"></i>
@@ -191,11 +302,11 @@
                     <div class="m-card">
                         <h3 class="m-section-title"><i class="bi bi-clock" style="margin-right: 5px;"></i> Crear Horario Base</h3>
                         <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Cuando guardes un bloque en una sección, el sistema intentará regenerar automáticamente las demás secciones del mismo grado con las mismas materias y sin chocar maestros.</p>
-                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST">
+                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST" data-academic-form>
                             <input type="hidden" name="guardar_horario_manual" value="true">
 
                             <label class="m-label">Seleccionar Sección</label>
-                            <select id="select-seccion" name="id_seccion" class="m-input" required onchange="filtrarMaterias()">
+                            <select id="select-seccion" name="id_seccion" class="m-input" required onchange="filtrarMaterias()" data-label="Sección">
                                 <option value="" disabled selected>Selecciona la sección...</option>
                                 {% for s in secciones %}
                                     <option value="{{ s.id_seccion }}" data-grado="{{ s.id_grado }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
@@ -203,7 +314,7 @@
                             </select>
 
                             <label class="m-label" style="margin-top: 15px;">Seleccionar Clase</label>
-                            <select id="select-clase" name="id_clase" class="m-input" required disabled>
+                            <select id="select-clase" name="id_clase" class="m-input" required disabled data-label="Clase">
                                 <option value="" disabled selected>Primero selecciona una sección...</option>
                                 {% for c in clases %}
                                     <option value="{{ c.id_clase }}" data-grado="{{ c.id_grado }}">{{ c.nombre_clase }}</option>
@@ -211,7 +322,7 @@
                             </select>
 
                             <label class="m-label" style="margin-top: 15px;">Días de la Semana</label>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; background: var(--bg); padding: 15px; border-radius: 14px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; background: var(--bg); padding: 15px; border-radius: 14px;" data-required-checkbox-group data-label="Días de la Semana">
                                 {% for dia in ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'] %}
                                 <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: var(--dark);">
                                     <input type="checkbox" name="dias_seleccionados" value="{{ dia }}" style="accent-color: var(--accent-green);"> {{ dia }}
@@ -222,11 +333,11 @@
                             <div style="display: flex; gap: 10px; margin-top: 15px;">
                                 <div style="flex: 1;">
                                     <label class="m-label">Inicio</label>
-                                    <input type="time" name="hora_inicio" class="m-input" required>
+                                    <input type="time" name="hora_inicio" class="m-input" required data-label="Hora de Inicio">
                                 </div>
                                 <div style="flex: 1;">
                                     <label class="m-label">Fin</label>
-                                    <input type="time" name="hora_fin" class="m-input" required>
+                                    <input type="time" name="hora_fin" class="m-input" required data-label="Hora de Fin">
                                 </div>
                             </div>
 
@@ -238,12 +349,12 @@
                         <h3 class="m-section-title"><i class="bi bi-magic" style="margin-right: 5px;"></i> Sincronización Inteligente</h3>
                         <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Usa una sección como horario base para regenerar automáticamente las demás secciones del mismo grado, reutilizando las materias ya configuradas y respetando la disponibilidad de los maestros.</p>
                         
-                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST">
+                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST" data-academic-form>
                             
                             <input type="hidden" name="sincronizar_grado" value="true">
 
                             <label class="m-label">Sección Base</label>
-                            <select name="id_seccion_origen" class="m-input" required>
+                            <select name="id_seccion_origen" class="m-input" required data-label="Sección Base">
                                 <option value="" disabled selected>Selecciona la sección base...</option>
                                 {% for s in secciones %}
                                     <option value="{{ s.id_seccion }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
@@ -303,7 +414,7 @@
                 
                 <div class="m-card">
                     <h3 class="m-section-title">Nuevo Ciclo Lectivo</h3>
-                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST">
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" data-academic-form>
                         <input type="hidden" name="guardar_ciclo" value="true">
                         
                         <label class="m-label">Año del Ciclo</label>
@@ -321,13 +432,39 @@
                                    min="2026" 
                                    max="2099" 
                                    value="2026"
-                                   required>
+                                   required
+                                   data-label="Año del Ciclo">
                         </div>
                         
                         <button type="submit" class="m-btn-config" style="margin-top: 20px;">
                             Registrar Ciclo
                         </button>
                     </form>
+                </div>
+
+                <div class="m-card" style="margin-top: 20px;">
+                    <h3 class="m-section-title">Semestre Activo</h3>
+                    {% if ciclo_activo %}
+                    <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 15px;">
+                        Define qué semestre deben ver los alumnos de Décimo y Undécimo en sus materias, horario y notas.
+                    </p>
+                    <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" data-academic-form>
+                        <input type="hidden" name="actualizar_semestre_activo" value="true">
+                        <label class="m-label">Ciclo en Curso</label>
+                        <input type="text" class="m-input" value="{{ ciclo_activo.nombre_ciclo }}" disabled>
+                        <label class="m-label" style="margin-top: 15px;">Semestre Visible para Alumnos</label>
+                        <select name="semestre_actual" class="m-input" required data-label="Semestre Activo">
+                            {% for valor, etiqueta in semestres_disponibles if valor != 'ANUAL' %}
+                                <option value="{{ valor }}" {% if semestre_activo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="m-btn-config">Actualizar Semestre Activo</button>
+                    </form>
+                    {% else %}
+                    <div class="materias-empty" style="padding: 22px 18px;">
+                        Activa primero un ciclo lectivo para poder definir el semestre actual.
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="m-card">
@@ -465,8 +602,17 @@
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    .grid-config { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
+    .grid-config { display: grid; grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.55fr); gap: 20px; align-items: start; }
     .m-card { background: white; padding: 2.5rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03); }
+    .grid-config-materias { grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.7fr); align-items: start; }
+    .m-card-materia-form { padding: 2rem; }
+    .m-card-materia-list { padding: 2.75rem; }
+    @media (max-width: 1100px) {
+        .grid-config,
+        .grid-config-materias {
+            grid-template-columns: 1fr;
+        }
+    }
     .m-section-title { font-weight: 800; color: var(--dark); margin-bottom: 1.5rem; font-size: 1.2rem; }
 
     .m-label { display: block; font-weight: 800; color: var(--dark); margin-bottom: 8px; font-size: 0.9rem; }
@@ -475,6 +621,201 @@
     
     .m-btn-config { background: var(--accent-green); color: white; width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 20px; font-size: 0.95rem; }
     .m-btn-config:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(5, 150, 105, 0.2); }
+    .materias-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+    .materias-help { margin: 0; font-size: 0.88rem; line-height: 1.5; }
+    .materias-toolbar { margin-bottom: 18px; }
+    .materias-search { position: relative; }
+    .materias-search i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .materias-search-input { padding-left: 44px; }
+    .materias-browser { display: grid; gap: 20px; }
+    .materias-grade-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 14px;
+    }
+    .materia-grade-card {
+        width: 100%;
+        border: 1px solid #e7edf5;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border-radius: 22px;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        text-align: left;
+        cursor: pointer;
+        transition: 0.24s ease;
+        color: var(--dark);
+        font: inherit;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+    }
+    .materia-grade-card:hover {
+        transform: translateY(-2px);
+        border-color: #bfdbfe;
+        box-shadow: 0 16px 32px rgba(59, 130, 246, 0.12);
+    }
+    .materia-grade-card.hidden-by-search { display: none; }
+    .materia-grade-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ecfdf5;
+        color: var(--accent-green);
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+    .materia-grade-card-main {
+        min-width: 0;
+        flex: 1;
+        display: grid;
+        gap: 4px;
+    }
+    .materia-grade-card-main strong { font-size: 1rem; line-height: 1.35; }
+    .materia-grade-card-main small { color: var(--muted); font-size: 0.82rem; font-weight: 700; }
+    .materia-grade-card-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        flex-shrink: 0;
+    }
+    .materias-detail-panels { position: relative; }
+    .materia-group {
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 24px;
+        overflow: visible;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.04);
+    }
+    .materia-group.hidden-by-search { display: none; }
+    .materia-group-header {
+        padding: 20px 22px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        color: var(--dark);
+    }
+    .materia-group-title-wrap { min-width: 0; }
+    .materia-group-title { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.08rem; }
+    .materia-group-title i { color: var(--accent-green); font-size: 1.05rem; }
+    .materia-group-subtitle { margin: 8px 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+    .materia-group-meta { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .materia-group-body {
+        display: block;
+        height: auto !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+        padding: 16px 22px 22px;
+        border-top: 1px solid #edf2f7;
+    }
+    .materia-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 14px;
+    }
+    .materia-item {
+        background: white;
+        border: 1px solid #e9eef5;
+        border-radius: 18px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 14px;
+        min-height: 150px;
+    }
+    .materia-item.hidden-by-search { display: none; }
+    .materia-item-main { min-width: 0; flex: 1; display: grid; gap: 12px; }
+    .materia-item-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .materia-item-top strong { font-size: 1rem; line-height: 1.4; }
+    .materia-item-meta { display: flex; flex-wrap: wrap; gap: 10px 16px; color: var(--muted); font-size: 0.88rem; }
+    .materia-item-meta span { display: inline-flex; align-items: center; gap: 6px; }
+    .materia-item-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .materia-item-actions { flex-shrink: 0; margin-left: auto; }
+    .materias-empty-detail {
+        padding: 26px 22px;
+        border-radius: 22px;
+        border: 1px dashed #d6dfeb;
+        background: #f8fafc;
+        color: var(--muted);
+        font-weight: 700;
+        text-align: center;
+    }
+    .materias-popup-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.38);
+        backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 1100;
+    }
+    .materias-popup-card {
+        width: min(1080px, 100%);
+        max-height: min(86vh, 920px);
+        overflow: hidden;
+        background: white;
+        border-radius: 30px;
+        box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22);
+        display: grid;
+        grid-template-rows: auto 1fr;
+    }
+    .materias-popup-close {
+        width: 42px;
+        height: 42px;
+        border: none;
+        border-radius: 50%;
+        background: #f8fafc;
+        color: var(--muted);
+        cursor: pointer;
+        transition: 0.2s ease;
+        flex-shrink: 0;
+    }
+    .materias-popup-close:hover { background: #eef2f7; color: var(--dark); }
+    .materias-popup-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 28px 30px 18px;
+        border-bottom: 1px solid #edf2f7;
+    }
+    .materias-popup-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        padding-right: 2px;
+    }
+    .materias-popup-content {
+        padding: 24px 30px 30px;
+        overflow-y: auto;
+    }
+    .materias-popup-content .materia-group {
+        border: none;
+        box-shadow: none;
+        background: transparent;
+    }
+    .materias-popup-content .materia-group-header {
+        padding: 0 0 18px;
+    }
+    .materias-popup-content .materia-group-body {
+        padding: 0;
+        border-top: none;
+    }
+    .materias-empty { text-align: center; padding: 28px 20px; color: var(--muted); background: #f8fafc; border: 1px dashed #dbe4f0; border-radius: 18px; font-weight: 700; }
 
     .table-responsive { overflow-x: auto; }
     .m-table { width: 100%; border-collapse: collapse; }
@@ -528,6 +869,48 @@
         display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;
     }
     .btn-seccion:hover { background: var(--dark); color: white; transform: translateY(-2px); }
+    @media (max-width: 720px) {
+        .materias-header,
+        .materia-item,
+        .materia-item-top,
+        .materia-group-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .materias-grade-grid { grid-template-columns: 1fr; }
+        .materia-grade-card {
+            padding: 16px;
+            border-radius: 18px;
+        }
+        .materias-popup-overlay { padding: 10px; }
+        .materias-popup-card {
+            width: 100%;
+            max-height: 92vh;
+            border-radius: 24px;
+        }
+        .materias-popup-head,
+        .materias-popup-content {
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+        .materias-popup-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .materia-group-body { padding: 14px 16px 16px; }
+        .materia-group-header { padding: 18px 16px 12px; }
+        .materia-items { grid-template-columns: 1fr; }
+        .materia-item { min-height: 0; }
+        .materia-item-footer {
+            width: 100%;
+            align-items: stretch;
+        }
+        .materia-item-actions {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+        }
+    }
 </style>
 
 <script>
@@ -619,6 +1002,169 @@
         });
     }
 
+    function toggleSemestreMateria() {
+        const selectGrado = document.getElementById('select-grado-materia');
+        const wrapper = document.getElementById('semestre-materia-wrapper');
+        const selectSemestre = document.getElementById('select-semestre-materia');
+        if (!selectGrado || !wrapper || !selectSemestre) return;
+
+        const optionSeleccionada = selectGrado.options[selectGrado.selectedIndex];
+        const usaSemestres = optionSeleccionada && optionSeleccionada.getAttribute('data-usa-semestres') === 'true';
+
+        wrapper.style.display = usaSemestres ? 'block' : 'none';
+        selectSemestre.disabled = !usaSemestres;
+        selectSemestre.required = usaSemestres;
+
+        if (!usaSemestres) {
+            selectSemestre.value = '';
+        }
+    }
+
+    function obtenerCampoVacio(form) {
+        const controls = Array.from(form.querySelectorAll('input[required], select[required], textarea[required]'));
+
+        for (const control of controls) {
+            if (control.disabled) {
+                return control;
+            }
+
+            const tipo = (control.type || '').toLowerCase();
+            const valor = typeof control.value === 'string' ? control.value.trim() : control.value;
+
+            if ((tipo === 'checkbox' || tipo === 'radio') && !control.checked) {
+                return control;
+            }
+
+            if (valor === '') {
+                return control;
+            }
+        }
+
+        const gruposCheckbox = Array.from(form.querySelectorAll('[data-required-checkbox-group]'));
+        for (const grupo of gruposCheckbox) {
+            const checked = grupo.querySelectorAll('input[type="checkbox"]:checked');
+            if (checked.length === 0) {
+                return grupo;
+            }
+        }
+
+        return null;
+    }
+
+    function obtenerNombreCampo(control) {
+        if (!control) return 'un campo obligatorio';
+        if (control.dataset && control.dataset.label) return control.dataset.label;
+        if (control.name) return control.name;
+        return 'un campo obligatorio';
+    }
+
+    function registrarValidacionFormulariosAcademicos() {
+        document.querySelectorAll('form[data-academic-form]').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                const campoVacio = obtenerCampoVacio(form);
+
+                if (!campoVacio) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const nombreCampo = obtenerNombreCampo(campoVacio);
+                alert(`Debes completar el campo "${nombreCampo}" antes de guardar.`);
+
+                if (campoVacio.matches && campoVacio.matches('[data-required-checkbox-group]')) {
+                    const primerCheckbox = campoVacio.querySelector('input[type="checkbox"]');
+                    if (primerCheckbox) primerCheckbox.focus();
+                } else if (typeof campoVacio.focus === 'function') {
+                    campoVacio.focus();
+                }
+            });
+        });
+    }
+
+    let filtroMateriasFrame = null;
+    function abrirPopupMaterias(idGrado) {
+        const panel = document.querySelector(`[data-grade-panel][data-grade-id="${idGrado}"]`);
+        const popup = document.getElementById('materiasPopup');
+        const popupTitulo = document.getElementById('materiasPopupTitulo');
+        const popupSubtitulo = document.getElementById('materiasPopupSubtitulo');
+        const popupCount = document.getElementById('materiasPopupCount');
+        const popupContenido = document.getElementById('materiasPopupContenido');
+
+        if (!panel || !popup || !popupContenido) return;
+
+        const titulo = panel.querySelector('.materia-group-title');
+        const contador = panel.querySelector('.chip-glass');
+        const cuerpo = panel.querySelector('.materia-group-body');
+
+        popupTitulo.textContent = titulo ? titulo.textContent.trim() : 'Materias';
+        popupSubtitulo.textContent = 'Materias asociadas al grado seleccionado.';
+        popupCount.textContent = contador ? contador.textContent.trim() : '';
+        popupContenido.innerHTML = cuerpo ? cuerpo.innerHTML : '';
+
+        popup.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarPopupMaterias() {
+        const popup = document.getElementById('materiasPopup');
+        const popupContenido = document.getElementById('materiasPopupContenido');
+
+        if (popup) {
+            popup.style.display = 'none';
+        }
+        if (popupContenido) {
+            popupContenido.innerHTML = '';
+        }
+        document.body.style.overflow = '';
+    }
+
+    function actualizarEstadoMateriasVacio() {
+        const firstVisibleCard = Array.from(document.querySelectorAll('[data-grade-card]'))
+            .find(card => !card.classList.contains('hidden-by-search'));
+        const emptyDetail = document.getElementById('materiasEmptyDetail');
+
+        if (!emptyDetail) return;
+        emptyDetail.style.display = firstVisibleCard ? 'none' : 'block';
+    }
+
+    function filtrarMateriasRegistradas() {
+        const input = document.getElementById('buscadorMaterias');
+        const termino = (input?.value || '').trim().toLowerCase();
+        const grupos = document.querySelectorAll('#materiasGroups .materia-group');
+        const cards = document.querySelectorAll('[data-grade-card]');
+
+        if (filtroMateriasFrame) {
+            cancelAnimationFrame(filtroMateriasFrame);
+        }
+
+        filtroMateriasFrame = requestAnimationFrame(() => {
+            grupos.forEach(grupo => {
+                const items = grupo.querySelectorAll('.materia-item');
+                let visibles = 0;
+
+                items.forEach(item => {
+                    const texto = item.dataset.search || '';
+                    const coincide = !termino || texto.includes(termino);
+                    item.classList.toggle('hidden-by-search', !coincide);
+                    if (coincide) visibles += 1;
+                });
+
+                const mostrarGrupo = visibles > 0 || !termino;
+                grupo.classList.toggle('hidden-by-search', !mostrarGrupo);
+            });
+
+            cards.forEach(card => {
+                const panel = document.querySelector(`[data-grade-panel][data-grade-id="${card.dataset.gradeId}"]`);
+                const visibleByItems = panel && !panel.classList.contains('hidden-by-search');
+                const visibleByGrade = !termino || (card.dataset.search || '').includes(termino);
+                card.classList.toggle('hidden-by-search', !(visibleByItems || visibleByGrade));
+            });
+
+            actualizarEstadoMateriasVacio();
+        });
+    }
+
     // --- NUEVAS FUNCIONES PARA EL VISOR DE HORARIOS ---
 
     function toggleAcordeon(id) {
@@ -693,6 +1239,29 @@
         if (botonTab) {
             botonTab.click();
         }
+
+        document.querySelectorAll('[data-grade-card]').forEach(card => {
+            card.addEventListener('click', () => abrirPopupMaterias(card.dataset.gradeId));
+        });
+
+        const popup = document.getElementById('materiasPopup');
+        if (popup) {
+            popup.addEventListener('click', (event) => {
+                if (event.target === popup) {
+                    cerrarPopupMaterias();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                cerrarPopupMaterias();
+            }
+        });
+
+        registrarValidacionFormulariosAcademicos();
+        toggleSemestreMateria();
+        actualizarEstadoMateriasVacio();
     });
 </script>
 

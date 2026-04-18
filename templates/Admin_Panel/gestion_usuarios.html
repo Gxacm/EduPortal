@@ -82,7 +82,7 @@
                             {% endfor %}
 
                             {# 2. Subcarpeta de Nivel: Sección #}
-                            {% for seccion in secciones_del_grado %}
+                            {% for seccion in secciones_del_grado | sort %}
                             <div class="folder-wrapper" data-tipo="seccion">
                                 <div class="folder-header subfolder" onclick="toggleCarpeta(this)">
                                     <i class="bi bi-folder2-open folder-icon text-warning"></i>
@@ -221,9 +221,12 @@
                 {% if m.usuario %}{{ m.usuario.nombre }} {{ m.usuario.apellido }}{% else %}<span class="text-danger">Sin Usuario</span>{% endif %}
             </td>
             <td>
-                <span class="badge-count" style="background: #e0e7ff; color: #4318ff;">
+                <button
+                    type="button"
+                    class="badge-count badge-count-button"
+                    onclick="abrirModalCarga('modalCarga{{ m.id_maestro }}')">
                     {{ m.clases|length }} Materias
-                </span>
+                </button>
             </td>
             <td class="email-text">{% if m.usuario %}{{ m.usuario.correo }}{% else %}-{% endif %}</td>
             <td style="text-align: right;">
@@ -244,10 +247,51 @@
                 </div>
             </td>
         </tr>
+
         {% endfor %}
     </tbody>
 </table>
                 </div>
+
+                {% for m in maestros %}
+                <div id="modalCarga{{ m.id_maestro }}" class="modal-overlay modal-overlay-carga" onclick="cerrarModalCarga(event, 'modalCarga{{ m.id_maestro }}')">
+                    <div class="modal-card modal-card-carga" onclick="event.stopPropagation()">
+                        <button type="button" class="btn-close-modal" onclick="cerrarModalCargaBtn('modalCarga{{ m.id_maestro }}')" aria-label="Cerrar">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                        <div class="modal-chip-header">
+                            <span class="chip-glass">
+                                <i class="bi bi-journal-bookmark-fill" style="margin-right: 6px;"></i>Carga académica
+                            </span>
+                        </div>
+                        <h3 class="m-section-title modal-title-left">
+                            {% if m.usuario %}{{ m.usuario.nombre }} {{ m.usuario.apellido }}{% else %}Docente sin usuario{% endif %}
+                        </h3>
+                        <p class="modal-desc modal-desc-left">Materias asignadas y grado en el que imparte clases.</p>
+
+                        <div class="carga-lista">
+                            {% if m.clases %}
+                                {% for clase in m.clases|sort(attribute='id_grado') %}
+                                <div class="carga-item">
+                                    <div class="carga-item-icon">
+                                        <i class="bi bi-book-fill"></i>
+                                    </div>
+                                    <div class="carga-item-content">
+                                        <strong>{{ clase.nombre_clase }}</strong>
+                                        <span>{{ clase.grado.nombre_grado if clase.grado else 'Grado no asignado' }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="carga-empty">
+                                    <i class="bi bi-info-circle"></i>
+                                    Este docente no tiene materias asignadas actualmente.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -319,6 +363,9 @@
     .id-text { color: var(--primary); font-weight: 800; }
     .id-text.special { color: var(--warning); }
     .email-text { color: var(--muted); font-size: 0.9rem; font-weight: 500; }
+    .badge-count { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 12px; font-weight: 800; font-size: 0.88rem; }
+    .badge-count-button { background: #e0e7ff; color: #4318ff; border: none; cursor: pointer; transition: 0.2s ease; font-family: inherit; }
+    .badge-count-button:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(67, 24, 255, 0.14); background: #c7d2fe; }
 
     /* Acciones */
     .action-btns { display: flex; gap: 8px; justify-content: flex-end; }
@@ -360,11 +407,68 @@
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 54, 116, 0.2); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }
     .modal-card { background: white; padding: 2.5rem; border-radius: 30px; width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
     .modal-alert-icon { font-size: 3rem; color: var(--danger); margin-bottom: 1rem; }
+    .modal-desc { color: var(--muted); margin-top: 10px; line-height: 1.5; }
     .modal-form { margin-top: 2rem; display: flex; gap: 12px; }
     .btn-cancel { flex: 1; padding: 14px; border-radius: 12px; border: none; background: var(--bg); font-weight: 700; cursor: pointer; }
     .btn-confirm-delete { flex: 1; padding: 14px; border-radius: 12px; border: none; background: var(--danger); color: white; font-weight: 700; cursor: pointer; }
+    .modal-card-carga {
+        width: min(92vw, 520px);
+        min-height: 440px;
+        max-height: min(80vh, 620px);
+        text-align: left;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    .modal-title-left, .modal-desc-left { text-align: left; }
+    .modal-chip-header { margin-bottom: 14px; }
+    .btn-close-modal {
+        position: absolute; top: 18px; right: 18px; width: 36px; height: 36px;
+        border: none; border-radius: 50%; background: #f1f5f9; color: #64748b;
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s ease;
+    }
+    .btn-close-modal:hover { background: #e2e8f0; color: var(--dark); }
+    .carga-lista {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 22px;
+        overflow-y: auto;
+        padding-right: 8px;
+        flex: 1;
+    }
+    .carga-lista::-webkit-scrollbar { width: 8px; }
+    .carga-lista::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    .carga-lista::-webkit-scrollbar-track { background: #f8fafc; border-radius: 999px; }
+    .carga-item {
+        display: flex; align-items: center; gap: 14px; padding: 15px 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0; border-radius: 18px;
+    }
+    .carga-item-icon {
+        width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: #e0e7ff; color: var(--primary); font-size: 1.1rem;
+    }
+    .carga-item-content { display: flex; flex-direction: column; gap: 4px; }
+    .carga-item-content strong { color: var(--dark); font-size: 0.96rem; }
+    .carga-item-content span { color: var(--muted); font-size: 0.88rem; font-weight: 700; }
+    .carga-empty {
+        padding: 18px; border-radius: 18px; background: #f8fafc; color: var(--muted);
+        font-weight: 700; display: flex; align-items: center; gap: 10px; border: 1px dashed #cbd5e1;
+    }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 768px) {
+        .modal-card-carga {
+            padding: 1.5rem;
+            min-height: 380px;
+            max-height: 82vh;
+        }
+        .badge-count-button { width: 100%; justify-content: center; }
+        .carga-item { align-items: flex-start; }
+    }
 </style>
 
 <script>
@@ -405,10 +509,28 @@
         document.getElementById('delNombre').innerText = nombre;
         document.getElementById('formDelete').action = "/admin/eliminar_usuario/" + id;
         document.getElementById('modalDelete').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
     }
     
     function cerrarModal() {
         document.getElementById('modalDelete').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function abrirModalCarga(modalId) {
+        document.getElementById(modalId).style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarModalCarga(event, modalId) {
+        if (event.target.id === modalId) {
+            cerrarModalCargaBtn(modalId);
+        }
+    }
+
+    function cerrarModalCargaBtn(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 
     function toggleCarpeta(elementoHeader) {
@@ -482,6 +604,16 @@
             }
         });
     }
+
+    window.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            cerrarModal();
+            document.querySelectorAll('.modal-overlay-carga').forEach(modal => {
+                modal.style.display = 'none';
+            });
+            document.body.style.overflow = 'auto';
+        }
+    });
 </script>
 
 {% endblock %}

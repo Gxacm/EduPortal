@@ -34,44 +34,38 @@
                 {% for item in grados_data %}
                     {% set clase_nombre = item.clases[0].nombre_clase %}
                     {% set accent_class = 'accent-slate' %}
-                    {% set accent_icon = 'bi-grid-1x2-fill' %}
                     {% if 'Mat' in clase_nombre %}
                         {% set accent_class = 'accent-blue' %}
-                        {% set accent_icon = 'bi-calculator-fill' %}
                     {% elif 'Leng' in clase_nombre %}
                         {% set accent_class = 'accent-rose' %}
-                        {% set accent_icon = 'bi-chat-square-text-fill' %}
                     {% elif 'Ciencia' in clase_nombre %}
                         {% set accent_class = 'accent-green' %}
-                        {% set accent_icon = 'bi-flask-fill' %}
                     {% elif 'Hist' in clase_nombre %}
                         {% set accent_class = 'accent-amber' %}
-                        {% set accent_icon = 'bi-bank2' %}
                     {% endif %}
 
                 <article class="teacher-grade-card {{ accent_class }}">
-                    <div class="grade-card-top">
-                        <div class="grade-icon">
-                            <i class="bi {{ accent_icon }}"></i>
+                    <div class="grade-card-header">
+                        <div class="grade-card-pattern"></div>
+                        <div class="grade-card-top">
+                            <div class="grade-icon">
+                                <i class="bi bi-clipboard-fill"></i>
+                            </div>
                         </div>
-                        <span class="grade-badge">
-                            {{ item.grado.nombre_grado | replace('Grado', '') | trim }} Grado
-                        </span>
                     </div>
 
-                    <div class="grade-card-body">
-                        <h3>{{ clase_nombre }}</h3>
-                        <p>
-                            Accede a tareas, examenes, asistencia, anuncios y recursos del aula
-                            desde un solo punto de gestion.
-                        </p>
-                    </div>
+                    <div class="grade-card-shell">
+                        <div class="grade-card-body">
+                            <h3>{{ clase_nombre }}</h3>
+                            <span class="grade-card-caption">{{ item.grado.nombre_grado | replace('Grado', '') | trim }} Grado</span>
+                        </div>
 
-                    <div class="grade-card-footer">
-                        <a href="{{ url_for('gestionar_grado', id_grado=item.grado.id_grado) }}" class="grade-action">
-                            Gestionar materia
-                            <i class="bi bi-arrow-right-short"></i>
-                        </a>
+                        <div class="grade-card-footer">
+                            <a href="{{ url_for('gestionar_grado', id_grado=item.grado.id_grado) }}" class="grade-action">
+                                Gestionar materia
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
                     </div>
                 </article>
                 {% else %}
@@ -188,7 +182,6 @@
     .teacher-eyebrow,
     .section-kicker,
     .hero-stat-label,
-    .grade-badge,
     .announcement-tab {
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -249,7 +242,7 @@
 
     .teacher-layout {
         display: grid;
-        grid-template-columns: minmax(340px, 0.92fr) minmax(0, 1.28fr);
+        grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.82fr);
         gap: 22px;
         align-items: start;
     }
@@ -318,13 +311,33 @@
     }
 
     .teacher-grade-card {
-        min-height: 228px;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        padding: 22px;
-        border-radius: 24px;
+        background: #ffffff;
+        border-radius: 30px;
+        overflow: hidden;
+        border: 1px solid #eef2f6;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 14px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .teacher-grade-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 22px 34px rgba(15, 23, 42, 0.12);
+    }
+
+    .grade-card-header {
+        position: relative;
+        height: 136px;
+        padding: 22px;
+        overflow: hidden;
+    }
+
+    .grade-card-pattern {
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 38%),
+            linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+        opacity: 0.9;
     }
 
     .grade-card-top,
@@ -333,6 +346,8 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
+        position: relative;
+        z-index: 1;
     }
 
     .grade-icon {
@@ -347,31 +362,43 @@
         font-size: 1.3rem;
     }
 
-    .grade-badge {
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.18);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.18);
+    .grade-card-shell {
+        padding: 0 22px 22px;
+        margin-top: -54px;
+        position: relative;
+        z-index: 2;
     }
 
     .grade-card-body {
-        flex: 1;
+        background: #ffffff;
+        border-radius: 24px;
+        border: 1px solid #eef2f6;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+        padding: 22px;
+        margin-bottom: 16px;
     }
 
     .grade-card-body h3 {
-        margin: 0 0 10px;
-        color: #ffffff;
-        font-size: 1.2rem;
+        margin: 0 0 8px;
+        color: var(--text-main);
+        font-size: 1.35rem;
         line-height: 1.2;
         letter-spacing: -0.03em;
     }
 
-    .grade-card-body p {
-        color: rgba(255, 255, 255, 0.84);
-        font-size: 0.92rem;
-        line-height: 1.65;
-        font-weight: 600;
+    .grade-card-caption {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        margin: 0;
+        color: #64748b;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 0.08em;
     }
 
     .grade-action {
@@ -381,10 +408,10 @@
         gap: 6px;
         width: 100%;
         padding: 12px 14px;
-        border-radius: 14px;
+        border-radius: 16px;
         text-decoration: none;
-        background: rgba(255, 255, 255, 0.14);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: #72A98F;
+        border: 1px solid transparent;
         color: #ffffff;
         font-size: 0.88rem;
         font-weight: 800;
@@ -392,28 +419,48 @@
     }
 
     .grade-action:hover {
-        background: rgba(255, 255, 255, 0.22);
+        background: var(--brand-color);
         transform: translateY(-1px);
     }
 
     .accent-blue {
-        background: #2563eb;
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
     }
 
     .accent-rose {
-        background: #be185d;
+        background: linear-gradient(135deg, #fce7f3, #fbcfe8);
     }
 
     .accent-green {
-        background: #059669;
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
     }
 
     .accent-amber {
-        background: #d97706;
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
     }
 
     .accent-slate {
-        background: #1f4f78;
+        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+    }
+
+    .accent-blue .grade-icon {
+        background: #2563eb;
+    }
+
+    .accent-rose .grade-icon {
+        background: #db2777;
+    }
+
+    .accent-green .grade-icon {
+        background: #059669;
+    }
+
+    .accent-amber .grade-icon {
+        background: #d97706;
+    }
+
+    .accent-slate .grade-icon {
+        background: #475569;
     }
 
     .announcement-stack {

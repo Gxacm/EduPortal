@@ -45,6 +45,24 @@
     
     .student-card { background: white; border-radius: 24px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
     .student-card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); background-color: white; }
+    .section-tabs {
+        display: flex; flex-wrap: wrap; gap: 10px;
+        padding: 18px 24px 18px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+    .section-tab {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 11px 18px; border-radius: 999px; background: #f8fafc; color: var(--muted-text);
+        border: 1px solid var(--border-color); font-weight: 800; font-size: 0.84rem; transition: 0.22s ease;
+        cursor: pointer; font-family: inherit;
+    }
+    .section-tab:hover { border-color: #bfdbfe; color: var(--primary-main); transform: translateY(-1px); }
+    .section-tab.active { background: var(--primary-soft); color: var(--primary-main); border-color: #bfdbfe; box-shadow: 0 8px 18px -14px rgba(59, 130, 246, 0.7); }
+    .section-count { background: white; color: inherit; border-radius: 999px; padding: 2px 8px; font-size: 0.72rem; border: 1px solid currentColor; }
+    .section-panel { display: none; animation: fadeSection 0.22s ease; }
+    .section-panel.active { display: block; }
+    @keyframes fadeSection { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     
     .custom-table { width: 100%; border-collapse: collapse; text-align: left; }
     .custom-table th { padding: 16px 24px; background-color: #f8fafc; color: var(--muted-text); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); }
@@ -90,7 +108,7 @@
                 <p class="text-muted m-0 fw-500" style="margin: 0; color: #64748b;">Gestión de alumnos y herramientas académicas</p>
             </div>
             <div style="background-color: #f8fafc; padding: 15px 25px; border-radius: 16px; text-align: center;">
-                <span style="display: block; font-weight: 800; font-size: 1.5rem; color: #1e293b;">{{ alumnos|length }}</span>
+                <span style="display: block; font-weight: 800; font-size: 1.5rem; color: #1e293b;">{{ total_alumnos }}</span>
                 <small style="color: #64748b; font-weight: 700; font-size: 0.7rem; text-transform: uppercase;">Alumnos</small>
             </div>
         </div>
@@ -156,43 +174,65 @@
     <div class="student-card">
         <div class="student-card-header">
             <h5 style="font-weight: 800; margin: 0; color: #1e293b; font-size: 1.1rem;">Estudiantes del Grado</h5>
+            {% if seccion_activa %}
+            <p id="students-section-label" style="margin: 6px 0 0; color: #64748b; font-weight: 600;">Sección {{ seccion_activa.nombre_seccion }}</p>
+            {% endif %}
         </div>
-        <div style="overflow-x: auto;">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th style="width: 45%;">Nombre del Alumno</th>
-                        <th style="width: 35%;">Correo Electrónico</th>
-                        <th style="width: 20%; text-align: center;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for alumno in alumnos %}
-                    <tr>
-                        <td>
-                            <div class="student-info">
-                                <div class="avatar">{{ alumno.nombre[0]|upper }}</div>
-                                <div><span class="student-name">{{ alumno.nombre }} {{ alumno.apellido }}</span></div>
-                            </div>
-                        </td>
-                        <td><span class="student-email">{{ alumno.correo }}</span></td>
-                        <td style="text-align: center;">
-                            <button type="button" class="btn-action" onclick="openModal('modal-alumno-{{ loop.index }}')">Ver Perfil</button>
-                        </td>
-                    </tr>
+        {% if secciones_data %}
+        <div class="section-tabs">
+            {% for seccion in secciones_data %}
+            <button type="button" class="section-tab {% if seccion_activa and seccion.id_seccion == seccion_activa.id_seccion %}active{% elif not seccion_activa and loop.first %}active{% endif %}" data-section-target="section-{{ seccion.id_seccion }}" data-section-name="{{ seccion.nombre_seccion }}">
+                Sección {{ seccion.nombre_seccion }}
+                <span class="section-count">{{ seccion.alumnos|length }}</span>
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% for seccion in secciones_data %}
+        <div id="section-{{ seccion.id_seccion }}" class="section-panel {% if seccion_activa and seccion.id_seccion == seccion_activa.id_seccion %}active{% elif not seccion_activa and loop.first %}active{% endif %}">
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">Nombre del Alumno</th>
+                            <th style="width: 35%;">Correo Electrónico</th>
+                            <th style="width: 20%; text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alumno in seccion.alumnos %}
+                        <tr>
+                            <td>
+                                <div class="student-info">
+                                    <div class="avatar">{{ alumno.nombre[0]|upper }}</div>
+                                    <div><span class="student-name">{{ alumno.nombre }} {{ alumno.apellido }}</span></div>
+                                </div>
+                            </td>
+                            <td><span class="student-email">{{ alumno.correo }}</span></td>
+                            <td style="text-align: center;">
+                                <button type="button" class="btn-action" onclick="openModal('modal-alumno-{{ seccion.id_seccion }}-{{ loop.index }}')">Ver Perfil</button>
+                            </td>
+                        </tr>
 
-                    <div id="modal-alumno-{{ loop.index }}" class="modal-overlay" onclick="closeModal(event, 'modal-alumno-{{ loop.index }}')">
-                        <div class="modal-card" onclick="event.stopPropagation()">
-                            <button class="btn-close-modal" onclick="closeModalBtn('modal-alumno-{{ loop.index }}')"><i class="bi bi-x"></i></button>
-                            <div class="avatar" style="width: 70px; height: 70px; margin: 0 auto 15px; font-size: 2rem;">{{ alumno.nombre[0]|upper }}</div>
-                            <h4 style="text-align: center; font-weight: 800;">{{ alumno.nombre }} {{ alumno.apellido }}</h4>
-                            <p style="text-align: center; color: var(--muted-text);">{{ alumno.correo }}</p>
+                        <div id="modal-alumno-{{ seccion.id_seccion }}-{{ loop.index }}" class="modal-overlay" onclick="closeModal(event, 'modal-alumno-{{ seccion.id_seccion }}-{{ loop.index }}')">
+                            <div class="modal-card" onclick="event.stopPropagation()">
+                                <button class="btn-close-modal" onclick="closeModalBtn('modal-alumno-{{ seccion.id_seccion }}-{{ loop.index }}')"><i class="bi bi-x"></i></button>
+                                <div class="avatar" style="width: 70px; height: 70px; margin: 0 auto 15px; font-size: 2rem;">{{ alumno.nombre[0]|upper }}</div>
+                                <h4 style="text-align: center; font-weight: 800;">{{ alumno.nombre }} {{ alumno.apellido }}</h4>
+                                <p style="text-align: center; color: var(--muted-text);">{{ alumno.correo }}</p>
+                            </div>
                         </div>
-                    </div>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% endfor %}
+                        {% if not seccion.alumnos %}
+                        <tr>
+                            <td colspan="3" style="text-align:center; color:#64748b; font-weight:700;">No hay alumnos registrados en esta sección.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
+        {% endfor %}
     </div>
 </div>
 
@@ -200,5 +240,22 @@
     function openModal(modalId) { document.getElementById(modalId).classList.add('active'); document.body.style.overflow = 'hidden'; }
     function closeModal(event, modalId) { if(event.target.id === modalId) { document.getElementById(modalId).classList.remove('active'); document.body.style.overflow = 'auto'; } }
     function closeModalBtn(modalId) { document.getElementById(modalId).classList.remove('active'); document.body.style.overflow = 'auto'; }
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabs = document.querySelectorAll('.section-tab');
+        const panels = document.querySelectorAll('.section-panel');
+        const sectionLabel = document.getElementById('students-section-label');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                const targetId = tab.dataset.sectionTarget;
+                tabs.forEach(item => item.classList.remove('active'));
+                panels.forEach(panel => panel.classList.remove('active'));
+                tab.classList.add('active');
+                const targetPanel = document.getElementById(targetId);
+                if (targetPanel) targetPanel.classList.add('active');
+                if (sectionLabel) sectionLabel.textContent = `Sección ${tab.dataset.sectionName}`;
+            });
+        });
+    });
 </script>
 {% endblock %}

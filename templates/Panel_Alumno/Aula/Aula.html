@@ -89,7 +89,7 @@
                         </div>
                         <div class="stats-mini-inner">
                             <div class="stat-item">
-                                <span class="stat-value">{{ tareas|length }}</span>
+                                <span class="stat-value">{{ tareas_pendientes_count }}</span>
                                 <span class="stat-label">Tareas</span>
                             </div>
                             <div class="divider-v"></div>
@@ -114,6 +114,8 @@
                                 <div class="tarea-status-tag">
                                     {% if tarea.id_tarea in entregadas_ids %}
                                     <span class="badge-status delivered">Entregado</span>
+                                    {% elif tarea.fecha_entrega and tarea.fecha_entrega < now %}
+                                    <span class="badge-status expired">Expirada</span>
                                     {% else %}
                                     <span class="badge-status pending">Pendiente</span>
                                     {% endif %}
@@ -259,6 +261,7 @@
 .badge-status { padding: 6px 12px; border-radius: 999px; font-size: .74rem; }
 .badge-status.pending { background: #fee2e2; color: #dc2626; }
 .badge-status.delivered { background: #dcfce7; color: #15803d; }
+.badge-status.expired { background: #e2e8f0; color: #475569; }
 .empty-state { text-align: center; padding: 46px 20px; color: #64748b; font-weight: 700; }
 .empty-state i { font-size: 2rem; display: block; margin-bottom: 8px; color: var(--materia-color); }
 @media (max-width: 1024px) {
