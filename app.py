@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from sqlalchemy.orm import joinedload
 import os
+import random
 from werkzeug.utils import secure_filename
 from models import db, Usuarios, Maestros, CiclosLectivos, Periodos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes, DocumentosClase, EnlacesClase, VideosClase, ForosClase, MensajesForoClase
 
@@ -25,6 +26,7 @@ def asegurar_columnas_panel_maestro():
     columnas_entregas_tareas = {col['name'] for col in inspector.get_columns('entregas_tareas')}
     columnas_clases = {col['name'] for col in inspector.get_columns('clases')}
     columnas_ciclos = {col['name'] for col in inspector.get_columns('ciclos_lectivos')}
+    columnas_horarios = {col['name'] for col in inspector.get_columns('horarios')}
 
     with db.engine.begin() as conn:
         if 'periodo' not in columnas_tareas:
@@ -57,6 +59,15 @@ def asegurar_columnas_panel_maestro():
         if 'semestre_actual' not in columnas_ciclos:
             conn.execute(text("ALTER TABLE ciclos_lectivos ADD COLUMN IF NOT EXISTS semestre_actual VARCHAR(20) DEFAULT '1'"))
         conn.execute(text("UPDATE ciclos_lectivos SET semestre_actual = '1' WHERE semestre_actual IS NULL"))
+        if 'es_recreo' not in columnas_horarios:
+            conn.execute(text("ALTER TABLE horarios ADD COLUMN IF NOT EXISTS es_recreo BOOLEAN DEFAULT FALSE"))
+        if 'nombre_bloque' not in columnas_horarios:
+            conn.execute(text("ALTER TABLE horarios ADD COLUMN IF NOT EXISTS nombre_bloque VARCHAR(100)"))
+        conn.execute(text("UPDATE horarios SET es_recreo = FALSE WHERE es_recreo IS NULL"))
+        try:
+            conn.execute(text("ALTER TABLE horarios ALTER COLUMN id_clase DROP NOT NULL"))
+        except Exception:
+            pass
 
 
 with app.app_context():
@@ -138,6 +149,48 @@ def alias_visual_grado(nombre_grado):
     }
     clave = ' '.join((nombre_grado or '').strip().lower().split())
     return alias_map.get(clave, nombre_grado)
+
+
+def orden_academico_grado(nombre_grado):
+    clave = ' '.join((nombre_grado or '').strip().lower().split())
+    orden_manual = {
+        'nursery': 1,
+        'pre kinder': 2,
+        'prekinder': 2,
+        'pre-kinder': 2,
+        'kinder': 3,
+        'preparatoria': 4,
+        'primer grado': 5,
+        'primero grado': 5,
+        'segundo grado': 6,
+        'tercer grado': 7,
+        'tercero grado': 7,
+        'cuarto grado': 8,
+        'quinto grado': 9,
+        'sexto grado': 10,
+        'septimo grado': 11,
+        'séptimo grado': 11,
+        'octavo grado': 12,
+        'noveno grado': 13,
+        'decimo grado': 14,
+        'décimo grado': 14,
+        'undecimo grado': 15,
+        'undécimo grado': 15,
+        'duodecimo grado': 16,
+        'duodécimo grado': 16,
+    }
+    return orden_manual.get(clave, 999)
+
+
+def clave_orden_seccion(seccion):
+    if not seccion:
+        return (999, 'zzz', 999999)
+    grado_nombre = seccion.grado.nombre_grado if getattr(seccion, 'grado', None) else ''
+    return (
+        orden_academico_grado(grado_nombre),
+        (grado_nombre or '').lower(),
+        (seccion.nombre_seccion or '').upper()
+    )
 
 GRADOS_CON_SEMESTRES = {'décimo grado', 'decimo grado', 'undécimo grado', 'undecimo grado'}
 SEMESTRES_DISPONIBLES = (
@@ -353,6 +406,12 @@ def existe_solapamiento(hora_inicio, hora_fin, otro_inicio, otro_fin):
     return hora_inicio < otro_fin and hora_fin > otro_inicio
 
 
+def obtener_titulo_bloque_horario(bloque):
+    if getattr(bloque, 'es_recreo', False):
+        return (bloque.nombre_bloque or 'Recreo').strip() or 'Recreo'
+    return bloque.clase.nombre_clase if bloque.clase else 'Clase'
+
+
 def validar_bloque_horario(id_clase, id_seccion, dia_semana, hora_inicio, hora_fin, excluir_id=None):
     seccion = Secciones.query.get(id_seccion)
     clase = Clases.query.get(id_clase)
@@ -395,58 +454,81 @@ def validar_bloque_horario(id_clase, id_seccion, dia_semana, hora_inicio, hora_f
 
 def generar_propuesta_horario_para_seccion(seccion_destino, horarios_origen, slots_candidatos):
     propuesta = []
-    slots_usados = set()
+    randomizador = random.Random(
+        f"autogen-{seccion_destino.id_grado}-{seccion_destino.id_seccion}-{len(horarios_origen)}"
+    )
 
-    bloques_ordenados = sorted(
+    bloques_recreo = []
+    bloques_clase = []
+    for bloque in sorted(
         horarios_origen,
         key=lambda item: (
-            item.clase.id_maestro or 0,
+            ordenar_dia_semana(item.dia_semana),
+            item.hora_inicio,
+            item.id_horario
+        )
+    ):
+        if getattr(bloque, 'es_recreo', False):
+            bloques_recreo.append(bloque)
+        else:
+            bloques_clase.append(bloque)
+
+    for bloque in bloques_recreo:
+        propuesta.append({
+            'id_clase': None,
+            'es_recreo': True,
+            'nombre_bloque': (bloque.nombre_bloque or 'Recreo'),
+            'dia_semana': bloque.dia_semana,
+            'hora_inicio': bloque.hora_inicio,
+            'hora_fin': bloque.hora_fin
+        })
+
+    slots_recreo = {
+        (bloque.dia_semana, bloque.hora_inicio, bloque.hora_fin)
+        for bloque in bloques_recreo
+    }
+    slots_clase = [
+        slot for slot in slots_candidatos
+        if (slot['dia'], slot['inicio'], slot['fin']) not in slots_recreo
+    ]
+
+    if not bloques_clase:
+        return propuesta
+
+    if len(slots_clase) < len(bloques_clase):
+        return None
+
+    slots_ordenados = sorted(
+        slots_clase,
+        key=lambda item: (
+            ordenar_dia_semana(item['dia']),
+            item['inicio'],
+            item['fin']
+        )
+    )
+    bloques_ordenados = sorted(
+        bloques_clase,
+        key=lambda item: (
             ordenar_dia_semana(item.dia_semana),
             item.hora_inicio,
             item.id_horario
         )
     )
 
-    for bloque in bloques_ordenados:
-        clase = bloque.clase
-        slot_asignado = None
+    clases_barajadas = randomizador.sample(bloques_ordenados, len(bloques_ordenados))
 
-        for slot in slots_candidatos:
-            firma_slot = (slot['dia'], slot['inicio'], slot['fin'])
-            if firma_slot in slots_usados:
-                continue
+    if len(clases_barajadas) > 1:
+        clases_barajadas = clases_barajadas[1:] + clases_barajadas[:1]
 
-            conflicto_local = any(
-                item['dia_semana'] == slot['dia'] and
-                existe_solapamiento(item['hora_inicio'], item['hora_fin'], slot['inicio'], slot['fin'])
-                for item in propuesta
-            )
-            if conflicto_local:
-                continue
-
-            if clase.id_maestro:
-                conflicto_maestro = db.session.query(Horarios).join(Clases).filter(
-                    Clases.id_maestro == clase.id_maestro,
-                    Horarios.id_seccion != seccion_destino.id_seccion,
-                    Horarios.dia_semana == slot['dia'],
-                    Horarios.hora_inicio < slot['fin'],
-                    Horarios.hora_fin > slot['inicio']
-                ).first()
-                if conflicto_maestro:
-                    continue
-
-            slot_asignado = slot
-            break
-
-        if not slot_asignado:
-            return None
-
-        slots_usados.add((slot_asignado['dia'], slot_asignado['inicio'], slot_asignado['fin']))
+    for indice, slot in enumerate(slots_ordenados):
+        bloque = clases_barajadas[indice]
         propuesta.append({
             'id_clase': bloque.id_clase,
-            'dia_semana': slot_asignado['dia'],
-            'hora_inicio': slot_asignado['inicio'],
-            'hora_fin': slot_asignado['fin']
+            'es_recreo': False,
+            'nombre_bloque': None,
+            'dia_semana': slot['dia'],
+            'hora_inicio': slot['inicio'],
+            'hora_fin': slot['fin']
         })
 
     return propuesta
@@ -488,6 +570,8 @@ def sincronizar_horarios_grado_desde_seccion(id_seccion_origen):
             db.session.add(Horarios(
                 id_clase=bloque['id_clase'],
                 id_seccion=seccion_destino.id_seccion,
+                es_recreo=bloque.get('es_recreo', False),
+                nombre_bloque=bloque.get('nombre_bloque'),
                 dia_semana=bloque['dia_semana'],
                 hora_inicio=bloque['hora_inicio'],
                 hora_fin=bloque['hora_fin']
@@ -499,6 +583,78 @@ def sincronizar_horarios_grado_desde_seccion(id_seccion_origen):
         'ok': True,
         'sincronizadas': sincronizadas,
         'omitidas': omitidas
+    }
+
+
+def serializar_horario_admin(bloque):
+    clase = bloque.clase
+    grado = clase.grado if clase else None
+    return {
+        'id_horario': bloque.id_horario,
+        'id_seccion': bloque.id_seccion,
+        'id_clase': bloque.id_clase,
+        'es_recreo': bool(getattr(bloque, 'es_recreo', False)),
+        'nombre_bloque': (bloque.nombre_bloque or 'Recreo') if getattr(bloque, 'es_recreo', False) else None,
+        'dia_semana': bloque.dia_semana,
+        'hora_inicio': bloque.hora_inicio.strftime('%H:%M'),
+        'hora_fin': bloque.hora_fin.strftime('%H:%M'),
+        'materia': obtener_titulo_bloque_horario(bloque),
+        'materia_label': (
+            f"{clase.nombre_clase} - {etiqueta_semestre(clase.semestre)}"
+            if clase and grado and grado_usa_semestres(grado)
+            else obtener_titulo_bloque_horario(bloque)
+        ),
+        'semestre': (clase.semestre or 'ANUAL') if clase else 'ANUAL'
+    }
+
+
+def construir_payload_horarios_admin(grados, secciones, clases, horarios):
+    grados_payload = [
+        {
+            'id_grado': grado.id_grado,
+            'nombre_grado': grado.nombre_grado,
+            'alias': alias_visual_grado(grado.nombre_grado)
+        }
+        for grado in grados
+    ]
+
+    secciones_payload = [
+        {
+            'id_seccion': seccion.id_seccion,
+            'id_grado': seccion.id_grado,
+            'nombre_seccion': seccion.nombre_seccion
+        }
+        for seccion in secciones
+    ]
+
+    clases_payload = []
+    for clase in clases:
+        grado = clase.grado
+        maestro_nombre = 'Sin maestro'
+        if clase.maestro_titular and clase.maestro_titular.usuario:
+            usuario_maestro = clase.maestro_titular.usuario
+            maestro_nombre = f"{usuario_maestro.nombre} {usuario_maestro.apellido}".strip()
+
+        clases_payload.append({
+            'id_clase': clase.id_clase,
+            'id_grado': clase.id_grado,
+            'nombre_clase': clase.nombre_clase,
+            'maestro': maestro_nombre,
+            'semestre': (clase.semestre or 'ANUAL'),
+            'label': (
+                f"{clase.nombre_clase} - {etiqueta_semestre(clase.semestre)}"
+                if grado and grado_usa_semestres(grado)
+                else clase.nombre_clase
+            )
+        })
+
+    horarios_payload = [serializar_horario_admin(horario) for horario in horarios]
+
+    return {
+        'grados': grados_payload,
+        'secciones': secciones_payload,
+        'clases': clases_payload,
+        'horarios': horarios_payload
     }
 
 
@@ -516,7 +672,7 @@ def construir_matriz_horario_alumno(alumno):
     bloques = Horarios.query.options(
         joinedload(Horarios.clase).joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
     ).filter_by(id_seccion=alumno.id_seccion).all()
-    bloques = [bloque for bloque in bloques if bloque.id_clase in clases_permitidas]
+    bloques = [bloque for bloque in bloques if getattr(bloque, 'es_recreo', False) or bloque.id_clase in clases_permitidas]
 
     dias = []
     for fecha in dias_semana:
@@ -536,10 +692,10 @@ def construir_matriz_horario_alumno(alumno):
             'semana_corta': lunes.strftime('%Y')
         }
 
-    clases_ids = sorted({bloque.id_clase for bloque in bloques})
+    clases_ids = sorted({bloque.id_clase for bloque in bloques if bloque.id_clase})
     asistencias = Asistencias.query.filter(
         Asistencias.id_alumno == alumno.id_alumno,
-        Asistencias.id_clase.in_(clases_ids),
+        Asistencias.id_clase.in_(clases_ids or [0]),
         Asistencias.fecha >= lunes,
         Asistencias.fecha <= lunes + timedelta(days=4)
     ).all()
@@ -561,21 +717,31 @@ def construir_matriz_horario_alumno(alumno):
                 'celdas': {dia['db']: None for dia in dias}
             }
 
-        if bloque.id_clase not in color_por_clase:
-            color_por_clase[bloque.id_clase] = colores_base[indice % len(colores_base)]
-
-        fecha_bloque = lunes + timedelta(days=ordenar_dia_semana(bloque.dia_semana))
-        estado = asistencias_map.get((bloque.id_clase, fecha_bloque), 'Sin registro')
-        estado_ui = ESTADOS_ASISTENCIA_UI.get(estado, ESTADOS_ASISTENCIA_UI['Sin registro']).copy()
+        if getattr(bloque, 'es_recreo', False):
+            estado = 'Recreo'
+            estado_ui = {
+                'clase': 'estado-feriado',
+                'texto': 'Bloque de recreo',
+                'color': '#b45309',
+                'fondo': '#fffbeb',
+                'borde': '#fcd34d',
+                'icono': 'bi-cup-hot-fill'
+            }
+        else:
+            if bloque.id_clase not in color_por_clase:
+                color_por_clase[bloque.id_clase] = colores_base[indice % len(colores_base)]
+            fecha_bloque = lunes + timedelta(days=ordenar_dia_semana(bloque.dia_semana))
+            estado = asistencias_map.get((bloque.id_clase, fecha_bloque), 'Sin registro')
+            estado_ui = ESTADOS_ASISTENCIA_UI.get(estado, ESTADOS_ASISTENCIA_UI['Sin registro']).copy()
 
         maestro = None
         if bloque.clase and bloque.clase.maestro_titular and bloque.clase.maestro_titular.usuario:
             maestro = f"{bloque.clase.maestro_titular.usuario.nombre} {bloque.clase.maestro_titular.usuario.apellido}"
 
         filas_indexadas[clave]['celdas'][bloque.dia_semana] = {
-            'materia': bloque.clase.nombre_clase if bloque.clase else 'Clase',
-            'maestro': maestro,
-            'accent': color_por_clase[bloque.id_clase],
+            'materia': obtener_titulo_bloque_horario(bloque),
+            'maestro': maestro if not getattr(bloque, 'es_recreo', False) else 'Espacio de descanso',
+            'accent': '#f59e0b' if getattr(bloque, 'es_recreo', False) else color_por_clase[bloque.id_clase],
             'estado': estado,
             'estado_ui': estado_ui,
             'horario': describir_rango_hora(bloque.hora_inicio, bloque.hora_fin)
@@ -728,7 +894,9 @@ def maestro_dashboard():
     maestro_usuario = Usuarios.query.get(user_id) 
     perfil = Maestros.query.filter_by(id_usuario=user_id).first()
     
-    clases = Clases.query.filter_by(id_maestro=perfil.id_maestro).all() if perfil else []
+    clases = Clases.query.options(
+        joinedload(Clases.grado)
+    ).filter_by(id_maestro=perfil.id_maestro).order_by(Clases.id_grado.asc(), Clases.nombre_clase.asc()).all() if perfil else []
     ids_grados_maestro = list({clase.id_grado for clase in clases})
     anuncios_recibidos = Anuncios.query.filter(
         (Anuncios.dirigido_a.in_(['Todos', 'Maestros'])) |
@@ -738,17 +906,17 @@ def maestro_dashboard():
         id_usuario_autor=user_id
     ).order_by(Anuncios.fecha_publicacion.desc()).limit(5).all()
     
-    grados_data = []
-    ids_grados_vistos = set()
-    for c in clases:
-        if c.id_grado not in ids_grados_vistos:
-            grado = Grados.query.get(c.id_grado)
-            grados_data.append({'grado': grado, 'clases': [c]})
-            ids_grados_vistos.add(c.id_grado)
+    semestre_activo = obtener_semestre_activo()
+    clases_actuales = [
+        clase for clase in clases
+        if not grado_usa_semestres(clase.grado) or (clase.semestre or 'ANUAL').strip().upper() in {'ANUAL', semestre_activo}
+    ]
             
     return render_template('Panel_Maestro/maestro_dash.html', 
                            maestro=maestro_usuario, clases=clases, 
-                           total_clases=len(clases), grados_data=grados_data,
+                           total_clases=len(clases_actuales), semestre_activo=semestre_activo,
+                           etiqueta_semestre=etiqueta_semestre,
+                           grado_usa_semestres=grado_usa_semestres,
                            anuncios_recibidos=anuncios_recibidos, anuncios_enviados=anuncios_enviados)
 
 # --- GESTIÓN DE TAREAS CORREGIDA ---
@@ -1985,31 +2153,43 @@ def construir_clases_hoy_alumno(alumno):
         id_seccion=alumno.id_seccion,
         dia_semana=dia_actual
     ).order_by(Horarios.hora_inicio.asc()).all()
-    bloques = [bloque for bloque in bloques if bloque.id_clase in clases_permitidas]
+    bloques = [bloque for bloque in bloques if getattr(bloque, 'es_recreo', False) or bloque.id_clase in clases_permitidas]
 
     asistencias_hoy = Asistencias.query.filter(
         Asistencias.id_alumno == alumno.id_alumno,
         Asistencias.fecha == hoy,
-        Asistencias.id_clase.in_([bloque.id_clase for bloque in bloques] or [0])
+        Asistencias.id_clase.in_([bloque.id_clase for bloque in bloques if bloque.id_clase] or [0])
     ).all()
     asistencias_map = {asistencia.id_clase: asistencia.estado for asistencia in asistencias_hoy}
 
     colores_base = ['#4361ee', '#2ecc71', '#ff9f43', '#9b59b6', '#e74c3c', '#0ea5e9', '#14b8a6']
     bloques_data = []
     for indice, bloque in enumerate(bloques):
-        estado = asistencias_map.get(bloque.id_clase, 'Sin registro')
-        estado_ui = ESTADOS_ASISTENCIA_UI.get(estado, ESTADOS_ASISTENCIA_UI['Sin registro'])
+        if getattr(bloque, 'es_recreo', False):
+            estado = 'Recreo'
+            estado_ui = {
+                'clase': 'estado-feriado',
+                'texto': 'Bloque de recreo',
+                'color': '#b45309',
+                'fondo': '#fffbeb',
+                'borde': '#fcd34d',
+                'icono': 'bi-cup-hot-fill'
+            }
+        else:
+            estado = asistencias_map.get(bloque.id_clase, 'Sin registro')
+            estado_ui = ESTADOS_ASISTENCIA_UI.get(estado, ESTADOS_ASISTENCIA_UI['Sin registro'])
         bloques_data.append({
             'id_clase': bloque.id_clase,
-            'materia': bloque.clase.nombre_clase if bloque.clase else 'Clase',
+            'materia': obtener_titulo_bloque_horario(bloque),
             'maestro': (
                 f"{bloque.clase.maestro_titular.usuario.nombre} {bloque.clase.maestro_titular.usuario.apellido}"
                 if bloque.clase and bloque.clase.maestro_titular and bloque.clase.maestro_titular.usuario else 'Maestro pendiente'
-            ),
+            ) if not getattr(bloque, 'es_recreo', False) else 'Espacio de descanso',
             'hora': describir_rango_hora(bloque.hora_inicio, bloque.hora_fin),
-            'accent': colores_base[indice % len(colores_base)],
+            'accent': '#f59e0b' if getattr(bloque, 'es_recreo', False) else colores_base[indice % len(colores_base)],
             'estado': estado,
-            'estado_ui': estado_ui
+            'estado_ui': estado_ui,
+            'es_recreo': bool(getattr(bloque, 'es_recreo', False))
         })
 
     return {
@@ -2850,7 +3030,10 @@ def vista_nuevo_alumno():
     if session.get('rol') != 1: return redirect(url_for('login'))
     
     carnet_sugerido = generar_nuevo_carnet()
-    secciones = Secciones.query.options(joinedload(Secciones.grado)).all()
+    secciones = sorted(
+        Secciones.query.options(joinedload(Secciones.grado)).all(),
+        key=clave_orden_seccion
+    )
     
     return render_template('Admin_Panel/usuario_nuevo.html', 
                            active_tab='alumno', 
@@ -2902,6 +3085,15 @@ def gestion_usuarios():
         joinedload(Alumnos.usuario), 
         joinedload(Alumnos.seccion).joinedload(Secciones.grado)
     ).all()
+    alumnos = sorted(
+        alumnos,
+        key=lambda alumno: (
+            clave_orden_seccion(alumno.seccion),
+            ((alumno.usuario.apellido if alumno.usuario else '') or '').lower(),
+            ((alumno.usuario.nombre if alumno.usuario else '') or '').lower(),
+            alumno.id_alumno
+        )
+    )
     
     maestros = Maestros.query.options(
         joinedload(Maestros.usuario),
@@ -2940,7 +3132,10 @@ def editar_usuario(id_usuario):
             
         return redirect(url_for('gestion_usuarios', tab='alumnos'))
         
-    secciones = Secciones.query.all() 
+    secciones = sorted(
+        Secciones.query.options(joinedload(Secciones.grado)).all(),
+        key=clave_orden_seccion
+    ) 
         
     return render_template('Admin_Panel/editar_usuario.html', usuario=usuario, secciones=secciones)
 
@@ -3200,19 +3395,36 @@ def configuracion_academica():
 
     # --- LÓGICA PARA PETICIONES GET ---
     maestros_para_select = Maestros.query.options(joinedload(Maestros.usuario)).all()
-    todos_los_horarios = Horarios.query.order_by(Horarios.dia_semana, Horarios.hora_inicio).all()
+    grados_config = sorted(
+        Grados.query.all(),
+        key=lambda grado: (orden_academico_grado(grado.nombre_grado), (grado.nombre_grado or '').lower())
+    )
+    secciones_config = Secciones.query.options(joinedload(Secciones.grado)).order_by(
+        Secciones.id_grado.asc(),
+        Secciones.nombre_seccion.asc()
+    ).all()
+    todos_los_horarios = Horarios.query.options(
+        joinedload(Horarios.clase).joinedload(Clases.grado)
+    ).order_by(Horarios.dia_semana, Horarios.hora_inicio).all()
     clases_config = Clases.query.options(
         joinedload(Clases.grado),
         joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
     ).order_by(Clases.id_grado.asc(), Clases.nombre_clase.asc()).all()
+    horarios_admin_payload = construir_payload_horarios_admin(
+        grados_config,
+        secciones_config,
+        clases_config,
+        todos_los_horarios
+    )
     
     # Aquí pasamos la variable 'tab_activa' al HTML
     return render_template('Admin_Panel/configuracion_academica.html', 
-                           grados=Grados.query.all(), 
+                           grados=grados_config, 
                            clases=clases_config, 
-                           secciones=Secciones.query.all(), 
+                           secciones=secciones_config, 
                            maestros=maestros_para_select,
                            horarios=todos_los_horarios,
+                           horarios_admin_payload=horarios_admin_payload,
                            ciclos=CiclosLectivos.query.all(),
                            ciclo_activo=CiclosLectivos.query.filter_by(estado='ACTIVO').first(),
                            semestre_activo=obtener_semestre_activo(),
@@ -3220,6 +3432,228 @@ def configuracion_academica():
                            grado_usa_semestres=grado_usa_semestres,
                            etiqueta_semestre=etiqueta_semestre,
                            tab_activa=tab_actual)
+
+@app.route('/admin/configuracion/horarios/lote', methods=['POST'])
+def guardar_horarios_lote():
+    if session.get('rol') != 1:
+        return jsonify({'ok': False, 'mensaje': 'No autorizado.'}), 403
+
+    payload = request.get_json(silent=True) or {}
+    secciones_payload = payload.get('secciones') or []
+
+    if not secciones_payload:
+        return jsonify({'ok': False, 'mensaje': 'No se recibió ningún horario para guardar.'}), 400
+
+    try:
+        ids_seccion = []
+        for seccion_payload in secciones_payload:
+            id_seccion = int(seccion_payload.get('id_seccion'))
+            if id_seccion not in ids_seccion:
+                ids_seccion.append(id_seccion)
+
+        secciones_db = {
+            seccion.id_seccion: seccion
+            for seccion in Secciones.query.filter(Secciones.id_seccion.in_(ids_seccion)).all()
+        }
+        if len(secciones_db) != len(ids_seccion):
+            return jsonify({'ok': False, 'mensaje': 'Una de las secciones enviadas ya no existe.'}), 400
+
+        ids_clase = set()
+        for seccion_payload in secciones_payload:
+            for bloque in seccion_payload.get('bloques') or []:
+                if bloque.get('id_clase'):
+                    ids_clase.add(int(bloque.get('id_clase')))
+
+        clases_db = {}
+        if ids_clase:
+            clases_db = {
+                clase.id_clase: clase
+                for clase in Clases.query.options(joinedload(Clases.grado)).filter(Clases.id_clase.in_(ids_clase)).all()
+            }
+
+        bloques_externos = db.session.query(Horarios).options(
+            joinedload(Horarios.clase)
+        ).join(Clases).filter(~Horarios.id_seccion.in_(ids_seccion)).all()
+        conflictos_maestro_externos = defaultdict(list)
+        for bloque in bloques_externos:
+            if bloque.clase and bloque.clase.id_maestro:
+                conflictos_maestro_externos[bloque.clase.id_maestro].append({
+                    'id_seccion': bloque.id_seccion,
+                    'dia_semana': bloque.dia_semana,
+                    'hora_inicio': bloque.hora_inicio,
+                    'hora_fin': bloque.hora_fin
+                })
+
+        propuesta_por_seccion = {}
+        conflictos_maestro_payload = defaultdict(list)
+
+        for seccion_payload in secciones_payload:
+            id_seccion = int(seccion_payload.get('id_seccion'))
+            seccion = secciones_db[id_seccion]
+            propuesta = []
+
+            bloques = seccion_payload.get('bloques') or []
+            bloques_ordenados = sorted(
+                bloques,
+                key=lambda item: (
+                    ordenar_dia_semana(item.get('dia_semana')),
+                    item.get('hora_inicio') or '',
+                    item.get('hora_fin') or ''
+                )
+            )
+
+            for bloque_payload in bloques_ordenados:
+                es_recreo = bool(bloque_payload.get('es_recreo'))
+                nombre_bloque = (bloque_payload.get('nombre_bloque') or 'Recreo').strip()
+                id_clase = int(bloque_payload.get('id_clase')) if bloque_payload.get('id_clase') else None
+                dia_semana = (bloque_payload.get('dia_semana') or '').strip()
+                if dia_semana not in DIA_ORDEN:
+                    return jsonify({'ok': False, 'mensaje': f'Hay un día inválido en la sección {seccion.nombre_seccion}.'}), 400
+
+                clase = None if es_recreo else clases_db.get(id_clase)
+                if not es_recreo:
+                    if not clase:
+                        return jsonify({'ok': False, 'mensaje': 'Una de las materias seleccionadas ya no existe.'}), 400
+                    if clase.id_grado != seccion.id_grado:
+                        return jsonify({'ok': False, 'mensaje': f'La materia "{clase.nombre_clase}" no pertenece al grado de la sección {seccion.nombre_seccion}.'}), 400
+
+                hora_inicio = datetime.strptime((bloque_payload.get('hora_inicio') or '').strip(), '%H:%M').time()
+                hora_fin = datetime.strptime((bloque_payload.get('hora_fin') or '').strip(), '%H:%M').time()
+
+                if hora_fin <= hora_inicio:
+                    return jsonify({'ok': False, 'mensaje': f'El bloque {dia_semana} {hora_inicio.strftime("%H:%M")} debe terminar después de iniciar.'}), 400
+
+                conflicto_local = next((
+                    item for item in propuesta
+                    if item['dia_semana'] == dia_semana and existe_solapamiento(
+                        item['hora_inicio'], item['hora_fin'], hora_inicio, hora_fin
+                    )
+                ), None)
+                if conflicto_local:
+                    return jsonify({
+                        'ok': False,
+                        'mensaje': f'La sección {seccion.nombre_seccion} tiene bloques solapados en {dia_semana}.'
+                    }), 400
+
+                if clase and clase.id_maestro:
+                    for bloque_externo in conflictos_maestro_externos.get(clase.id_maestro, []):
+                        if bloque_externo['dia_semana'] == dia_semana and existe_solapamiento(
+                            bloque_externo['hora_inicio'], bloque_externo['hora_fin'], hora_inicio, hora_fin
+                        ):
+                            return jsonify({
+                                'ok': False,
+                                'mensaje': f'El maestro de "{clase.nombre_clase}" ya tiene otra clase asignada en ese horario.'
+                            }), 400
+
+                    for bloque_interno in conflictos_maestro_payload.get(clase.id_maestro, []):
+                        if bloque_interno['id_seccion'] != id_seccion and bloque_interno['dia_semana'] == dia_semana and existe_solapamiento(
+                            bloque_interno['hora_inicio'], bloque_interno['hora_fin'], hora_inicio, hora_fin
+                        ):
+                            return jsonify({
+                                'ok': False,
+                                'mensaje': 'Hay un choque de maestro entre secciones dentro del mismo guardado.'
+                            }), 400
+
+                    conflictos_maestro_payload[clase.id_maestro].append({
+                        'id_seccion': id_seccion,
+                        'dia_semana': dia_semana,
+                        'hora_inicio': hora_inicio,
+                        'hora_fin': hora_fin
+                    })
+
+                propuesta.append({
+                    'id_clase': id_clase,
+                    'es_recreo': es_recreo,
+                    'nombre_bloque': nombre_bloque if es_recreo else None,
+                    'dia_semana': dia_semana,
+                    'hora_inicio': hora_inicio,
+                    'hora_fin': hora_fin
+                })
+
+            propuesta_por_seccion[id_seccion] = propuesta
+
+        for id_seccion, propuesta in propuesta_por_seccion.items():
+            Horarios.query.filter_by(id_seccion=id_seccion).delete(synchronize_session=False)
+            for bloque in propuesta:
+                db.session.add(Horarios(
+                    id_clase=bloque['id_clase'],
+                    id_seccion=id_seccion,
+                    es_recreo=bloque.get('es_recreo', False),
+                    nombre_bloque=bloque.get('nombre_bloque'),
+                    dia_semana=bloque['dia_semana'],
+                    hora_inicio=bloque['hora_inicio'],
+                    hora_fin=bloque['hora_fin']
+                ))
+
+        db.session.commit()
+
+        horarios_actualizados = Horarios.query.options(
+            joinedload(Horarios.clase).joinedload(Clases.grado)
+        ).filter(Horarios.id_seccion.in_(ids_seccion)).order_by(
+            Horarios.id_seccion.asc(),
+            Horarios.dia_semana.asc(),
+            Horarios.hora_inicio.asc()
+        ).all()
+
+        return jsonify({
+            'ok': True,
+            'mensaje': 'Horario guardado correctamente sin recargar la página.',
+            'horarios': [serializar_horario_admin(horario) for horario in horarios_actualizados]
+        })
+    except ValueError:
+        db.session.rollback()
+        return jsonify({'ok': False, 'mensaje': 'Se recibió un bloque con horas inválidas.'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'ok': False, 'mensaje': f'No se pudo guardar el horario: {str(e)}'}), 500
+
+
+@app.route('/admin/configuracion/horarios/sincronizar', methods=['POST'])
+def sincronizar_horarios_admin_json():
+    if session.get('rol') != 1:
+        return jsonify({'ok': False, 'mensaje': 'No autorizado.'}), 403
+
+    payload = request.get_json(silent=True) or {}
+
+    try:
+        id_seccion_origen = int(payload.get('id_seccion_origen'))
+        sincronizacion = sincronizar_horarios_grado_desde_seccion(id_seccion_origen)
+
+        if not sincronizacion.get('ok'):
+            return jsonify(sincronizacion), 400
+
+        seccion_origen = Secciones.query.get(id_seccion_origen)
+        if not seccion_origen:
+            return jsonify({'ok': False, 'mensaje': 'No se encontró la sección base.'}), 404
+
+        ids_secciones_grado = [
+            seccion.id_seccion
+            for seccion in Secciones.query.filter_by(id_grado=seccion_origen.id_grado).all()
+        ]
+        horarios_actualizados = Horarios.query.options(
+            joinedload(Horarios.clase).joinedload(Clases.grado)
+        ).filter(Horarios.id_seccion.in_(ids_secciones_grado)).order_by(
+            Horarios.id_seccion.asc(),
+            Horarios.dia_semana.asc(),
+            Horarios.hora_inicio.asc()
+        ).all()
+
+        mensaje = 'Se regeneraron las demás secciones del grado.'
+        if sincronizacion.get('sincronizadas'):
+            mensaje = f"Se generó el horario para: {', '.join(sincronizacion['sincronizadas'])}."
+
+        if sincronizacion.get('omitidas'):
+            mensaje += f" Se omitieron por choques: {', '.join(sincronizacion['omitidas'])}."
+
+        return jsonify({
+            'ok': True,
+            'mensaje': mensaje,
+            'horarios': [serializar_horario_admin(horario) for horario in horarios_actualizados]
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'ok': False, 'mensaje': f'No se pudo sincronizar el grado: {str(e)}'}), 500
+
 
 #----------------------- LOGICA DE ELIMINACION -----------------------
 @app.route('/admin/configuracion/eliminar_grado/<int:id_grado>', methods=['POST'])

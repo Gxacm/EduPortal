@@ -65,11 +65,13 @@ class Secciones(db.Model):
 class Horarios(db.Model):
     __tablename__ = 'horarios'
     id_horario = db.Column(db.Integer, primary_key=True)
-    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=False)
+    id_clase = db.Column(db.Integer, db.ForeignKey('clases.id_clase', ondelete='CASCADE'), nullable=True)
     id_seccion = db.Column(db.Integer, db.ForeignKey('secciones.id_seccion', ondelete='CASCADE'), nullable=False)
     dia_semana = db.Column(db.String(15), nullable=False)
     hora_inicio = db.Column(db.Time, nullable=False)
     hora_fin = db.Column(db.Time, nullable=False)
+    es_recreo = db.Column(db.Boolean, nullable=False, default=False)
+    nombre_bloque = db.Column(db.String(100), nullable=True)
 
     clase = db.relationship(
         'Clases',

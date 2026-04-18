@@ -296,116 +296,47 @@
         </div>
 
         <div id="tab-horarios" class="tab-content">
-            <div class="grid-config">
-                
-                <div>
-                    <div class="m-card">
-                        <h3 class="m-section-title"><i class="bi bi-clock" style="margin-right: 5px;"></i> Crear Horario Base</h3>
-                        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Cuando guardes un bloque en una sección, el sistema intentará regenerar automáticamente las demás secciones del mismo grado con las mismas materias y sin chocar maestros.</p>
-                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST" data-academic-form>
-                            <input type="hidden" name="guardar_horario_manual" value="true">
-
-                            <label class="m-label">Seleccionar Sección</label>
-                            <select id="select-seccion" name="id_seccion" class="m-input" required onchange="filtrarMaterias()" data-label="Sección">
-                                <option value="" disabled selected>Selecciona la sección...</option>
-                                {% for s in secciones %}
-                                    <option value="{{ s.id_seccion }}" data-grado="{{ s.id_grado }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
-                                {% endfor %}
-                            </select>
-
-                            <label class="m-label" style="margin-top: 15px;">Seleccionar Clase</label>
-                            <select id="select-clase" name="id_clase" class="m-input" required disabled data-label="Clase">
-                                <option value="" disabled selected>Primero selecciona una sección...</option>
-                                {% for c in clases %}
-                                    <option value="{{ c.id_clase }}" data-grado="{{ c.id_grado }}">{{ c.nombre_clase }}</option>
-                                {% endfor %}
-                            </select>
-
-                            <label class="m-label" style="margin-top: 15px;">Días de la Semana</label>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; background: var(--bg); padding: 15px; border-radius: 14px;" data-required-checkbox-group data-label="Días de la Semana">
-                                {% for dia in ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'] %}
-                                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: var(--dark);">
-                                    <input type="checkbox" name="dias_seleccionados" value="{{ dia }}" style="accent-color: var(--accent-green);"> {{ dia }}
-                                </label>
-                                {% endfor %}
-                            </div>
-
-                            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                                <div style="flex: 1;">
-                                    <label class="m-label">Inicio</label>
-                                    <input type="time" name="hora_inicio" class="m-input" required data-label="Hora de Inicio">
-                                </div>
-                                <div style="flex: 1;">
-                                    <label class="m-label">Fin</label>
-                                    <input type="time" name="hora_fin" class="m-input" required data-label="Hora de Fin">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="m-btn-config">Asignar al Horario</button>
-                        </form>
+            <div class="m-card">
+                <div class="horario-admin-header">
+                    <div>
+                        <h3 class="m-section-title"><i class="bi bi-grid-1x2-fill" style="margin-right: 8px;"></i> Editor Inteligente de Horarios</h3>
+                        <p class="text-muted horario-admin-help">Selecciona un grado y edita su horario completo dentro de un popup con tabs por sección. Los cambios se mantienen en memoria y se guardan todos al mismo tiempo, sin recargar la página.</p>
                     </div>
-
-                    <div class="m-card" style="margin-top: 20px;">
-                        <h3 class="m-section-title"><i class="bi bi-magic" style="margin-right: 5px;"></i> Sincronización Inteligente</h3>
-                        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Usa una sección como horario base para regenerar automáticamente las demás secciones del mismo grado, reutilizando las materias ya configuradas y respetando la disponibilidad de los maestros.</p>
-                        
-                        <form action="{{ url_for('configuracion_academica') }}?tab=tab-horarios" method="POST" data-academic-form>
-                            
-                            <input type="hidden" name="sincronizar_grado" value="true">
-
-                            <label class="m-label">Sección Base</label>
-                            <select name="id_seccion_origen" class="m-input" required data-label="Sección Base">
-                                <option value="" disabled selected>Selecciona la sección base...</option>
-                                {% for s in secciones %}
-                                    <option value="{{ s.id_seccion }}">{{ s.nombre_seccion }} - {{ s.grado.nombre_grado }}</option>
-                                {% endfor %}
-                            </select>
-
-                            <div style="margin-top: 15px; padding: 14px 16px; border-radius: 14px; background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; font-size: 0.85rem; line-height: 1.5;">
-                                El sistema tomará esta sección como referencia y actualizará las demás secciones del mismo grado. Si hay choques de maestro, la sección conflictiva se conserva sin cambios.
-                            </div>
-
-                            <button type="submit" class="m-btn-config" style="background: var(--dark); margin-top: 20px;">
-                                <i class="bi bi-diagram-3-fill"></i> Sincronizar Todo el Grado
-                            </button>
-                        </form>
+                    <div class="horario-admin-badges">
+                        <span class="chip-glass"><i class="bi bi-lightning-charge-fill"></i> Guardado por lote</span>
+                        <span class="chip-glass" style="color: var(--dark);"><i class="bi bi-diagram-3"></i> Auto-generación</span>
                     </div>
                 </div>
 
-                <div class="m-card">
-                    <h3 class="m-section-title"><i class="bi bi-folder2-open" style="margin-right: 5px;"></i> Visor de Horarios</h3>
-                    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px;">Haz clic en un grado y luego selecciona la sección para ver su horario.</p>
-                    
-                    <div class="archivador-grados">
-                        {% for g in grados %}
-                        <div class="grado-folder">
-                            <div class="grado-folder-header" onclick="toggleAcordeon('grado-{{ g.id_grado }}')">
-                                <span><i class="bi bi-layers"style="margin-right: 5px;"></i> {{ g.nombre_grado }}</span>
-                                <i class="bi bi-chevron-down arrow-icon"></i>
-                            </div>
-                            
-                            <div id="grado-{{ g.id_grado }}" class="grado-folder-body">
-                                <div class="secciones-grid">
-                                    {% set ns = namespace(encontrada=false) %}
-                                    {% for s in secciones %}
-                                        {% if s.id_grado == g.id_grado %}
-                                            {% set ns.encontrada = true %}
-                                            <button class="btn-seccion" onclick="abrirVisorHorario('{{ s.id_seccion }}', '{{ s.nombre_seccion }}', '{{ g.nombre_grado }}')">
-                                                <i class="bi bi-grid-3x3-gap"></i> {{ s.nombre_seccion }}
-                                            </button>
-                                        {% endif %}
-                                    {% endfor %}
-                                    
-                                    {% if not ns.encontrada %}
-                                        <p class="text-muted" style="font-size: 0.8rem; padding: 10px;">No hay secciones.</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
+                <div class="horario-grade-grid">
+                    {% for g in grados %}
+                    {% set total_secciones = secciones|selectattr('id_grado', 'equalto', g.id_grado)|list|length %}
+                    {% set total_materias = clases|selectattr('id_grado', 'equalto', g.id_grado)|list|length %}
+                    <button type="button" class="horario-grade-card" onclick="abrirEditorHorario('{{ g.id_grado }}')">
+                        <span class="horario-grade-icon"><i class="bi bi-journal-richtext"></i></span>
+                        <span class="horario-grade-main">
+                            <strong>{{ g.nombre_grado }}</strong>
+                            <small>{{ total_secciones }} secciones · {{ total_materias }} materias</small>
+                        </span>
+                        <span class="horario-grade-arrow"><i class="bi bi-arrow-right"></i></span>
+                    </button>
+                    {% endfor %}
                 </div>
 
+                <div class="horario-admin-tips">
+                    <article class="horario-tip-card">
+                        <strong>Cómo funciona</strong>
+                        <p>Abres un grado, eliges la sección en tabs, agregas bloques horarios y asignas materias a las casillas que quieras.</p>
+                    </article>
+                    <article class="horario-tip-card">
+                        <strong>Más eficiente</strong>
+                        <p>No se guarda bloque por bloque. Puedes preparar varias secciones y persistir todo en un solo guardado.</p>
+                    </article>
+                    <article class="horario-tip-card">
+                        <strong>Automatización</strong>
+                        <p>Desde una sección base puedes regenerar las demás secciones del grado usando las mismas materias de forma automática.</p>
+                    </article>
+                </div>
             </div>
         </div>
 
@@ -549,11 +480,13 @@
                 </button>
             </div>
 
-            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <div id="visorHorarioGrid" class="visor-horario-grid"></div>
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-top: 18px;">
                 <table class="m-table">
                     <thead>
                         <tr>
-                            <th>Día / Clase</th>
+                            <th>Materia</th>
+                            <th>Día</th>
                             <th>Horario</th>
                             <th style="text-align: right;">Acciones</th>
                         </tr>
@@ -565,6 +498,105 @@
             
             <div style="margin-top: 20px; text-align: right;">
                 <button type="button" onclick="cerrarVisor()" class="btn-cancel" style="width: auto; padding: 10px 20px;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalHorarioEditor" class="modal-overlay">
+        <div class="modal-card horario-editor-modal">
+            <div class="horario-editor-head">
+                <div>
+                    <h3 class="m-section-title" style="margin-bottom: 6px;" id="horarioEditorTitulo">Horario por grado</h3>
+                    <p class="text-muted" id="horarioEditorSubtitulo" style="margin: 0;">Edita todas las secciones sin recargar la página.</p>
+                </div>
+                <div class="horario-editor-head-actions">
+                    <span class="chip-glass" id="horarioEditorEstado">Sin cambios</span>
+                    <button type="button" onclick="cerrarEditorHorario()" class="btn-icon" style="background: var(--bg); color: var(--dark);">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="horario-editor-tabs" id="horarioEditorTabs"></div>
+
+            <div class="horario-editor-layout">
+                <div class="horario-editor-main">
+                    <div class="horario-toolbar">
+                        <div class="horario-toolbar-times">
+                            <div>
+                                <label class="m-label">Inicio</label>
+                                <input type="time" id="horarioNuevoInicio" class="m-input">
+                            </div>
+                            <div>
+                                <label class="m-label">Fin</label>
+                                <input type="time" id="horarioNuevoFin" class="m-input">
+                            </div>
+                            <button type="button" class="btn-toolbar-primary" onclick="agregarFilaHorario()">
+                                <i class="bi bi-plus-lg"></i> Agregar bloque
+                            </button>
+                        </div>
+                        <div class="horario-toolbar-actions">
+                            <button type="button" class="btn-toolbar-secondary" onclick="sincronizarDesdeSeccionActiva()">
+                                <i class="bi bi-diagram-3"></i> Auto-generar secciones
+                            </button>
+                            <button type="button" class="btn-toolbar-ghost" onclick="vaciarSeccionActiva()">
+                                <i class="bi bi-eraser"></i> Vaciar sección
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="horario-selection-bar">
+                        <span id="horarioSelectionLabel">Selecciona una o varias casillas del grid para asignar una materia.</span>
+                    </div>
+
+                    <div class="horario-grid-shell">
+                        <div id="horarioEditorGrid" class="horario-editor-grid"></div>
+                    </div>
+                </div>
+
+                <aside class="horario-editor-side">
+                    <div class="horario-side-card">
+                        <h4>Asignar materia</h4>
+                        <p class="text-muted">Las materias disponibles se filtran automáticamente por el grado activo.</p>
+                        <label class="m-label" style="margin-top: 14px;">Materia</label>
+                        <select id="horarioClaseSelect" class="m-input"></select>
+                        <div class="horario-side-actions">
+                            <button type="button" class="m-btn-config" style="margin-top: 0;" onclick="aplicarMateriaSeleccionada()">
+                                Aplicar a selección
+                            </button>
+                            <button type="button" class="btn-toolbar-ghost" onclick="limpiarSeleccionHorario()">
+                                Limpiar casillas seleccionadas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="horario-side-card">
+                        <h4>Bloque especial</h4>
+                        <p class="text-muted">Marca la selección como recreo o descanso sin asociarla a una materia.</p>
+                        <label class="m-label" style="margin-top: 14px;">Nombre del bloque</label>
+                        <input type="text" id="horarioNombreRecreo" class="m-input" value="Recreo" maxlength="100" placeholder="Ej. Recreo o Almuerzo">
+                        <div class="horario-side-actions">
+                            <button type="button" class="btn-toolbar-secondary" onclick="aplicarRecreoSeleccionado()">
+                                <i class="bi bi-cup-hot"></i> Aplicar recreo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="horario-side-card">
+                        <h4>Resumen</h4>
+                        <div class="horario-resumen" id="horarioResumenSeccion"></div>
+                    </div>
+                </aside>
+            </div>
+
+            <div class="horario-editor-footer">
+                <div class="text-muted" id="horarioFooterMensaje">Los cambios quedan pendientes hasta que presiones guardar.</div>
+                <div class="horario-footer-actions">
+                    <button type="button" class="btn-cancel" style="width: auto; padding: 12px 20px;" onclick="cerrarEditorHorario()">Cerrar</button>
+                    <button type="button" class="m-btn-config" style="width: auto; margin-top: 0; padding: 12px 22px;" onclick="guardarHorariosDelGrado()">
+                        <i class="bi bi-save2-fill"></i> Guardar todo el grado
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -817,6 +849,371 @@
     }
     .materias-empty { text-align: center; padding: 28px 20px; color: var(--muted); background: #f8fafc; border: 1px dashed #dbe4f0; border-radius: 18px; font-weight: 700; }
 
+    .horario-admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 22px;
+    }
+    .horario-admin-help { max-width: 720px; margin: 0; font-size: 0.9rem; line-height: 1.6; }
+    .horario-admin-badges {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    .horario-grade-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+    .horario-grade-card {
+        border: 1px solid #e5edf6;
+        border-radius: 22px;
+        background: #fbfdff;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        cursor: pointer;
+        font: inherit;
+        text-align: left;
+        color: var(--dark);
+        transition: 0.22s ease;
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.04);
+    }
+    .horario-grade-card:hover {
+        transform: translateY(-2px);
+        border-color: #b8e2d1;
+        box-shadow: 0 16px 30px rgba(5, 150, 105, 0.12);
+    }
+    .horario-grade-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ecfdf5;
+        color: var(--accent-green);
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+    .horario-grade-main {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+        flex: 1;
+    }
+    .horario-grade-main strong { font-size: 1rem; }
+    .horario-grade-main small { color: var(--muted); font-weight: 700; }
+    .horario-grade-arrow { color: var(--muted); font-size: 1rem; }
+    .horario-admin-tips {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+    }
+    .horario-tip-card {
+        border: 1px solid #edf2f7;
+        background: #f8fafc;
+        border-radius: 18px;
+        padding: 18px;
+    }
+    .horario-tip-card strong {
+        display: block;
+        color: var(--dark);
+        margin-bottom: 8px;
+    }
+    .horario-tip-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.55;
+    }
+    .horario-editor-modal {
+        display: flex;
+        flex-direction: column;
+    }
+    .horario-editor-head,
+    .horario-editor-footer {
+        padding: 22px 24px;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+    .horario-editor-footer {
+        border-bottom: none;
+        border-top: 1px solid #edf2f7;
+    }
+    .horario-editor-head-actions,
+    .horario-footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .horario-editor-tabs {
+        padding: 0 24px 18px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid #edf2f7;
+    }
+    .horario-editor-tab {
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: var(--dark);
+        border-radius: 999px;
+        padding: 10px 16px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+    .horario-editor-tab.active {
+        background: var(--accent-green);
+        color: white;
+        border-color: var(--accent-green);
+        box-shadow: 0 10px 18px rgba(5, 150, 105, 0.18);
+    }
+    .horario-editor-layout {
+        padding: 22px 24px;
+        display: grid;
+        grid-template-columns: minmax(0, 2.15fr) minmax(280px, 0.72fr);
+        gap: 20px;
+        overflow: auto;
+        flex: 1;
+        min-height: 0;
+        align-items: start;
+    }
+    .horario-editor-main,
+    .horario-editor-side { min-width: 0; min-height: 0; }
+    .horario-toolbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+    }
+    .horario-toolbar-times,
+    .horario-toolbar-actions,
+    .horario-side-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+    }
+    .horario-side-actions { margin-top: 14px; }
+    .btn-toolbar-primary,
+    .btn-toolbar-secondary,
+    .btn-toolbar-ghost {
+        border: none;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+    .btn-toolbar-primary { background: var(--accent-green); color: white; }
+    .btn-toolbar-secondary { background: #eaf6ef; color: #0f6d49; }
+    .btn-toolbar-ghost { background: #f8fafc; color: var(--dark); border: 1px solid #e2e8f0; }
+    .horario-selection-bar {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #f8fafc;
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 0.84rem;
+        margin-bottom: 14px;
+    }
+    .horario-grid-shell {
+        border: 1px solid #edf2f7;
+        border-radius: 20px;
+        padding: 14px;
+        background: #fbfdff;
+        overflow: auto;
+        max-height: 70vh;
+    }
+    .horario-editor-grid {
+        display: grid;
+        grid-template-columns: 130px repeat(5, minmax(140px, 1fr));
+        gap: 10px;
+        min-width: 880px;
+    }
+    .horario-grid-head,
+    .horario-grid-time {
+        border-radius: 14px;
+        padding: 12px;
+        text-align: center;
+        font-weight: 800;
+    }
+    .horario-grid-head {
+        background: #f1f5f9;
+        color: var(--muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+    }
+    .horario-grid-time {
+        background: white;
+        border: 1px solid #e7edf5;
+        color: var(--dark);
+        font-size: 0.82rem;
+        display: grid;
+        gap: 10px;
+        align-content: center;
+        justify-items: center;
+        min-height: 136px;
+    }
+    .horario-remove-row {
+        border: none;
+        background: #fee2e2;
+        color: #ef4444;
+        border-radius: 999px;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .horario-grid-cell {
+        min-height: 136px;
+        border-radius: 16px;
+        border: 1px dashed #d7e3ef;
+        background: white;
+        padding: 12px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+        cursor: pointer;
+        transition: 0.18s ease;
+    }
+    .horario-grid-cell:hover { border-color: #8fd1b4; transform: translateY(-1px); }
+    .horario-grid-cell.selected {
+        border-style: solid;
+        border-color: var(--accent-green);
+        background: #ecfdf5;
+        box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.12);
+    }
+    .horario-grid-cell.empty {
+        color: var(--muted);
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        font-size: 0.82rem;
+    }
+    .horario-cell-block {
+        display: grid;
+        gap: 6px;
+        width: 100%;
+    }
+    .horario-cell-block strong {
+        font-size: 0.9rem;
+        line-height: 1.35;
+        color: var(--dark);
+    }
+    .horario-cell-block small {
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.45;
+    }
+    .horario-editor-side {
+        display: grid;
+        gap: 16px;
+        align-content: start;
+    }
+    .horario-side-card {
+        border: 1px solid #edf2f7;
+        background: #fbfdff;
+        border-radius: 20px;
+        padding: 18px;
+    }
+    .horario-side-card h4 {
+        margin: 0 0 8px;
+        color: var(--dark);
+        font-size: 1rem;
+    }
+    .horario-side-card p {
+        margin: 0;
+        font-size: 0.86rem;
+        line-height: 1.55;
+    }
+    .horario-resumen {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .horario-resumen-item {
+        border: 1px solid #e5edf6;
+        border-radius: 14px;
+        padding: 12px 14px;
+        background: white;
+        color: var(--dark);
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+    .horario-empty-grid {
+        grid-column: 1 / -1;
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--muted);
+        background: white;
+        border: 1px dashed #dbe4f0;
+        border-radius: 18px;
+        padding: 20px;
+        font-weight: 700;
+    }
+    .horario-status-saving { color: #0f6d49; background: #ecfdf5; }
+    .horario-status-dirty { color: #9a6700; background: #fff7ed; }
+    .horario-status-clean { color: var(--dark); }
+    @media (max-width: 1180px) {
+        .horario-editor-layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+        .horario-admin-header { flex-direction: column; }
+        .horario-editor-head,
+        .horario-editor-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .horario-editor-head-actions,
+        .horario-footer-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .horario-editor-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 14px;
+        }
+        .horario-editor-tab {
+            flex: 0 0 auto;
+        }
+    }
+    @media (max-width: 720px) {
+        .horario-editor-layout,
+        .horario-editor-head,
+        .horario-editor-tabs,
+        .horario-editor-footer {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+        .horario-toolbar-times,
+        .horario-toolbar-actions,
+        .horario-side-actions {
+            width: 100%;
+        }
+        .horario-toolbar-times > div {
+            flex: 1 1 140px;
+        }
+    }
+
     .table-responsive { overflow-x: auto; }
     .m-table { width: 100%; border-collapse: collapse; }
     .m-table th { text-align: left; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid var(--bg); }
@@ -833,10 +1230,19 @@
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
         background: rgba(43, 54, 116, 0.2); backdrop-filter: blur(8px); 
         display: none; align-items: center; justify-content: center; z-index: 1000; 
+        padding: 20px;
+        box-sizing: border-box;
     }
     .modal-card { 
         background: white; padding: 2.5rem; border-radius: 30px; 
         width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
+    }
+    .modal-card.horario-editor-modal {
+        width: min(1240px, 96vw);
+        max-height: 92vh;
+        text-align: left;
+        padding: 0;
+        overflow: hidden;
     }
     .modal-alert-icon { font-size: 3rem; color: #ef4444; margin-bottom: 1rem; }
     .modal-desc { color: #a3aed0; margin-top: 10px; line-height: 1.5; }
@@ -869,6 +1275,73 @@
         display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;
     }
     .btn-seccion:hover { background: var(--dark); color: white; transform: translateY(-2px); }
+    .visor-horario-grid {
+        display: grid;
+        grid-template-columns: 110px repeat(5, 1fr);
+        gap: 10px;
+        align-items: stretch;
+    }
+    .visor-grid-head {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #f8fafc;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        text-align: center;
+    }
+    .visor-grid-time {
+        padding: 12px;
+        border-radius: 14px;
+        background: #f1f5f9;
+        color: var(--dark);
+        font-size: 0.78rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    .visor-grid-cell {
+        min-height: 82px;
+        border-radius: 16px;
+        border: 1px dashed #dbe5f0;
+        background: #fbfdff;
+        padding: 10px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+    .visor-grid-empty {
+        width: 100%;
+        color: #a3aed0;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .visor-grid-block {
+        width: 100%;
+        border-radius: 14px;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: var(--dark);
+        padding: 10px;
+    }
+    .visor-grid-block strong {
+        display: block;
+        font-size: 0.82rem;
+        margin-bottom: 4px;
+    }
+    .visor-grid-block span {
+        display: block;
+        font-size: 0.7rem;
+        color: #047857;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
     @media (max-width: 720px) {
         .materias-header,
         .materia-item,
@@ -966,17 +1439,78 @@
     window.onclick = function(event) {
         let modalDelete = document.getElementById('modalDelete');
         let modalVisor = document.getElementById('modalVisor');
+        let modalHorarioEditor = document.getElementById('modalHorarioEditor');
         if (event.target == modalDelete) {
             cerrarModal();
         }
         if (event.target == modalVisor) {
             cerrarVisor();
         }
+        if (event.target == modalHorarioEditor) {
+            cerrarEditorHorario();
+        }
+    }
+
+    function actualizarOpcionesPorGrado(selectDestino, placeholder, idGradoObjetivo) {
+        if (!selectDestino) return;
+
+        selectDestino.disabled = !idGradoObjetivo;
+        selectDestino.value = "";
+
+        const opciones = selectDestino.querySelectorAll('option');
+        let visibles = 0;
+
+        opciones.forEach(option => {
+            const gradoOption = option.getAttribute('data-grado');
+
+            if (!gradoOption) {
+                option.textContent = idGradoObjetivo ? placeholder : 'Primero selecciona un grado...';
+                option.style.display = 'block';
+                return;
+            }
+
+            if (gradoOption === idGradoObjetivo) {
+                option.style.display = 'block';
+                visibles += 1;
+            } else {
+                option.style.display = 'none';
+            }
+        });
+
+        if (visibles === 0 && opciones[0]) {
+            opciones[0].textContent = 'No hay opciones para este grado';
+        }
+    }
+
+    function filtrarSeccionesHorario() {
+        const selectGrado = document.getElementById('select-grado-horario');
+        const selectSeccion = document.getElementById('select-seccion');
+        const selectClase = document.getElementById('select-clase');
+
+        const idGradoObjetivo = selectGrado ? selectGrado.value : '';
+        actualizarOpcionesPorGrado(selectSeccion, 'Selecciona la sección...', idGradoObjetivo);
+        actualizarOpcionesPorGrado(selectClase, 'Primero selecciona una sección...', '');
+        if (selectClase) selectClase.disabled = true;
+    }
+
+    function filtrarSeccionesSync() {
+        const selectGrado = document.getElementById('select-grado-sync');
+        const selectSeccionSync = document.getElementById('select-seccion-sync');
+        const idGradoObjetivo = selectGrado ? selectGrado.value : '';
+        actualizarOpcionesPorGrado(selectSeccionSync, 'Selecciona la sección base...', idGradoObjetivo);
     }
 
     function filtrarMaterias() {
         const selectSeccion = document.getElementById('select-seccion');
         const selectClase = document.getElementById('select-clase');
+
+        if (!selectSeccion || !selectClase || !selectSeccion.value) {
+            if (selectClase) {
+                selectClase.disabled = true;
+                selectClase.value = "";
+            }
+            return;
+        }
         
         const optionSeleccionada = selectSeccion.options[selectSeccion.selectedIndex];
         const idGradoObjetivo = optionSeleccionada.getAttribute('data-grado');
@@ -1025,7 +1559,7 @@
 
         for (const control of controls) {
             if (control.disabled) {
-                return control;
+                continue;
             }
 
             const tipo = (control.type || '').toLowerCase();
@@ -1165,6 +1699,556 @@
         });
     }
 
+    const horarioAdminData = {{ horarios_admin_payload|tojson }};
+    const HORARIO_DIAS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
+    const horarioEditorState = {
+        currentGradeId: null,
+        activeSectionId: null,
+        draftBlocksBySection: {},
+        baseBlocksBySection: {},
+        draftSlotsBySection: {},
+        baseSlotsBySection: {},
+        selectedCells: [],
+        isSaving: false
+    };
+
+    function clonarData(data) {
+        return JSON.parse(JSON.stringify(data));
+    }
+
+    function normalizarId(valor) {
+        return valor == null ? '' : String(valor);
+    }
+
+    function construirSlotsDesdeBloques(bloques) {
+        const mapa = new Map();
+        (bloques || []).forEach(bloque => {
+            const clave = `${bloque.hora_inicio}|${bloque.hora_fin}`;
+            if (!mapa.has(clave)) {
+                mapa.set(clave, { hora_inicio: bloque.hora_inicio, hora_fin: bloque.hora_fin });
+            }
+        });
+
+        return Array.from(mapa.values()).sort((a, b) =>
+            `${a.hora_inicio}-${a.hora_fin}`.localeCompare(`${b.hora_inicio}-${b.hora_fin}`)
+        );
+    }
+
+    function asegurarDraftSeccion(idSeccion) {
+        const idNormalizado = normalizarId(idSeccion);
+        if (!horarioEditorState.baseBlocksBySection[idNormalizado]) {
+const bloquesIniciales = horarioAdminData.horarios
+                .filter(h => normalizarId(h.id_seccion) === idNormalizado)
+                .map(h => ({
+                    id_clase: normalizarId(h.id_clase),
+                    es_recreo: !!h.es_recreo,
+                    nombre_bloque: h.nombre_bloque || 'Recreo',
+                    dia_semana: h.dia_semana,
+                    hora_inicio: h.hora_inicio,
+                    hora_fin: h.hora_fin
+                }));
+
+            const slotsIniciales = construirSlotsDesdeBloques(bloquesIniciales);
+            horarioEditorState.baseBlocksBySection[idNormalizado] = clonarData(bloquesIniciales);
+            horarioEditorState.draftBlocksBySection[idNormalizado] = clonarData(bloquesIniciales);
+            horarioEditorState.baseSlotsBySection[idNormalizado] = clonarData(slotsIniciales);
+            horarioEditorState.draftSlotsBySection[idNormalizado] = clonarData(slotsIniciales);
+        }
+    }
+
+    function obtenerSeccionesDeGrado(idGrado) {
+        return horarioAdminData.secciones.filter(s => normalizarId(s.id_grado) === normalizarId(idGrado));
+    }
+
+    function obtenerClasesDeGrado(idGrado) {
+        return horarioAdminData.clases.filter(c => normalizarId(c.id_grado) === normalizarId(idGrado));
+    }
+
+    function obtenerBloquesDraft(idSeccion) {
+        asegurarDraftSeccion(idSeccion);
+        return horarioEditorState.draftBlocksBySection[normalizarId(idSeccion)] || [];
+    }
+
+    function obtenerSlotsDraft(idSeccion) {
+        asegurarDraftSeccion(idSeccion);
+        return horarioEditorState.draftSlotsBySection[normalizarId(idSeccion)] || [];
+    }
+
+    function obtenerClaveCelda(dia, inicio, fin) {
+        return `${dia}|${inicio}|${fin}`;
+    }
+
+    function obtenerBloqueEnCelda(idSeccion, dia, inicio, fin) {
+        return obtenerBloquesDraft(idSeccion).find(
+            bloque => bloque.dia_semana === dia && bloque.hora_inicio === inicio && bloque.hora_fin === fin
+        );
+    }
+
+    function hayCambiosEnSeccion(idSeccion) {
+        const idNormalizado = normalizarId(idSeccion);
+        asegurarDraftSeccion(idNormalizado);
+        return JSON.stringify(horarioEditorState.draftBlocksBySection[idNormalizado]) !== JSON.stringify(horarioEditorState.baseBlocksBySection[idNormalizado])
+            || JSON.stringify(horarioEditorState.draftSlotsBySection[idNormalizado]) !== JSON.stringify(horarioEditorState.baseSlotsBySection[idNormalizado]);
+    }
+
+    function abrirEditorHorario(idGrado) {
+        const grado = horarioAdminData.grados.find(g => normalizarId(g.id_grado) === normalizarId(idGrado));
+        const secciones = obtenerSeccionesDeGrado(idGrado);
+        if (!grado || secciones.length === 0) {
+            alert('Este grado no tiene secciones registradas todavía.');
+            return;
+        }
+
+        horarioEditorState.currentGradeId = normalizarId(idGrado);
+        secciones.forEach(seccion => asegurarDraftSeccion(seccion.id_seccion));
+
+        if (!secciones.some(seccion => normalizarId(seccion.id_seccion) === horarioEditorState.activeSectionId)) {
+            horarioEditorState.activeSectionId = normalizarId(secciones[0].id_seccion);
+        }
+
+        document.getElementById('horarioEditorTitulo').textContent = `Horario de ${grado.nombre_grado}`;
+        document.getElementById('horarioEditorSubtitulo').textContent = 'Administra todas las secciones desde un solo editor por lote.';
+        document.getElementById('modalHorarioEditor').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        renderTabsHorarioEditor();
+        renderSelectMateriasHorario();
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function cerrarEditorHorario() {
+        document.getElementById('modalHorarioEditor').style.display = 'none';
+        document.body.style.overflow = '';
+        horarioEditorState.selectedCells = [];
+    }
+
+    function renderTabsHorarioEditor() {
+        const contenedor = document.getElementById('horarioEditorTabs');
+        const secciones = obtenerSeccionesDeGrado(horarioEditorState.currentGradeId);
+        contenedor.innerHTML = secciones.map(seccion => `
+            <button type="button"
+                    class="horario-editor-tab ${normalizarId(seccion.id_seccion) === horarioEditorState.activeSectionId ? 'active' : ''}"
+                    onclick="activarSeccionHorario('${seccion.id_seccion}')">
+                Sección ${seccion.nombre_seccion}
+            </button>
+        `).join('');
+    }
+
+    function activarSeccionHorario(idSeccion) {
+        horarioEditorState.activeSectionId = normalizarId(idSeccion);
+        horarioEditorState.selectedCells = [];
+        renderTabsHorarioEditor();
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        renderSelectMateriasHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function renderSelectMateriasHorario() {
+        const select = document.getElementById('horarioClaseSelect');
+        const clases = obtenerClasesDeGrado(horarioEditorState.currentGradeId);
+        select.innerHTML = `<option value="">Selecciona una materia...</option>` + clases.map(clase => `
+            <option value="${clase.id_clase}">${clase.label}</option>
+        `).join('');
+    }
+
+    function renderGridHorarioEditor() {
+        const contenedor = document.getElementById('horarioEditorGrid');
+        const slots = obtenerSlotsDraft(horarioEditorState.activeSectionId);
+        const seccion = horarioAdminData.secciones.find(s => normalizarId(s.id_seccion) === horarioEditorState.activeSectionId);
+        const selectionLabel = document.getElementById('horarioSelectionLabel');
+
+        if (!slots.length) {
+            contenedor.innerHTML = `
+                <div class="horario-empty-grid">
+                    La sección ${seccion ? seccion.nombre_seccion : ''} aún no tiene bloques. Agrega un bloque horario para empezar a asignar materias.
+                </div>
+            `;
+            selectionLabel.textContent = 'Agrega un bloque horario para poder seleccionar casillas.';
+            return;
+        }
+
+        selectionLabel.textContent = horarioEditorState.selectedCells.length
+            ? `${horarioEditorState.selectedCells.length} casilla(s) seleccionada(s).`
+            : 'Selecciona una o varias casillas del grid para asignar una materia.';
+
+        let html = '<div class="horario-grid-head">Bloque</div>';
+        HORARIO_DIAS.forEach(dia => {
+            html += `<div class="horario-grid-head">${dia}</div>`;
+        });
+
+        slots.forEach(slot => {
+            html += `
+                <div class="horario-grid-time">
+                    <span>${slot.hora_inicio} - ${slot.hora_fin}</span>
+                    <button type="button" class="horario-remove-row" onclick="eliminarFilaHorario('${slot.hora_inicio}', '${slot.hora_fin}')">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            `;
+
+            HORARIO_DIAS.forEach(dia => {
+                const clave = obtenerClaveCelda(dia, slot.hora_inicio, slot.hora_fin);
+                const bloque = obtenerBloqueEnCelda(horarioEditorState.activeSectionId, dia, slot.hora_inicio, slot.hora_fin);
+                const estaSeleccionada = horarioEditorState.selectedCells.includes(clave);
+                const clase = bloque
+                    ? horarioAdminData.clases.find(item => normalizarId(item.id_clase) === normalizarId(bloque.id_clase))
+                    : null;
+                const semestreInfo = clase && clase.label !== clase.nombre_clase
+                    ? clase.label.replace(`${clase.nombre_clase} - `, '')
+                    : '';
+                const tituloBloque = bloque && bloque.es_recreo ? (bloque.nombre_bloque || 'Recreo') : '';
+
+                html += `
+                    <button type="button"
+                            class="horario-grid-cell ${estaSeleccionada ? 'selected' : ''} ${bloque ? '' : 'empty'}"
+                            onclick="toggleCeldaHorario('${dia}', '${slot.hora_inicio}', '${slot.hora_fin}')">
+                        ${bloque && clase ? `
+                            <span class="horario-cell-block">
+                                <strong>${clase.nombre_clase}</strong>
+                                <small>${clase.maestro}</small>
+                                ${semestreInfo ? `<small>${semestreInfo}</small>` : ''}
+                            </span>
+                        ` : bloque && bloque.es_recreo ? `
+                            <span class="horario-cell-block">
+                                <strong>${tituloBloque}</strong>
+                                <small>Bloque especial</small>
+                                <small>Sin asistencia</small>
+                            </span>
+                        ` : '<span>Libre</span>'}
+                    </button>
+                `;
+            });
+        });
+
+        contenedor.innerHTML = html;
+    }
+
+    function toggleCeldaHorario(dia, inicio, fin) {
+        const clave = obtenerClaveCelda(dia, inicio, fin);
+        const index = horarioEditorState.selectedCells.indexOf(clave);
+        if (index >= 0) {
+            horarioEditorState.selectedCells.splice(index, 1);
+        } else {
+            horarioEditorState.selectedCells.push(clave);
+        }
+        renderGridHorarioEditor();
+    }
+
+    function agregarFilaHorario() {
+        const inputInicio = document.getElementById('horarioNuevoInicio');
+        const inputFin = document.getElementById('horarioNuevoFin');
+        const horaInicio = inputInicio.value;
+        const horaFin = inputFin.value;
+
+        if (!horaInicio || !horaFin) {
+            alert('Debes completar la hora de inicio y fin del bloque.');
+            return;
+        }
+        if (horaFin <= horaInicio) {
+            alert('La hora de fin debe ser posterior a la hora de inicio.');
+            return;
+        }
+
+        const slots = obtenerSlotsDraft(horarioEditorState.activeSectionId);
+        const existe = slots.some(slot => slot.hora_inicio === horaInicio && slot.hora_fin === horaFin);
+        if (existe) {
+            alert('Ese bloque horario ya existe en la sección activa.');
+            return;
+        }
+
+        const solapado = slots.some(slot => horaInicio < slot.hora_fin && horaFin > slot.hora_inicio);
+        if (solapado) {
+            alert('El nuevo bloque se solapa con otro bloque ya creado en esta sección.');
+            return;
+        }
+
+        slots.push({ hora_inicio: horaInicio, hora_fin: horaFin });
+        slots.sort((a, b) => `${a.hora_inicio}-${a.hora_fin}`.localeCompare(`${b.hora_inicio}-${b.hora_fin}`));
+        inputInicio.value = '';
+        inputFin.value = '';
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function eliminarFilaHorario(inicio, fin) {
+        const slots = obtenerSlotsDraft(horarioEditorState.activeSectionId);
+        const bloques = obtenerBloquesDraft(horarioEditorState.activeSectionId);
+        horarioEditorState.draftSlotsBySection[horarioEditorState.activeSectionId] = slots.filter(
+            slot => !(slot.hora_inicio === inicio && slot.hora_fin === fin)
+        );
+        horarioEditorState.draftBlocksBySection[horarioEditorState.activeSectionId] = bloques.filter(
+            bloque => !(bloque.hora_inicio === inicio && bloque.hora_fin === fin)
+        );
+        horarioEditorState.selectedCells = horarioEditorState.selectedCells.filter(
+            clave => !clave.endsWith(`|${inicio}|${fin}`)
+        );
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function aplicarMateriaSeleccionada() {
+        const select = document.getElementById('horarioClaseSelect');
+        const idClase = select.value;
+
+        if (!horarioEditorState.selectedCells.length) {
+            alert('Selecciona al menos una casilla del horario.');
+            return;
+        }
+        if (!idClase) {
+            alert('Selecciona la materia que quieres asignar.');
+            return;
+        }
+
+        const bloques = obtenerBloquesDraft(horarioEditorState.activeSectionId);
+        horarioEditorState.selectedCells.forEach(clave => {
+            const [dia, inicio, fin] = clave.split('|');
+            const index = bloques.findIndex(
+                bloque => bloque.dia_semana === dia && bloque.hora_inicio === inicio && bloque.hora_fin === fin
+            );
+            if (index >= 0) {
+                bloques.splice(index, 1);
+            }
+            bloques.push({
+                id_clase: normalizarId(idClase),
+                es_recreo: false,
+                nombre_bloque: null,
+                dia_semana: dia,
+                hora_inicio: inicio,
+                hora_fin: fin
+            });
+        });
+
+        horarioEditorState.selectedCells = [];
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function aplicarRecreoSeleccionado() {
+        const nombreRecreo = (document.getElementById('horarioNombreRecreo').value || 'Recreo').trim() || 'Recreo';
+
+        if (!horarioEditorState.selectedCells.length) {
+            alert('Selecciona al menos una casilla del horario.');
+            return;
+        }
+
+        const bloques = obtenerBloquesDraft(horarioEditorState.activeSectionId);
+        horarioEditorState.selectedCells.forEach(clave => {
+            const [dia, inicio, fin] = clave.split('|');
+            const index = bloques.findIndex(
+                bloque => bloque.dia_semana === dia && bloque.hora_inicio === inicio && bloque.hora_fin === fin
+            );
+            if (index >= 0) {
+                bloques.splice(index, 1);
+            }
+            bloques.push({
+                id_clase: '',
+                es_recreo: true,
+                nombre_bloque: nombreRecreo,
+                dia_semana: dia,
+                hora_inicio: inicio,
+                hora_fin: fin
+            });
+        });
+
+        horarioEditorState.selectedCells = [];
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function limpiarSeleccionHorario() {
+        if (!horarioEditorState.selectedCells.length) {
+            alert('Selecciona una o varias casillas para limpiarlas.');
+            return;
+        }
+
+        horarioEditorState.draftBlocksBySection[horarioEditorState.activeSectionId] = obtenerBloquesDraft(horarioEditorState.activeSectionId).filter(bloque => {
+            const clave = obtenerClaveCelda(bloque.dia_semana, bloque.hora_inicio, bloque.hora_fin);
+            return !horarioEditorState.selectedCells.includes(clave);
+        });
+
+        horarioEditorState.selectedCells = [];
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function vaciarSeccionActiva() {
+        horarioEditorState.draftBlocksBySection[horarioEditorState.activeSectionId] = [];
+        horarioEditorState.draftSlotsBySection[horarioEditorState.activeSectionId] = [];
+        horarioEditorState.selectedCells = [];
+        renderGridHorarioEditor();
+        renderResumenHorario();
+        actualizarEstadoHorarioEditor();
+    }
+
+    function renderResumenHorario() {
+        const contenedor = document.getElementById('horarioResumenSeccion');
+        const bloques = obtenerBloquesDraft(horarioEditorState.activeSectionId);
+        const slots = obtenerSlotsDraft(horarioEditorState.activeSectionId);
+        const materiasUnicas = new Set(
+            bloques.filter(bloque => !bloque.es_recreo).map(bloque => normalizarId(bloque.id_clase))
+        ).size;
+        const recreos = bloques.filter(bloque => bloque.es_recreo).length;
+        const seccion = horarioAdminData.secciones.find(s => normalizarId(s.id_seccion) === horarioEditorState.activeSectionId);
+        const items = [
+            `Sección activa: ${seccion ? seccion.nombre_seccion : '-'}`,
+            `Bloques configurados: ${bloques.length}`,
+            `Filas horarias: ${slots.length}`,
+            `Materias distintas: ${materiasUnicas}`,
+            `Bloques de recreo: ${recreos}`,
+            hayCambiosEnSeccion(horarioEditorState.activeSectionId) ? 'Estado: cambios pendientes' : 'Estado: sincronizado'
+        ];
+        contenedor.innerHTML = items.map(item => `<div class="horario-resumen-item">${item}</div>`).join('');
+    }
+
+    function actualizarEstadoHorarioEditor() {
+        const badge = document.getElementById('horarioEditorEstado');
+        const footer = document.getElementById('horarioFooterMensaje');
+        const secciones = obtenerSeccionesDeGrado(horarioEditorState.currentGradeId);
+        const pendientes = secciones.filter(seccion => hayCambiosEnSeccion(seccion.id_seccion)).length;
+
+        badge.classList.remove('horario-status-saving', 'horario-status-dirty', 'horario-status-clean');
+
+        if (horarioEditorState.isSaving) {
+            badge.textContent = 'Guardando...';
+            badge.classList.add('horario-status-saving');
+            footer.textContent = 'Persistiendo los horarios del grado seleccionado...';
+            return;
+        }
+
+        if (pendientes > 0) {
+            badge.textContent = `${pendientes} sección(es) con cambios`;
+            badge.classList.add('horario-status-dirty');
+            footer.textContent = 'Hay cambios pendientes. Puedes seguir editando y guardar todo al final.';
+        } else {
+            badge.textContent = 'Sin cambios';
+            badge.classList.add('horario-status-clean');
+            footer.textContent = 'Los cambios quedan pendientes hasta que presiones guardar.';
+        }
+    }
+
+    function actualizarHorariosEnCache(nuevosHorarios) {
+        const seccionesAfectadas = [...new Set((nuevosHorarios || []).map(h => normalizarId(h.id_seccion)))];
+        horarioAdminData.horarios = horarioAdminData.horarios.filter(
+            bloque => !seccionesAfectadas.includes(normalizarId(bloque.id_seccion))
+        ).concat(nuevosHorarios || []);
+
+        seccionesAfectadas.forEach(idSeccion => {
+            const bloques = horarioAdminData.horarios
+                .filter(h => normalizarId(h.id_seccion) === idSeccion)
+                .map(h => ({
+                    id_clase: normalizarId(h.id_clase),
+                    es_recreo: !!h.es_recreo,
+                    nombre_bloque: h.nombre_bloque || 'Recreo',
+                    dia_semana: h.dia_semana,
+                    hora_inicio: h.hora_inicio,
+                    hora_fin: h.hora_fin
+                }));
+            const slots = construirSlotsDesdeBloques(bloques);
+            horarioEditorState.baseBlocksBySection[idSeccion] = clonarData(bloques);
+            horarioEditorState.draftBlocksBySection[idSeccion] = clonarData(bloques);
+            horarioEditorState.baseSlotsBySection[idSeccion] = clonarData(slots);
+            horarioEditorState.draftSlotsBySection[idSeccion] = clonarData(slots);
+        });
+    }
+
+    async function guardarHorariosDelGrado(mostrarAlerta = true) {
+        if (!horarioEditorState.currentGradeId || horarioEditorState.isSaving) {
+            return false;
+        }
+
+        const secciones = obtenerSeccionesDeGrado(horarioEditorState.currentGradeId);
+        const payload = {
+            secciones: secciones.map(seccion => ({
+                id_seccion: seccion.id_seccion,
+                bloques: obtenerBloquesDraft(seccion.id_seccion).map(bloque => ({
+                    id_clase: bloque.id_clase,
+                    es_recreo: !!bloque.es_recreo,
+                    nombre_bloque: bloque.nombre_bloque,
+                    dia_semana: bloque.dia_semana,
+                    hora_inicio: bloque.hora_inicio,
+                    hora_fin: bloque.hora_fin
+                }))
+            }))
+        };
+
+        horarioEditorState.isSaving = true;
+        actualizarEstadoHorarioEditor();
+
+        try {
+            const response = await fetch("{{ url_for('guardar_horarios_lote') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                throw new Error(data.mensaje || 'No se pudo guardar el horario.');
+            }
+
+            actualizarHorariosEnCache(data.horarios || []);
+            horarioEditorState.selectedCells = [];
+            renderGridHorarioEditor();
+            renderResumenHorario();
+            if (mostrarAlerta) {
+                alert(data.mensaje || 'Horario guardado correctamente.');
+            }
+            return true;
+        } catch (error) {
+            alert(error.message || 'No se pudo guardar el horario.');
+            return false;
+        } finally {
+            horarioEditorState.isSaving = false;
+            actualizarEstadoHorarioEditor();
+        }
+    }
+
+    async function sincronizarDesdeSeccionActiva() {
+        if (!horarioEditorState.activeSectionId) {
+            return;
+        }
+        if (hayCambiosEnSeccion(horarioEditorState.activeSectionId)) {
+            const guardadoPrevio = await guardarHorariosDelGrado(false);
+            if (!guardadoPrevio) {
+                return;
+            }
+        }
+
+        horarioEditorState.isSaving = true;
+        actualizarEstadoHorarioEditor();
+
+        try {
+            const response = await fetch("{{ url_for('sincronizar_horarios_admin_json') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_seccion_origen: horarioEditorState.activeSectionId })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                throw new Error(data.mensaje || 'No se pudo sincronizar el grado.');
+            }
+
+            actualizarHorariosEnCache(data.horarios || []);
+            horarioEditorState.selectedCells = [];
+            renderGridHorarioEditor();
+            renderResumenHorario();
+            renderTabsHorarioEditor();
+            alert(data.mensaje || 'Sincronización completada.');
+        } catch (error) {
+            alert(error.message || 'No se pudo sincronizar el grado.');
+        } finally {
+            horarioEditorState.isSaving = false;
+            actualizarEstadoHorarioEditor();
+        }
+    }
+
     // --- NUEVAS FUNCIONES PARA EL VISOR DE HORARIOS ---
 
     function toggleAcordeon(id) {
@@ -1177,32 +2261,67 @@
         document.getElementById('visorSubtitulo').innerText = nombreGrado;
 
         const tablaContenido = document.getElementById('tablaVisorContenido');
+        const visorGrid = document.getElementById('visorHorarioGrid');
         tablaContenido.innerHTML = ""; 
+        visorGrid.innerHTML = "";
 
         const todosLosHorarios = [
-            {% for h in horarios %}
-            {
-                id: '{{ h.id_horario }}',
-                id_seccion: '{{ h.id_seccion }}',
-                dia: '{{ h.dia_semana }}',
-                materia: '{{ h.clase.nombre_clase }}',
-                inicio: '{{ h.hora_inicio.strftime("%H:%M") }}',
-                fin: '{{ h.hora_fin.strftime("%H:%M") }}'
-            },
-            {% endfor %}
+            ...horarioAdminData.horarios.map(h => ({
+                id: h.id_horario,
+                id_seccion: String(h.id_seccion),
+                dia: h.dia_semana,
+                materia: h.materia,
+                inicio: h.hora_inicio,
+                fin: h.hora_fin
+            }))
         ];
 
-        const horariosFiltrados = todosLosHorarios.filter(h => h.id_seccion === idSeccion);
+        const horariosFiltrados = todosLosHorarios
+            .filter(h => h.id_seccion === idSeccion)
+            .sort((a, b) => `${a.inicio}-${a.dia}`.localeCompare(`${b.inicio}-${b.dia}`));
+
+        const diasOrden = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
+        const bloquesOrdenados = [...new Set(horariosFiltrados.map(h => `${h.inicio}-${h.fin}`))];
+
+        visorGrid.innerHTML += `<div class="visor-grid-head">Bloque</div>`;
+        diasOrden.forEach(dia => {
+            visorGrid.innerHTML += `<div class="visor-grid-head">${dia}</div>`;
+        });
+
+        if (bloquesOrdenados.length === 0) {
+            visorGrid.innerHTML = `<div class="visor-grid-cell" style="grid-column: 1 / -1; min-height: 110px;"><div class="visor-grid-empty">No hay materias asignadas en esta sección.</div></div>`;
+        } else {
+            bloquesOrdenados.forEach(bloque => {
+                const [inicio, fin] = bloque.split('-');
+                visorGrid.innerHTML += `<div class="visor-grid-time">${inicio} - ${fin}</div>`;
+
+                diasOrden.forEach(dia => {
+                    const bloqueDia = horariosFiltrados.find(h => h.dia === dia && h.inicio === inicio && h.fin === fin);
+                    if (bloqueDia) {
+                        visorGrid.innerHTML += `
+                            <div class="visor-grid-cell">
+                                <div class="visor-grid-block">
+                                    <strong>${bloqueDia.materia}</strong>
+                                    <span>${bloqueDia.inicio} - ${bloqueDia.fin}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        visorGrid.innerHTML += `<div class="visor-grid-cell"><div class="visor-grid-empty">Libre</div></div>`;
+                    }
+                });
+            });
+        }
 
         if (horariosFiltrados.length === 0) {
-            tablaContenido.innerHTML = `<tr><td colspan="3" class="text-muted" style="text-align: center; padding: 20px;">No hay materias asignadas.</td></tr>`;
+            tablaContenido.innerHTML = `<tr><td colspan="4" class="text-muted" style="text-align: center; padding: 20px;">No hay materias asignadas.</td></tr>`;
         } else {
             horariosFiltrados.forEach(h => {
                 const fila = `
                     <tr>
+                        <td><strong>${h.materia}</strong></td>
                         <td>
                             <div style="font-size: 0.75rem; color: var(--accent-green); font-weight: 800; text-transform: uppercase;">${h.dia}</div>
-                            <strong>${h.materia}</strong>
                         </td>
                         <td style="font-size: 0.85rem;">${h.inicio} - ${h.fin}</td>
                         <td style="text-align: right;">
@@ -1256,11 +2375,14 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 cerrarPopupMaterias();
+                cerrarEditorHorario();
             }
         });
 
         registrarValidacionFormulariosAcademicos();
         toggleSemestreMateria();
+        filtrarSeccionesHorario();
+        filtrarSeccionesSync();
         actualizarEstadoMateriasVacio();
     });
 </script>
