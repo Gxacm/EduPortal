@@ -1272,6 +1272,8 @@
     .m-table { width: 100%; border-collapse: collapse; }
     .m-table th { text-align: left; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid var(--bg); }
     .m-table td { padding: 15px 10px; font-weight: 600; color: var(--dark); border-bottom: 1px solid #f8fafc; font-size: 0.95rem; vertical-align: middle; }
+    .m-table th:last-child,
+    .m-table td:last-child { white-space: nowrap; }
     
     .btn-icon { border: none; background: #fee2e2; color: #ef4444; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 1rem; }
     .btn-icon:hover { transform: scale(1.05); background: #ef4444; color: white; }
@@ -1396,6 +1398,14 @@
         font-weight: 800;
         text-transform: uppercase;
     }
+    #modalVisor .modal-card {
+        width: min(550px, 100%);
+        max-height: min(90vh, 760px);
+        overflow: auto;
+    }
+    #modalVisor .table-responsive {
+        -webkit-overflow-scrolling: touch;
+    }
     @media (max-width: 720px) {
         .materias-header,
         .materia-item,
@@ -1437,6 +1447,14 @@
             display: flex;
             justify-content: flex-end;
         }
+        .horario-admin-badges,
+        .materia-group-meta {
+            width: 100%;
+            justify-content: flex-start;
+        }
+        .visor-horario-grid {
+            min-width: 780px;
+        }
     }
 
     @media (max-width: 768px) {
@@ -1455,7 +1473,7 @@
         .main-content-box {
             width: 100%;
             max-width: 100%;
-            padding: 0;
+            padding: 0 12px;
             overflow-x: hidden;
         }
 
@@ -1514,6 +1532,7 @@
             font-size: 0.86rem;
             line-height: 1.2;
             white-space: normal;
+            min-height: 56px;
         }
 
         .grid-config,
@@ -1534,9 +1553,18 @@
             margin-bottom: 1rem;
         }
 
+        .m-label {
+            font-size: 0.82rem;
+        }
+
         .m-input,
         .m-btn-config {
             min-height: 50px;
+        }
+
+        .m-input {
+            padding: 13px 15px;
+            font-size: 0.95rem;
         }
 
         .materias-header,
@@ -1562,10 +1590,126 @@
             max-width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            margin-left: -4px;
+            margin-right: -4px;
+            padding-left: 4px;
+            padding-right: 4px;
         }
 
         .m-table {
-            min-width: 100% !important;
+            min-width: 620px;
+        }
+
+        .m-table th,
+        .m-table td {
+            padding: 12px 9px;
+            font-size: 0.88rem;
+        }
+
+        .badge-grado,
+        .badge-count {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            white-space: normal;
+            text-align: left;
+            line-height: 1.25;
+        }
+
+        .btn-icon {
+            min-width: 42px;
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .horario-admin-badges,
+        .horario-toolbar,
+        .horario-toolbar-times,
+        .horario-toolbar-actions,
+        .horario-side-actions,
+        .horario-editor-head-actions,
+        .horario-footer-actions {
+            width: 100%;
+        }
+
+        .horario-toolbar-times,
+        .horario-toolbar-actions,
+        .horario-side-actions {
+            gap: 10px;
+        }
+
+        .horario-toolbar-times > div,
+        .horario-toolbar-times > button,
+        .horario-toolbar-actions > button,
+        .horario-side-actions > button,
+        .horario-footer-actions > button {
+            flex: 1 1 100%;
+        }
+
+        .horario-grid-shell {
+            padding: 10px;
+            border-radius: 18px;
+        }
+
+        .horario-editor-grid {
+            grid-template-columns: 112px repeat(5, minmax(110px, 1fr));
+            min-width: 690px;
+        }
+
+        .horario-grid-head,
+        .horario-grid-time,
+        .horario-grid-cell {
+            border-radius: 14px;
+        }
+
+        .horario-grid-time,
+        .horario-grid-cell {
+            min-height: 116px;
+        }
+
+        .horario-side-card {
+            padding: 16px;
+            border-radius: 18px;
+        }
+
+        .horario-resumen-item {
+            font-size: 0.82rem;
+        }
+
+        .modal-card {
+            width: min(100%, 420px);
+            padding: 1.4rem;
+            border-radius: 24px;
+        }
+
+        .modal-form {
+            flex-direction: column;
+        }
+
+        #modalVisor {
+            padding: 12px;
+        }
+
+        #modalVisor .modal-card {
+            width: 100%;
+            padding: 1.15rem;
+            border-radius: 22px;
+        }
+
+        #modalVisor .m-table {
+            min-width: 520px;
+        }
+
+        #modalVisor .btn-cancel {
+            width: 100% !important;
+        }
+
+        #modalDelete .btn-cancel,
+        #modalDelete .btn-confirm-delete {
+            width: 100%;
         }
 
         .horario-mobile-overlay {
@@ -1648,6 +1792,68 @@
         .m-card-materia-form,
         .m-card-materia-list {
             padding: 1.1rem;
+        }
+
+        .header-minimal {
+            padding: 0;
+        }
+
+        .chip-glass {
+            width: 100%;
+        }
+
+        .m-table {
+            min-width: 560px;
+        }
+
+        .m-table th,
+        .m-table td {
+            font-size: 0.84rem;
+        }
+
+        .materias-popup-head {
+            gap: 12px;
+        }
+
+        .materias-popup-close {
+            width: 40px;
+            height: 40px;
+        }
+
+        .horario-admin-help,
+        .materias-help,
+        .modal-desc {
+            font-size: 0.84rem;
+        }
+
+        .horario-editor-grid {
+            grid-template-columns: 96px repeat(5, minmax(96px, 1fr));
+            min-width: 590px;
+            gap: 8px;
+        }
+
+        .horario-grid-head,
+        .horario-grid-time {
+            padding: 10px 8px;
+            font-size: 0.72rem;
+        }
+
+        .horario-grid-cell {
+            min-height: 102px;
+            padding: 10px;
+        }
+
+        .horario-cell-block strong {
+            font-size: 0.82rem;
+        }
+
+        .horario-cell-block small {
+            font-size: 0.72rem;
+        }
+
+        .visor-horario-grid {
+            min-width: 720px;
+            gap: 8px;
         }
 
         .horario-mobile-overlay {
