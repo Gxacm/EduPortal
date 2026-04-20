@@ -541,6 +541,9 @@
                             </button>
                         </div>
                         <div class="horario-toolbar-actions">
+                            <button type="button" class="btn-toolbar-secondary" onclick="abrirImportadorHorario()">
+                                <i class="bi bi-file-earmark-arrow-up"></i> Importar hoja
+                            </button>
                             <button type="button" class="btn-toolbar-secondary" onclick="sincronizarDesdeSeccionActiva()">
                                 <i class="bi bi-diagram-3"></i> Auto-generar secciones
                             </button>
@@ -583,6 +586,17 @@
                         <div class="horario-side-actions">
                             <button type="button" class="btn-toolbar-secondary" onclick="aplicarRecreoSeleccionado()">
                                 <i class="bi bi-cup-hot"></i> Aplicar recreo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="horario-side-card">
+                        <h4>Importar horario</h4>
+                        <p class="text-muted">Sube un archivo <strong>CSV</strong> o <strong>XLSX</strong> con columnas como: sección, día, hora_inicio, hora_fin y materia. También puedes incluir es_recreo o nombre_bloque.</p>
+                        <input type="file" id="horarioArchivoImportacion" accept=".csv,.xlsx" class="horario-hidden-file" onchange="importarHorarioDesdeArchivo(event)">
+                        <div class="horario-side-actions">
+                            <button type="button" class="btn-toolbar-secondary" onclick="abrirImportadorHorario()">
+                                <i class="bi bi-upload"></i> Seleccionar archivo
                             </button>
                         </div>
                     </div>
@@ -1310,6 +1324,9 @@
         margin: 0;
         font-size: 0.86rem;
         line-height: 1.55;
+    }
+    .horario-hidden-file {
+        display: none;
     }
     .horario-resumen {
         display: grid;
@@ -2571,6 +2588,16 @@
         return valor == null ? '' : String(valor);
     }
 
+    function abrirImportadorHorario() {
+        if (!horarioEditorState.currentGradeId || horarioEditorState.readOnly) {
+            return;
+        }
+        const input = document.getElementById('horarioArchivoImportacion');
+        if (input) {
+            input.click();
+        }
+    }
+
     function construirSlotsDesdeBloques(bloques) {
         const mapa = new Map();
         (bloques || []).forEach(bloque => {
@@ -3161,6 +3188,69 @@ const bloquesIniciales = horarioAdminData.horarios
             hayCambiosEnSeccion(horarioEditorState.activeSectionId) ? 'Estado: cambios pendientes' : 'Estado: sincronizado'
         ];
         contenedor.innerHTML = items.map(item => `<div class="horario-resumen-item">${item}</div>`).join('');
+    }
+
+    async function importarHorarioDesdeArchivo(event) {
+        const archivo = event?.target?.files?.[0];
+        if (!archivo || !horarioEditorState.currentGradeId || horarioEditorState.isSaving) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('archivo', archivo);
+        formData.append('id_grado', horarioEditorState.currentGradeId);
+
+        horarioEditorState.isSaving = true;
+        actualizarEstadoHorarioEditor();
+
+        try {
+            const response = await fetch("{{ url_for('importar_horarios_desde_archivo') }}", {
+                method: 'POST',
+                body: formData
+            });
+            let data = null;
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const rawText = (await response.text()).trim();
+                throw new Error(rawText || 'El servidor devolvio una respuesta invalida al importar el horario.');
+            }
+
+            if (!response.ok || !data.ok) {
+                throw new Error(data.mensaje || 'No se pudo importar el horario.');
+            }
+
+            (data.secciones || []).forEach(seccion => {
+                const idSeccion = normalizarId(seccion.id_seccion);
+                const bloques = (seccion.bloques || []).map(bloque => ({
+                    id_clase: normalizarId(bloque.id_clase),
+                    es_recreo: !!bloque.es_recreo,
+                    nombre_bloque: bloque.nombre_bloque || 'Recreo',
+                    dia_semana: bloque.dia_semana,
+                    hora_inicio: bloque.hora_inicio,
+                    hora_fin: bloque.hora_fin
+                }));
+                const slots = construirSlotsDesdeBloques(bloques);
+                horarioEditorState.draftBlocksBySection[idSeccion] = clonarData(bloques);
+                horarioEditorState.draftSlotsBySection[idSeccion] = clonarData(slots);
+            });
+
+            horarioEditorState.selectedCells = [];
+            renderGridHorarioEditor();
+            renderResumenHorario();
+            renderTabsHorarioEditor();
+            alert(data.mensaje || 'Horario importado. Revisa el resultado y luego guarda.');
+        } catch (error) {
+            const mensaje = error instanceof TypeError
+                ? 'No se pudo conectar con el servidor. Revisa que Flask siga ejecutandose y vuelve a intentar.'
+                : (error.message || 'No se pudo importar el horario.');
+            alert(mensaje);
+        } finally {
+            event.target.value = '';
+            horarioEditorState.isSaving = false;
+            actualizarEstadoHorarioEditor();
+        }
     }
 
     function actualizarEstadoHorarioEditor() {

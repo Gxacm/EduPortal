@@ -1,14 +1,20 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify, send_from_directory, abort
 from sqlalchemy.orm.attributes import flag_modified
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 from collections import defaultdict
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from sqlalchemy.orm import joinedload
+import csv
+import io
 import os
 import random
+import re
+import unicodedata
+import zipfile
+from xml.etree import ElementTree as ET
 from werkzeug.utils import secure_filename
 from models import db, Usuarios, Maestros, CiclosLectivos, Periodos, Alumnos, Clases, Notas, Asistencias, Horarios, Anuncios, Grados, Secciones, Horarios, Tareas, EntregasTareas, Examenes, PreguntasExamen, OpcionesPregunta, EntregasExamenes, DocumentosClase, EnlacesClase, VideosClase, ForosClase, MensajesForoClase
 
@@ -385,6 +391,75 @@ def describir_rango_hora(hora_inicio, hora_fin):
     return f"{hora_inicio.strftime('%H:%M')} - {hora_fin.strftime('%H:%M')}"
 
 
+def construir_segmentos_horario_dashboard(bloques):
+    recreos = [bloque for bloque in bloques if getattr(bloque, 'es_recreo', False)]
+    cortes = sorted(recreos, key=lambda bloque: (bloque.hora_inicio, bloque.hora_fin))[:2]
+
+    primer_recreo = cortes[0] if len(cortes) > 0 else None
+    segundo_recreo = cortes[1] if len(cortes) > 1 else None
+
+    primer_bloque = [
+        bloque for bloque in bloques
+        if not getattr(bloque, 'es_recreo', False)
+        and (primer_recreo is None or bloque.hora_fin <= primer_recreo.hora_inicio)
+    ]
+    segundo_bloque = [
+        bloque for bloque in bloques
+        if not getattr(bloque, 'es_recreo', False)
+        and primer_recreo is not None
+        and bloque.hora_inicio >= primer_recreo.hora_fin
+        and (segundo_recreo is None or bloque.hora_fin <= segundo_recreo.hora_inicio)
+    ]
+    tercer_bloque = [
+        bloque for bloque in bloques
+        if not getattr(bloque, 'es_recreo', False)
+        and (
+            (segundo_recreo is not None and bloque.hora_inicio >= segundo_recreo.hora_fin)
+            or (segundo_recreo is None and primer_recreo is not None and bloque.hora_inicio >= primer_recreo.hora_fin and bloque not in segundo_bloque)
+        )
+    ]
+
+    def crear_segmento(indice, clases_segmento, inicio, fin, recreo_referencia=None):
+        if not clases_segmento:
+            return None
+        return {
+            'indice': indice,
+            'titulo': f'Bloque {indice}',
+            'subtitulo': describir_rango_hora(inicio, fin),
+            'inicio': inicio,
+            'fin': fin,
+            'recreo': recreo_referencia,
+            'clases': clases_segmento
+        }
+
+    segmentos = []
+    if primer_bloque:
+        segmentos.append(crear_segmento(
+            1,
+            primer_bloque,
+            primer_bloque[0].hora_inicio,
+            (primer_recreo.hora_inicio if primer_recreo else primer_bloque[-1].hora_fin),
+            primer_recreo
+        ))
+    if segundo_bloque:
+        segmentos.append(crear_segmento(
+            2,
+            segundo_bloque,
+            (primer_recreo.hora_fin if primer_recreo else segundo_bloque[0].hora_inicio),
+            (segundo_recreo.hora_inicio if segundo_recreo else segundo_bloque[-1].hora_fin),
+            segundo_recreo
+        ))
+    if tercer_bloque:
+        segmentos.append(crear_segmento(
+            3,
+            tercer_bloque,
+            (segundo_recreo.hora_fin if segundo_recreo else tercer_bloque[0].hora_inicio),
+            tercer_bloque[-1].hora_fin
+        ))
+
+    return segmentos
+
+
 def obtener_semana_actual():
     hoy = datetime.now().date()
     lunes = hoy - timedelta(days=hoy.weekday())
@@ -413,6 +488,284 @@ def obtener_slots_candidatos_desde_origen(horarios_origen):
 
 def existe_solapamiento(hora_inicio, hora_fin, otro_inicio, otro_fin):
     return hora_inicio < otro_fin and hora_fin > otro_inicio
+
+
+def normalizar_texto_plano(valor):
+    valor = '' if valor is None else str(valor)
+    valor = unicodedata.normalize('NFKD', valor)
+    valor = ''.join(char for char in valor if not unicodedata.combining(char))
+    valor = re.sub(r'[\s\-_]+', ' ', valor.strip().lower())
+    return valor
+
+
+def parsear_hora_desde_excel_serial(serial):
+    try:
+        total_segundos = round(float(serial) * 24 * 60 * 60)
+    except (TypeError, ValueError):
+        raise ValueError('Hora inválida en la hoja de cálculo.')
+    total_segundos %= 24 * 60 * 60
+    horas = total_segundos // 3600
+    minutos = (total_segundos % 3600) // 60
+    return datetime.strptime(f'{horas:02d}:{minutos:02d}', '%H:%M').time()
+
+
+def parsear_hora_horario(valor):
+    if valor is None:
+        raise ValueError('Falta una hora en la hoja de cálculo.')
+
+    if isinstance(valor, (int, float)):
+        return parsear_hora_desde_excel_serial(valor)
+
+    texto = str(valor).strip()
+    if not texto:
+        raise ValueError('Falta una hora en la hoja de cálculo.')
+
+    if re.fullmatch(r'\d+(\.\d+)?', texto):
+        return parsear_hora_desde_excel_serial(float(texto))
+
+    for formato in ('%H:%M', '%H:%M:%S', '%I:%M %p', '%I:%M%p'):
+        try:
+            return datetime.strptime(texto, formato).time()
+        except ValueError:
+            continue
+
+    raise ValueError(f'No se pudo interpretar la hora "{texto}".')
+
+
+def normalizar_dia_horario(valor):
+    texto = normalizar_texto_plano(valor)
+    mapa = {
+        'lunes': 'Lunes',
+        'martes': 'Martes',
+        'miercoles': 'Miercoles',
+        'miércoles': 'Miercoles',
+        'jueves': 'Jueves',
+        'viernes': 'Viernes'
+    }
+    return mapa.get(texto)
+
+
+def cargar_filas_csv_horarios(file_storage):
+    contenido = file_storage.read()
+    if not contenido:
+        return []
+    for encoding in ('utf-8-sig', 'utf-8', 'latin-1'):
+        try:
+            texto = contenido.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        raise ValueError('No se pudo leer el archivo CSV.')
+
+    muestra = texto[:4096]
+    try:
+        dialecto = csv.Sniffer().sniff(muestra, delimiters=',;\t')
+    except csv.Error:
+        dialecto = csv.excel
+        dialecto.delimiter = ';' if texto.count(';') > texto.count(',') else ','
+
+    lector = csv.DictReader(io.StringIO(texto), dialect=dialecto)
+    return [dict(fila) for fila in lector if any((valor or '').strip() for valor in fila.values())]
+
+
+def columna_excel_a_indice(columna):
+    indice = 0
+    for char in columna:
+        indice = indice * 26 + (ord(char.upper()) - 64)
+    return indice - 1
+
+
+def cargar_shared_strings_xlsx(zip_file):
+    shared = []
+    if 'xl/sharedStrings.xml' not in zip_file.namelist():
+        return shared
+    root = ET.fromstring(zip_file.read('xl/sharedStrings.xml'))
+    namespace = {'a': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+    for si in root.findall('a:si', namespace):
+        texto = ''.join(nodo.text or '' for nodo in si.findall('.//a:t', namespace))
+        shared.append(texto)
+    return shared
+
+
+def cargar_filas_xlsx_horarios(file_storage):
+    contenido = file_storage.read()
+    if not contenido:
+        return []
+
+    with zipfile.ZipFile(io.BytesIO(contenido)) as archivo_zip:
+        shared_strings = cargar_shared_strings_xlsx(archivo_zip)
+        workbook = ET.fromstring(archivo_zip.read('xl/workbook.xml'))
+        namespace = {'a': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+        rel_namespace = {'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'}
+
+        primer_sheet = workbook.find('a:sheets/a:sheet', namespace)
+        if primer_sheet is None:
+            return []
+
+        relationship_id = primer_sheet.attrib.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+        rels = ET.fromstring(archivo_zip.read('xl/_rels/workbook.xml.rels'))
+        target = None
+        for rel in rels:
+            if rel.attrib.get('Id') == relationship_id:
+                target = rel.attrib.get('Target')
+                break
+        if not target:
+            raise ValueError('No se encontró la hoja principal del archivo XLSX.')
+
+        sheet_path = target if target.startswith('xl/') else f"xl/{target.lstrip('/')}"
+        sheet_root = ET.fromstring(archivo_zip.read(sheet_path))
+
+        filas_crudas = []
+        for row in sheet_root.findall('.//a:sheetData/a:row', namespace):
+            celdas = {}
+            for cell in row.findall('a:c', namespace):
+                referencia = cell.attrib.get('r', '')
+                columna = re.sub(r'\d+', '', referencia)
+                idx = columna_excel_a_indice(columna)
+                tipo = cell.attrib.get('t')
+                valor = ''
+                if tipo == 'inlineStr':
+                    valor = ''.join(nodo.text or '' for nodo in cell.findall('.//a:t', namespace))
+                else:
+                    nodo_valor = cell.find('a:v', namespace)
+                    if nodo_valor is not None and nodo_valor.text is not None:
+                        valor = nodo_valor.text
+                        if tipo == 's':
+                            valor = shared_strings[int(valor)] if valor.isdigit() and int(valor) < len(shared_strings) else ''
+                celdas[idx] = valor
+            if celdas:
+                max_idx = max(celdas.keys())
+                filas_crudas.append([celdas.get(i, '') for i in range(max_idx + 1)])
+
+    if not filas_crudas:
+        return []
+
+    encabezados = [str(valor).strip() for valor in filas_crudas[0]]
+    filas = []
+    for fila in filas_crudas[1:]:
+        registro = {}
+        for idx, encabezado in enumerate(encabezados):
+            if encabezado:
+                registro[encabezado] = fila[idx] if idx < len(fila) else ''
+        if any(str(valor).strip() for valor in registro.values()):
+            filas.append(registro)
+    return filas
+
+
+def cargar_filas_archivo_horarios(file_storage):
+    nombre = (file_storage.filename or '').lower()
+    if nombre.endswith('.csv'):
+        return cargar_filas_csv_horarios(file_storage)
+    if nombre.endswith('.xlsx'):
+        return cargar_filas_xlsx_horarios(file_storage)
+    raise ValueError('Formato no soportado. Sube un archivo .csv o .xlsx.')
+
+
+def construir_diccionario_encabezados(fila):
+    mapa = {}
+    for clave in fila.keys():
+        mapa[normalizar_texto_plano(clave)] = clave
+    return mapa
+
+
+def obtener_valor_columna(fila, aliases, obligatorio=True):
+    mapa = construir_diccionario_encabezados(fila)
+    for alias in aliases:
+        clave = mapa.get(normalizar_texto_plano(alias))
+        if clave is not None:
+            return fila.get(clave)
+    if obligatorio:
+        raise ValueError(f'Falta la columna requerida: {aliases[0]}.')
+    return None
+
+
+def convertir_filas_a_borrador_horario(filas, id_grado):
+    secciones_grado = Secciones.query.filter_by(id_grado=id_grado).all()
+    if not secciones_grado:
+        raise ValueError('El grado seleccionado no tiene secciones registradas.')
+
+    clases_grado = Clases.query.options(joinedload(Clases.grado)).filter_by(id_grado=id_grado).all()
+    mapa_secciones = {
+        normalizar_texto_plano(seccion.nombre_seccion): seccion
+        for seccion in secciones_grado
+    }
+    mapa_clases = {}
+    for clase in clases_grado:
+        claves = {
+            normalizar_texto_plano(clase.nombre_clase),
+            normalizar_texto_plano(f"{clase.nombre_clase} - {etiqueta_semestre(clase.semestre)}"),
+            normalizar_texto_plano(f"{clase.nombre_clase} {etiqueta_semestre(clase.semestre)}")
+        }
+        for clave in claves:
+            mapa_clases[clave] = clase
+
+    bloques_por_seccion = defaultdict(list)
+
+    for indice, fila in enumerate(filas, start=2):
+        try:
+            valor_seccion = obtener_valor_columna(fila, ['seccion', 'sección'])
+            valor_dia = obtener_valor_columna(fila, ['dia', 'día'])
+            valor_inicio = obtener_valor_columna(fila, ['hora_inicio', 'inicio', 'hora inicio'])
+            valor_fin = obtener_valor_columna(fila, ['hora_fin', 'fin', 'hora fin'])
+            valor_materia = obtener_valor_columna(fila, ['materia', 'clase', 'asignatura', 'materia_label'], obligatorio=False)
+            valor_es_recreo = obtener_valor_columna(fila, ['es_recreo', 'recreo', 'bloque_especial', 'tipo'], obligatorio=False)
+            valor_nombre_bloque = obtener_valor_columna(fila, ['nombre_bloque', 'bloque', 'detalle', 'descripcion'], obligatorio=False)
+
+            seccion = mapa_secciones.get(normalizar_texto_plano(valor_seccion))
+            if not seccion:
+                raise ValueError(f'La sección "{valor_seccion}" no pertenece al grado seleccionado.')
+
+            dia_semana = normalizar_dia_horario(valor_dia)
+            if not dia_semana:
+                raise ValueError(f'El día "{valor_dia}" no es válido.')
+
+            hora_inicio = parsear_hora_horario(valor_inicio)
+            hora_fin = parsear_hora_horario(valor_fin)
+            if hora_fin <= hora_inicio:
+                raise ValueError('La hora de fin debe ser posterior a la hora de inicio.')
+
+            texto_recreo = normalizar_texto_plano(valor_es_recreo)
+            es_recreo = texto_recreo in {'1', 'si', 'sí', 'true', 'recreo', 'descanso', 'almuerzo', 'bloque especial'}
+            nombre_bloque = (str(valor_nombre_bloque).strip() if valor_nombre_bloque is not None else '') or 'Recreo'
+
+            id_clase = None
+            if not es_recreo:
+                clase = mapa_clases.get(normalizar_texto_plano(valor_materia))
+                if not clase:
+                    raise ValueError(f'No se encontró la materia "{valor_materia}" en el grado.')
+                id_clase = clase.id_clase
+
+            bloques_por_seccion[seccion.id_seccion].append({
+                'id_clase': id_clase,
+                'es_recreo': es_recreo,
+                'nombre_bloque': nombre_bloque if es_recreo else None,
+                'dia_semana': dia_semana,
+                'hora_inicio': hora_inicio.strftime('%H:%M'),
+                'hora_fin': hora_fin.strftime('%H:%M')
+            })
+        except ValueError as error:
+            raise ValueError(f'Fila {indice}: {error}') from error
+
+    if not bloques_por_seccion:
+        raise ValueError('El archivo no contiene filas de horario para importar.')
+
+    resultado = []
+    for seccion in secciones_grado:
+        if seccion.id_seccion in bloques_por_seccion:
+            resultado.append({
+                'id_seccion': seccion.id_seccion,
+                'nombre_seccion': seccion.nombre_seccion,
+                'bloques': sorted(
+                    bloques_por_seccion[seccion.id_seccion],
+                    key=lambda item: (
+                        ordenar_dia_semana(item['dia_semana']),
+                        item['hora_inicio'],
+                        item['hora_fin']
+                    )
+                )
+            })
+    return resultado
 
 
 def construir_ocupacion_maestros(excluir_secciones_ids=None):
@@ -763,6 +1116,153 @@ def serializar_horario_admin(bloque):
         ),
         'semestre': (clase.semestre or 'ANUAL') if clase else 'ANUAL'
     }
+
+
+def validar_bloques_horario_por_secciones(secciones_payload):
+    if not secciones_payload:
+        raise ValueError('No se recibió ningún horario para validar.')
+
+    ids_seccion = []
+    for seccion_payload in secciones_payload:
+        id_seccion = int(seccion_payload.get('id_seccion'))
+        if id_seccion not in ids_seccion:
+            ids_seccion.append(id_seccion)
+
+    secciones_db = {
+        seccion.id_seccion: seccion
+        for seccion in Secciones.query.filter(Secciones.id_seccion.in_(ids_seccion)).all()
+    }
+    if len(secciones_db) != len(ids_seccion):
+        raise ValueError('Una de las secciones enviadas ya no existe.')
+
+    ids_clase = set()
+    for seccion_payload in secciones_payload:
+        for bloque in seccion_payload.get('bloques') or []:
+            if bloque.get('id_clase'):
+                ids_clase.add(int(bloque.get('id_clase')))
+
+    clases_db = {}
+    if ids_clase:
+        clases_db = {
+            clase.id_clase: clase
+            for clase in Clases.query.options(
+                joinedload(Clases.grado),
+                joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
+            ).filter(Clases.id_clase.in_(ids_clase)).all()
+        }
+
+    bloques_externos = db.session.query(Horarios).options(
+        joinedload(Horarios.clase).joinedload(Clases.maestro_titular).joinedload(Maestros.usuario)
+    ).join(Clases).filter(~Horarios.id_seccion.in_(ids_seccion)).all()
+    conflictos_maestro_externos = defaultdict(list)
+    for bloque in bloques_externos:
+        if bloque.clase and bloque.clase.id_maestro:
+            conflictos_maestro_externos[bloque.clase.id_maestro].append({
+                'id_seccion': bloque.id_seccion,
+                'dia_semana': bloque.dia_semana,
+                'hora_inicio': bloque.hora_inicio,
+                'hora_fin': bloque.hora_fin
+            })
+
+    propuesta_por_seccion = {}
+    conflictos_maestro_payload = defaultdict(list)
+
+    for seccion_payload in secciones_payload:
+        id_seccion = int(seccion_payload.get('id_seccion'))
+        seccion = secciones_db[id_seccion]
+        propuesta = []
+
+        bloques = seccion_payload.get('bloques') or []
+        bloques_ordenados = sorted(
+            bloques,
+            key=lambda item: (
+                ordenar_dia_semana(item.get('dia_semana')),
+                item.get('hora_inicio') or '',
+                item.get('hora_fin') or ''
+            )
+        )
+
+        for bloque_payload in bloques_ordenados:
+            es_recreo = bool(bloque_payload.get('es_recreo'))
+            nombre_bloque = (bloque_payload.get('nombre_bloque') or 'Recreo').strip()
+            id_clase = int(bloque_payload.get('id_clase')) if bloque_payload.get('id_clase') else None
+            dia_semana = (bloque_payload.get('dia_semana') or '').strip()
+            if dia_semana not in DIA_ORDEN:
+                raise ValueError(f'Hay un día inválido en la sección {seccion.nombre_seccion}.')
+
+            clase = None if es_recreo else clases_db.get(id_clase)
+            if not es_recreo:
+                if not clase:
+                    raise ValueError('Una de las materias seleccionadas ya no existe.')
+                if clase.id_grado != seccion.id_grado:
+                    raise ValueError(
+                        f'La materia "{clase.nombre_clase}" no pertenece al grado de la sección {seccion.nombre_seccion}.'
+                    )
+
+            hora_inicio = datetime.strptime((bloque_payload.get('hora_inicio') or '').strip(), '%H:%M').time()
+            hora_fin = datetime.strptime((bloque_payload.get('hora_fin') or '').strip(), '%H:%M').time()
+
+            if hora_fin <= hora_inicio:
+                raise ValueError(
+                    f'El bloque {dia_semana} {hora_inicio.strftime("%H:%M")} debe terminar después de iniciar.'
+                )
+
+            conflicto_local = next((
+                item for item in propuesta
+                if item['dia_semana'] == dia_semana and existe_solapamiento(
+                    item['hora_inicio'], item['hora_fin'], hora_inicio, hora_fin
+                )
+            ), None)
+            if conflicto_local:
+                raise ValueError(f'La sección {seccion.nombre_seccion} tiene bloques solapados en {dia_semana}.')
+
+            if clase and clase.id_maestro:
+                for bloque_externo in conflictos_maestro_externos.get(clase.id_maestro, []):
+                    if bloque_externo['dia_semana'] == dia_semana and existe_solapamiento(
+                        bloque_externo['hora_inicio'], bloque_externo['hora_fin'], hora_inicio, hora_fin
+                    ):
+                        maestro_nombre = 'ese maestro'
+                        if clase.maestro_titular and clase.maestro_titular.usuario:
+                            usuario = clase.maestro_titular.usuario
+                            maestro_nombre = f'{usuario.nombre} {usuario.apellido}'.strip()
+                        raise ValueError(
+                            f'Choque de maestro: {maestro_nombre} ya tiene asignada "{clase.nombre_clase}" '
+                            f'en otro grado o sección el {dia_semana} de '
+                            f'{hora_inicio.strftime("%H:%M")} a {hora_fin.strftime("%H:%M")}.'
+                        )
+
+                for bloque_interno in conflictos_maestro_payload.get(clase.id_maestro, []):
+                    if bloque_interno['id_seccion'] != id_seccion and bloque_interno['dia_semana'] == dia_semana and existe_solapamiento(
+                        bloque_interno['hora_inicio'], bloque_interno['hora_fin'], hora_inicio, hora_fin
+                    ):
+                        maestro_nombre = 'ese maestro'
+                        if clase.maestro_titular and clase.maestro_titular.usuario:
+                            usuario = clase.maestro_titular.usuario
+                            maestro_nombre = f'{usuario.nombre} {usuario.apellido}'.strip()
+                        raise ValueError(
+                            f'Choque de maestro: {maestro_nombre} no puede estar en dos secciones al mismo tiempo '
+                            f'el {dia_semana} de {hora_inicio.strftime("%H:%M")} a {hora_fin.strftime("%H:%M")}.'
+                        )
+
+                conflictos_maestro_payload[clase.id_maestro].append({
+                    'id_seccion': id_seccion,
+                    'dia_semana': dia_semana,
+                    'hora_inicio': hora_inicio,
+                    'hora_fin': hora_fin
+                })
+
+            propuesta.append({
+                'id_clase': id_clase,
+                'es_recreo': es_recreo,
+                'nombre_bloque': nombre_bloque if es_recreo else None,
+                'dia_semana': dia_semana,
+                'hora_inicio': hora_inicio,
+                'hora_fin': hora_fin
+            })
+
+        propuesta_por_seccion[id_seccion] = propuesta
+
+    return propuesta_por_seccion
 
 
 def construir_payload_horarios_admin(grados, secciones, clases, horarios):
@@ -2162,6 +2662,7 @@ def alumno_dashboard():
 
     resumen_notas = construir_resumen_notas_alumno(alumno)
     rendimiento = construir_rendimiento_dashboard(resumen_notas)
+    examenes_dashboard = construir_examenes_dashboard_alumno(alumno, ids_clases)
     progreso_ciclo = construir_progreso_ciclo(ciclo_activo)
     clases_hoy = construir_clases_hoy_alumno(alumno)
     comunicados = construir_comunicados_alumno(alumno)
@@ -2173,6 +2674,7 @@ def alumno_dashboard():
                            asistencia_val=porcentaje_asistencia,
                            promedio_val=rendimiento['promedio_actual'],
                            rendimiento=rendimiento,
+                           examenes_dashboard=examenes_dashboard,
                            rendimiento_periodos=resumen_notas['periodos'][:3],
                            progreso_ciclo=progreso_ciclo,
                            clases_hoy=clases_hoy,
@@ -2441,11 +2943,16 @@ def construir_progreso_ciclo(ciclo_activo):
 
 
 def construir_clases_hoy_alumno(alumno):
-    hoy = datetime.now().date()
+    ahora = datetime.now()
+    hoy = ahora.date()
+    hora_actual = ahora.time()
     if hoy.weekday() > 4:
         return {
             'dia_label': 'Fin de semana',
-            'bloques': []
+            'bloques': [],
+            'bloque_activo': None,
+            'jornada_finalizada': False,
+            'sin_jornada': True
         }
 
     dia_actual = DIA_ORDEN[hoy.weekday()]
@@ -2457,6 +2964,15 @@ def construir_clases_hoy_alumno(alumno):
         dia_semana=dia_actual
     ).order_by(Horarios.hora_inicio.asc()).all()
     bloques = [bloque for bloque in bloques if getattr(bloque, 'es_recreo', False) or bloque.id_clase in clases_permitidas]
+
+    if not bloques:
+        return {
+            'dia_label': DIA_LABELS[dia_actual],
+            'bloques': [],
+            'bloque_activo': None,
+            'jornada_finalizada': False,
+            'sin_jornada': True
+        }
 
     asistencias_hoy = Asistencias.query.filter(
         Asistencias.id_alumno == alumno.id_alumno,
@@ -2495,9 +3011,47 @@ def construir_clases_hoy_alumno(alumno):
             'es_recreo': bool(getattr(bloque, 'es_recreo', False))
         })
 
+    bloques_data_por_id = {
+        bloque.id_horario: data for bloque, data in zip(bloques, bloques_data)
+    }
+    segmentos_base = construir_segmentos_horario_dashboard(bloques)
+    segmentos = []
+    for segmento in segmentos_base:
+        clases_segmento = [
+            bloques_data_por_id[bloque.id_horario]
+            for bloque in segmento['clases']
+            if bloque.id_horario in bloques_data_por_id
+        ]
+        if not clases_segmento:
+            continue
+        segmentos.append({
+            'indice': segmento['indice'],
+            'titulo': segmento['titulo'],
+            'subtitulo': segmento['subtitulo'],
+            'inicio': segmento['inicio'],
+            'fin': segmento['fin'],
+            'clases': clases_segmento
+        })
+
+    jornada_fin = max((bloque.hora_fin for bloque in bloques), default=time(0, 0))
+    jornada_finalizada = hora_actual >= jornada_fin if bloques else False
+
+    bloque_activo = None
+    if not jornada_finalizada:
+        for segmento in segmentos:
+            if hora_actual < segmento['fin']:
+                bloque_activo = segmento
+                break
+        if not bloque_activo and segmentos:
+            bloque_activo = segmentos[-1]
+
     return {
         'dia_label': DIA_LABELS[dia_actual],
-        'bloques': bloques_data
+        'bloques': bloque_activo['clases'] if bloque_activo else [],
+        'bloque_activo': bloque_activo,
+        'bloques_segmentados': segmentos,
+        'jornada_finalizada': jornada_finalizada,
+        'sin_jornada': False
     }
 
 
@@ -2510,6 +3064,54 @@ def construir_rendimiento_dashboard(resumen_notas):
         'promedio_actual': round((periodo_actual.get('promedio') or 0), 1) if periodo_actual else 0,
         'texto_periodo': periodo_actual['nombre'] if periodo_actual else 'Sin parciales',
         'periodos_totales': len(periodos_con_promedio)
+    }
+
+
+def construir_examenes_dashboard_alumno(alumno, ids_clases):
+    ahora = datetime.utcnow()
+    entregados_ids = {
+        entrega.id_examen
+        for entrega in EntregasExamenes.query.filter_by(id_alumno=alumno.id_alumno).all()
+    }
+
+    examenes = Examenes.query.options(
+        joinedload(Examenes.clase)
+    ).filter(
+        Examenes.id_clase.in_(ids_clases or [0])
+    ).order_by(
+        Examenes.fecha_limite.asc().nullslast(),
+        Examenes.id_examen.desc()
+    ).all()
+
+    examenes_habilitados = []
+    for examen in examenes:
+        if examen.modalidad == 'instrucciones':
+            continue
+        if examen.id_examen in entregados_ids:
+            continue
+        if examen.fecha_limite and examen.fecha_limite < ahora:
+            continue
+
+        fecha_texto = examen.fecha_limite.strftime('%d/%m/%Y') if examen.fecha_limite else 'Sin fecha'
+        hora_texto = examen.fecha_limite.strftime('%H:%M') if examen.fecha_limite else 'Hora abierta'
+        examenes_habilitados.append({
+            'id_examen': examen.id_examen,
+            'titulo': examen.titulo,
+            'clase': examen.clase.nombre_clase if examen.clase else 'Clase no disponible',
+            'fecha': fecha_texto,
+            'hora': hora_texto,
+            'fecha_limite': examen.fecha_limite,
+            'url': url_for('alumno_examen_detalle', id_examen=examen.id_examen)
+        })
+
+    proximos = sorted(
+        examenes_habilitados,
+        key=lambda item: item['fecha_limite'] or datetime.max
+    )[:4]
+
+    return {
+        'total': len(examenes_habilitados),
+        'items': proximos
     }
 
 
@@ -3978,6 +4580,51 @@ def sincronizar_horarios_admin_json():
     except Exception as e:
         db.session.rollback()
         return jsonify({'ok': False, 'mensaje': f'No se pudo sincronizar el grado: {str(e)}'}), 500
+
+
+@app.route('/admin/configuracion/horarios/importar', methods=['POST'])
+def importar_horarios_desde_archivo():
+    if session.get('rol') != 1:
+        return jsonify({'ok': False, 'mensaje': 'No autorizado.'}), 403
+
+    archivo = request.files.get('archivo')
+    id_grado = request.form.get('id_grado')
+
+    if not archivo or not archivo.filename:
+        return jsonify({'ok': False, 'mensaje': 'Selecciona un archivo CSV o XLSX para importar.'}), 400
+
+    try:
+        id_grado = int(id_grado)
+    except (TypeError, ValueError):
+        return jsonify({'ok': False, 'mensaje': 'Grado inválido para importar horario.'}), 400
+
+    grado = Grados.query.get(id_grado)
+    if not grado:
+        return jsonify({'ok': False, 'mensaje': 'El grado seleccionado ya no existe.'}), 404
+
+    try:
+        filas = cargar_filas_archivo_horarios(archivo)
+        secciones_importadas = convertir_filas_a_borrador_horario(filas, id_grado)
+        validar_bloques_horario_por_secciones([
+            {
+                'id_seccion': seccion['id_seccion'],
+                'bloques': seccion.get('bloques') or []
+            }
+            for seccion in secciones_importadas
+        ])
+        total_bloques = sum(len(seccion['bloques']) for seccion in secciones_importadas)
+
+        return jsonify({
+            'ok': True,
+            'mensaje': f'Se leyeron {total_bloques} bloques para {len(secciones_importadas)} sección(es). Revisa el resultado antes de guardar.',
+            'secciones': secciones_importadas
+        })
+    except ValueError as error:
+        return jsonify({'ok': False, 'mensaje': str(error)}), 400
+    except zipfile.BadZipFile:
+        return jsonify({'ok': False, 'mensaje': 'El archivo XLSX no es válido o está dañado.'}), 400
+    except Exception as error:
+        return jsonify({'ok': False, 'mensaje': f'No se pudo importar el archivo: {str(error)}'}), 500
 
 
 #----------------------- LOGICA DE ELIMINACION -----------------------

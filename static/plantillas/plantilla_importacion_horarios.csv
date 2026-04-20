@@ -1,0 +1,13 @@
+seccion,dia,hora_inicio,hora_fin,materia,es_recreo,nombre_bloque
+A,Lunes,07:00,07:45,Matematicas,,
+A,Lunes,07:45,08:30,Espanol,,
+A,Lunes,08:30,09:00,,si,Recreo
+A,Lunes,09:00,09:45,Ciencias Naturales,,
+A,Martes,07:00,07:45,Matematicas,,
+A,Martes,07:45,08:30,Ingles,,
+B,Lunes,07:00,07:45,Matematicas,,
+B,Lunes,07:45,08:30,Espanol,,
+B,Lunes,08:30,09:00,,si,Recreo
+B,Lunes,09:00,09:45,Ciencias Naturales,,
+B,Martes,07:00,07:45,Matematicas,,
+B,Martes,07:45,08:30,Ingles,,
