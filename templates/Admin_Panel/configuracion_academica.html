@@ -90,7 +90,7 @@
                     <form action="{{ url_for('configuracion_academica') }}?tab=tab-materias" method="POST" data-academic-form>
                         <label class="m-label">Nombre de la Materia</label>
                         <input type="text" name="nombre_clase" class="m-input" placeholder="Ej. Matemáticas" required data-label="Nombre de la Materia">
-                        <label class="m-label">Grado Destino</label>
+                        <label class="m-label" style="margin-top: 15px;">Grado Destino</label>
                         <select name="id_grado" id="select-grado-materia" class="m-input" required data-label="Grado Destino" onchange="toggleSemestreMateria()">
                             <option value="" disabled selected>Seleccione un grado...</option>
                             {% for g in grados %}
@@ -98,7 +98,7 @@
                             {% endfor %}
                         </select>
                         <div id="semestre-materia-wrapper" style="display:none;">
-                            <label class="m-label">Semestre de la Materia</label>
+                            <label class="m-label" style="margin-top: 15px;">Semestre de la Materia</label>
                             <select name="semestre_clase" id="select-semestre-materia" class="m-input" data-label="Semestre de la Materia">
                                 <option value="" disabled selected>Seleccione un semestre...</option>
                                 {% for valor, etiqueta in semestres_disponibles if valor != 'ANUAL' %}
@@ -106,7 +106,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <label class="m-label">Maestro Encargado</label>
+                        <label class="m-label" style="margin-top: 15px;">Maestro Encargado</label>
                         <select name="id_maestro" class="m-input" required data-label="Maestro Encargado">
                             <option value="" disabled selected>Seleccione un maestro...</option>
                             {% for m in maestros %}
@@ -742,6 +742,24 @@
     .m-label { display: block; font-weight: 800; color: var(--dark); margin-bottom: 8px; font-size: 0.9rem; }
     .m-input { width: 100%; padding: 14px 18px; border-radius: 14px; background-color: var(--bg); border: 2px solid transparent; color: var(--dark); font-weight: 600; box-sizing: border-box; transition: 0.3s; font-family: inherit; }
     .m-input:focus { outline: none; border-color: var(--accent-green); background-color: white; }
+    #horarioNuevoInicio,
+    #horarioNuevoFin {
+        color-scheme: light;
+    }
+    #horarioNuevoInicio::-webkit-calendar-picker-indicator,
+    #horarioNuevoFin::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.95;
+        filter: brightness(0) saturate(100%);
+    }
+    html.dark-mode #horarioNuevoInicio,
+    html.dark-mode #horarioNuevoFin {
+        color-scheme: dark;
+    }
+    html.dark-mode #horarioNuevoInicio::-webkit-calendar-picker-indicator,
+    html.dark-mode #horarioNuevoFin::-webkit-calendar-picker-indicator {
+        filter: brightness(0) invert(1) saturate(100%);
+    }
     
     .m-btn-config { background: var(--accent-green); color: white; width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 20px; font-size: 0.95rem; }
     .m-btn-config:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(5, 150, 105, 0.2); }
@@ -1420,6 +1438,22 @@
         flex: 1; padding: 14px; border-radius: 12px; border: none; 
         background: #ef4444; color: white; font-weight: 700; cursor: pointer; 
     }
+    html.dark-mode .btn-cancel {
+        background: #111a2d !important;
+        color: #dbe7fb !important;
+        border: 1px solid #2d3c56 !important;
+    }
+    html.dark-mode .btn-cancel:hover {
+        background: #182235 !important;
+    }
+    html.dark-mode .m-btn-config {
+        background: linear-gradient(135deg, #119e70, #0c7d58) !important;
+        color: #ffffff !important;
+        box-shadow: 0 14px 24px rgba(12, 125, 88, 0.28);
+    }
+    html.dark-mode .m-btn-config:hover {
+        background: linear-gradient(135deg, #15b57f, #119e70) !important;
+    }
 
     /* ESTILOS NUEVOS: ARCHIVADOR DE HORARIOS */
     .archivador-grados { display: flex; flex-direction: column; gap: 10px; }
@@ -1432,6 +1466,173 @@
     .grado-folder-header:hover { background: #fdfdfd; color: var(--accent-green); }
     .grado-folder-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: var(--bg); }
     .grado-folder-body.open { max-height: 200px; transition: max-height 0.3s ease-in; }
+    html.dark-mode .m-card-materia-form,
+    html.dark-mode .m-card-materia-list,
+    html.dark-mode .materia-group,
+    html.dark-mode .materias-popup-card,
+    html.dark-mode .horario-grade-card,
+    html.dark-mode .horario-tip-card,
+    html.dark-mode .grado-folder,
+    html.dark-mode .grado-folder-body,
+    html.dark-mode .horario-grid-shell,
+    html.dark-mode .horario-side-card,
+    html.dark-mode .visor-grid-cell,
+    html.dark-mode .visor-grid-block,
+    html.dark-mode .visor-grid-time,
+    html.dark-mode .horario-grid-time,
+    html.dark-mode .horario-grid-cell,
+    html.dark-mode .horario-empty-grid,
+    html.dark-mode .horario-resumen-item {
+        background: #111827 !important;
+        border-color: #243041 !important;
+        color: #e5eefb !important;
+    }
+    html.dark-mode .materias-search,
+    html.dark-mode .materias-search-input,
+    html.dark-mode .horario-admin-header,
+    html.dark-mode .horario-selection-bar,
+    html.dark-mode .horario-grid-head,
+    html.dark-mode .visor-grid-head,
+    html.dark-mode .grado-folder-header,
+    html.dark-mode .btn-seccion,
+    html.dark-mode .materia-item {
+        background: #0f172a !important;
+        border-color: #243041 !important;
+        color: #e5eefb !important;
+    }
+    html.dark-mode .materia-grade-card {
+        background: linear-gradient(180deg, #111827 0%, #162033 100%) !important;
+        border-color: #243041 !important;
+        box-shadow: 0 16px 28px rgba(0, 0, 0, 0.22) !important;
+    }
+    html.dark-mode .horario-editor-main {
+        background: #111827 !important;
+        border: 1px solid #243041 !important;
+        border-radius: 24px;
+        padding: 18px;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
+    }
+    html.dark-mode .materia-grade-card:hover,
+    html.dark-mode .btn-seccion:hover,
+    html.dark-mode .grado-folder-header:hover,
+    html.dark-mode .materia-item:hover {
+        background: #182235 !important;
+    }
+    html.dark-mode .materia-grade-card-main strong,
+    html.dark-mode .materia-group-title,
+    html.dark-mode .horario-grade-main strong,
+    html.dark-mode .horario-tip-card strong,
+    html.dark-mode .horario-side-card h4,
+    html.dark-mode .horario-cell-block strong,
+    html.dark-mode .visor-grid-block strong,
+    html.dark-mode .grado-folder-header,
+    html.dark-mode .btn-seccion {
+        color: #e5eefb !important;
+    }
+    html.dark-mode .materia-grade-card-main small,
+    html.dark-mode .materia-group-subtitle,
+    html.dark-mode .horario-grade-main small,
+    html.dark-mode .horario-grade-arrow,
+    html.dark-mode .horario-admin-help,
+    html.dark-mode .horario-tip-card p,
+    html.dark-mode .materia-item-meta,
+    html.dark-mode .horario-side-card p,
+    html.dark-mode .horario-cell-block small,
+    html.dark-mode .visor-grid-block span,
+    html.dark-mode .visor-grid-empty,
+    html.dark-mode .horario-empty-grid,
+    html.dark-mode .horario-selection-bar,
+    html.dark-mode #horarioEditorSubtitulo,
+    html.dark-mode #horarioMobileSubtitulo,
+    html.dark-mode #horarioFooterMensaje,
+    html.dark-mode #horarioMobileFooterMensaje {
+        color: #93a4bc !important;
+    }
+    html.dark-mode .materias-popup-overlay,
+    html.dark-mode .modal-overlay {
+        background: rgba(2, 6, 23, 0.66) !important;
+    }
+    html.dark-mode #tab-horarios .chip-glass {
+        background: #182235 !important;
+        color: #d8fff0 !important;
+        border: 1px solid #2c3f5f !important;
+        box-shadow: none !important;
+    }
+    html.dark-mode .horario-grade-icon {
+        background: rgba(17, 158, 112, 0.16) !important;
+        color: #34d399 !important;
+    }
+    html.dark-mode .materias-popup-close,
+    html.dark-mode .horario-editor-head .btn-icon,
+    html.dark-mode .horario-mobile-head .btn-icon,
+    html.dark-mode #modalVisor .btn-icon {
+        background: #0f172a !important;
+        color: #dbe7fb !important;
+        border: 1px solid #243041 !important;
+    }
+    html.dark-mode .horario-editor-modal,
+    html.dark-mode #modalVisor .modal-card,
+    html.dark-mode .horario-mobile-modal {
+        background: #111827 !important;
+        color: #e5eefb !important;
+        border: 1px solid #243041 !important;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35) !important;
+    }
+    html.dark-mode .horario-editor-head,
+    html.dark-mode .horario-editor-footer,
+    html.dark-mode .horario-mobile-head,
+    html.dark-mode .horario-mobile-footer {
+        background: #111827 !important;
+        border-color: #243041 !important;
+    }
+    html.dark-mode .horario-editor-tab {
+        background: #0f172a !important;
+        color: #cbd5e1 !important;
+        border-color: #243041 !important;
+    }
+    html.dark-mode .horario-editor-tab.active {
+        background: #119e70 !important;
+        color: #ffffff !important;
+        border-color: #119e70 !important;
+    }
+    html.dark-mode .btn-toolbar-ghost {
+        background: #1a2438 !important;
+        color: #e5eefb !important;
+        border: 1px solid #31415e !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    html.dark-mode .btn-toolbar-ghost:hover {
+        background: #23314b !important;
+        color: #ffffff !important;
+        border-color: #42577d !important;
+    }
+    html.dark-mode .btn-toolbar-secondary {
+        background: #183c32 !important;
+        color: #d8fff0 !important;
+        border: 1px solid #256551 !important;
+    }
+    html.dark-mode .btn-toolbar-secondary:hover {
+        background: #1f4c40 !important;
+    }
+    html.dark-mode .horario-grid-cell.selected {
+        background: rgba(17, 158, 112, 0.18) !important;
+        border-color: #22c58b !important;
+    }
+    html.dark-mode .horario-grid-cell.empty {
+        color: #8fa0b8 !important;
+    }
+    html.dark-mode #horarioClaseSelect,
+    html.dark-mode #horarioNombreRecreo,
+    html.dark-mode #horarioNuevoInicio,
+    html.dark-mode #horarioNuevoFin {
+        background: #0f172a !important;
+        color: #e5eefb !important;
+        border-color: #243041 !important;
+    }
+    html.dark-mode .visor-grid-block {
+        background: linear-gradient(180deg, rgba(17,158,112,0.16), rgba(17,158,112,0.08)) !important;
+        border-color: rgba(34,197,139,0.45) !important;
+    }
     
     .secciones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; padding: 15px; }
     .btn-seccion { 

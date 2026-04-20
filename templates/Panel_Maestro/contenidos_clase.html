@@ -1,8 +1,8 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block content %}
 <style>
 .page-wrap { max-width: 1200px; margin: 0 auto; padding: 30px 20px; color: #1e293b; }
-.header, .panel, .item { background: white; border: 1px solid #e2e8f0; border-radius: 24px; }
+.header, .panel, .item, .modal-card { background: white; border: 1px solid #e2e8f0; border-radius: 24px; }
 .header, .panel { padding: 24px; }
 .header { margin-bottom: 22px; }
 .back-link { text-decoration: none; color: #475569; font-weight: 800; display: inline-flex; gap: 8px; align-items: center; }
@@ -12,76 +12,379 @@ form { display: grid; gap: 12px; }
 input, textarea, select { width: 100%; border: 1px solid #cbd5e1; border-radius: 14px; padding: 12px 14px; font: inherit; }
 button { border: none; background: #2563eb; color: white; border-radius: 14px; padding: 12px 16px; font-weight: 800; cursor: pointer; }
 .tabs { display: grid; gap: 20px; }
-.item { padding: 18px 20px; margin-bottom: 12px; }
+.item { padding: 18px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
 .item h4 { margin: 0 0 6px; }
 .item p { margin: 0; color: #64748b; }
+.item-main { flex: 1; min-width: 0; }
+.item-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+.action-btn { width: 42px; height: 42px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border: 1px solid #dbeafe; background: #f8fbff; color: #2563eb; transition: .2s ease; }
+.action-btn:hover { transform: translateY(-1px); }
+.action-btn.edit { border-color: #fde68a; background: #fffbea; color: #d97706; }
+.action-btn.delete { border-color: #fecaca; background: #fff1f2; color: #dc2626; }
 .badge { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: .72rem; font-weight: 800; background: #eff6ff; color: #1d4ed8; margin-bottom: 10px; }
-@media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+.form-note { margin: 0; color: #64748b; font-size: .88rem; line-height: 1.5; }
+.field-block { display: grid; gap: 8px; }
+.field-label { font-size: .82rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .04em; }
+.field-group { display: none; }
+.field-group.active { display: grid; gap: 12px; }
+.field-helper { padding: 12px 14px; border-radius: 16px; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; font-size: .88rem; line-height: 1.5; }
+.empty-text { color:#64748b; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, .45); display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: .25s ease; z-index: 1000; }
+.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-card { width: min(620px, 100%); padding: 24px; box-shadow: 0 18px 50px rgba(15, 23, 42, .18); }
+.modal-card h3 { margin-top: 0; margin-bottom: 10px; }
+.modal-card p { color: #64748b; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 18px; }
+.btn-ghost { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
+.btn-danger { background: #dc2626; }
+.preview-frame { padding: 16px; border-radius: 18px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.preview-frame a { color: #2563eb; font-weight: 700; text-decoration: none; word-break: break-all; }
+@media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .item { flex-direction: column; } .item-actions { width: 100%; justify-content: flex-end; } }
 </style>
+
 <div class="page-wrap">
     <div class="header">
         <a href="{{ url_for('gestionar_grado', id_grado=grado.id_grado) }}" class="back-link"><i class="bi bi-arrow-left"></i> Volver al grado</a>
         <h1 style="margin:12px 0 6px;">Recursos del Aula</h1>
         <p style="margin:0; color:#64748b;">Publica documentos, enlaces y videos para que aparezcan automaticamente en el aula del alumno.</p>
     </div>
+
     <div class="layout">
         <div class="panel">
             <h3>Nuevo contenido</h3>
-            <form method="POST" enctype="multipart/form-data">
-                <select name="tipo_contenido" required>
+            <form method="POST" enctype="multipart/form-data" id="form-contenido">
+                <select name="tipo_contenido" id="tipo_contenido" required>
                     <option value="documento">Documento</option>
                     <option value="enlace">Enlace</option>
                     <option value="video">Video</option>
                 </select>
                 <select name="id_clase" required>
                     <option value="">Selecciona la clase</option>
-                    {% for clase in clases %}<option value="{{ clase.id_clase }}">{{ clase.nombre_clase }}</option>{% endfor %}
+                    {% for clase in clases %}
+                    <option value="{{ clase.id_clase }}">{{ clase.nombre_clase }}</option>
+                    {% endfor %}
                 </select>
                 <input type="text" name="titulo" placeholder="Titulo" required>
                 <textarea name="descripcion" rows="4" placeholder="Descripcion"></textarea>
-                <input type="url" name="url" placeholder="URL para enlaces o videos">
-                <input type="file" name="archivo">
+                <div class="field-helper" id="tipo-helper">
+                    Selecciona el tipo de contenido para ver solo los campos que corresponden a esa publicacion.
+                </div>
+                <div id="grupo-documento" class="field-group">
+                    <div class="field-block">
+                        <span class="field-label">Archivo del documento</span>
+                        <input type="file" name="archivo" id="archivo_input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png">
+                        <p class="form-note">Usa esta opcion para subir guias, PDFs, presentaciones o material descargable.</p>
+                    </div>
+                </div>
+                <div id="grupo-enlace" class="field-group">
+                    <div class="field-block">
+                        <span class="field-label">Enlace externo</span>
+                        <input type="url" name="url" id="url_input" placeholder="https://ejemplo.com/recurso">
+                        <p class="form-note">Se mostrara como enlace de interes dentro del aula.</p>
+                    </div>
+                </div>
+                <div id="grupo-video" class="field-group">
+                    <div class="field-block">
+                        <span class="field-label">URL del video</span>
+                        <input type="url" name="url_video_fake" id="url_video_proxy" placeholder="https://youtube.com/... o https://vimeo.com/...">
+                        <p class="form-note">Pega el enlace del video que quieres compartir. Se publicara en la seccion de videos.</p>
+                    </div>
+                </div>
                 <button type="submit">Publicar contenido</button>
             </form>
         </div>
+
         <div class="tabs">
             <div class="panel">
                 <h3>Documentos publicados</h3>
                 {% for documento in documentos %}
                 <div class="item">
-                    <span class="badge">Documento</span>
-                    <h4>{{ documento.titulo }} - {{ documento.clase.nombre_clase }}</h4>
-                    <p>{{ documento.descripcion or 'Sin descripcion.' }}</p>
+                    <div class="item-main">
+                        <span class="badge">Documento</span>
+                        <h4>{{ documento.titulo }} - {{ documento.clase.nombre_clase }}</h4>
+                        <p>{{ documento.descripcion or 'Sin descripcion.' }}</p>
+                    </div>
+                    <div class="item-actions">
+                        <button type="button" class="action-btn" onclick="openModal('ver-documento-{{ documento.id_documento }}')" title="Ver">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                        <button type="button" class="action-btn edit" onclick="openModal('editar-documento-{{ documento.id_documento }}')" title="Editar">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                        <button type="button" class="action-btn delete" onclick="openModal('borrar-documento-{{ documento.id_documento }}')" title="Borrar">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ver-documento-{{ documento.id_documento }}" class="modal-overlay" onclick="closeModal(event, 'ver-documento-{{ documento.id_documento }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Ver documento</h3>
+                        <div class="preview-frame">
+                            <p><strong>{{ documento.titulo }}</strong></p>
+                            <p>{{ documento.descripcion or 'Sin descripcion.' }}</p>
+                            <a href="{{ url_archivo_subido(documento.archivo_ruta) }}" target="_blank">Abrir documento</a>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-ghost" onclick="closeModalById('ver-documento-{{ documento.id_documento }}')">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editar-documento-{{ documento.id_documento }}" class="modal-overlay" onclick="closeModal(event, 'editar-documento-{{ documento.id_documento }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Editar documento</h3>
+                        <form action="{{ url_for('editar_contenido_clase', id_grado=grado.id_grado, tipo='documento', item_id=documento.id_documento) }}" method="POST" enctype="multipart/form-data">
+                            <select name="id_clase" required>
+                                {% for clase in clases %}
+                                <option value="{{ clase.id_clase }}" {% if clase.id_clase == documento.id_clase %}selected{% endif %}>{{ clase.nombre_clase }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="titulo" value="{{ documento.titulo }}" required>
+                            <textarea name="descripcion" rows="4">{{ documento.descripcion or '' }}</textarea>
+                            <input type="file" name="archivo" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png">
+                            <p class="form-note">Si no subes un nuevo archivo, se conservara el actual.</p>
+                            <div class="modal-actions">
+                                <button type="button" class="btn-ghost" onclick="closeModalById('editar-documento-{{ documento.id_documento }}')">Cancelar</button>
+                                <button type="submit">Guardar cambios</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="borrar-documento-{{ documento.id_documento }}" class="modal-overlay" onclick="closeModal(event, 'borrar-documento-{{ documento.id_documento }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Eliminar documento</h3>
+                        <p>Se eliminara el documento <strong>{{ documento.titulo }}</strong>. Esta accion no se puede deshacer.</p>
+                        <form action="{{ url_for('borrar_contenido_clase', id_grado=grado.id_grado, tipo='documento', item_id=documento.id_documento) }}" method="POST">
+                            <div class="modal-actions">
+                                <button type="button" class="btn-ghost" onclick="closeModalById('borrar-documento-{{ documento.id_documento }}')">Cancelar</button>
+                                <button type="submit" class="btn-danger">Eliminar</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
                 {% else %}
-                <p style="color:#64748b;">No hay documentos registrados.</p>
+                <p class="empty-text">No hay documentos registrados.</p>
                 {% endfor %}
             </div>
+
             <div class="panel">
                 <h3>Enlaces publicados</h3>
                 {% for enlace in enlaces %}
                 <div class="item">
-                    <span class="badge">Enlace</span>
-                    <h4>{{ enlace.titulo }} - {{ enlace.clase.nombre_clase }}</h4>
-                    <p>{{ enlace.url }}</p>
+                    <div class="item-main">
+                        <span class="badge">Enlace</span>
+                        <h4>{{ enlace.titulo }} - {{ enlace.clase.nombre_clase }}</h4>
+                        <p>{{ enlace.descripcion or enlace.url }}</p>
+                    </div>
+                    <div class="item-actions">
+                        <button type="button" class="action-btn" onclick="openModal('ver-enlace-{{ enlace.id_enlace }}')" title="Ver">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                        <button type="button" class="action-btn edit" onclick="openModal('editar-enlace-{{ enlace.id_enlace }}')" title="Editar">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                        <button type="button" class="action-btn delete" onclick="openModal('borrar-enlace-{{ enlace.id_enlace }}')" title="Borrar">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ver-enlace-{{ enlace.id_enlace }}" class="modal-overlay" onclick="closeModal(event, 'ver-enlace-{{ enlace.id_enlace }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Ver enlace</h3>
+                        <div class="preview-frame">
+                            <p><strong>{{ enlace.titulo }}</strong></p>
+                            <p>{{ enlace.descripcion or 'Sin descripcion.' }}</p>
+                            <a href="{{ enlace.url }}" target="_blank">{{ enlace.url }}</a>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-ghost" onclick="closeModalById('ver-enlace-{{ enlace.id_enlace }}')">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editar-enlace-{{ enlace.id_enlace }}" class="modal-overlay" onclick="closeModal(event, 'editar-enlace-{{ enlace.id_enlace }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Editar enlace</h3>
+                        <form action="{{ url_for('editar_contenido_clase', id_grado=grado.id_grado, tipo='enlace', item_id=enlace.id_enlace) }}" method="POST">
+                            <select name="id_clase" required>
+                                {% for clase in clases %}
+                                <option value="{{ clase.id_clase }}" {% if clase.id_clase == enlace.id_clase %}selected{% endif %}>{{ clase.nombre_clase }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="titulo" value="{{ enlace.titulo }}" required>
+                            <textarea name="descripcion" rows="4">{{ enlace.descripcion or '' }}</textarea>
+                            <input type="url" name="url" value="{{ enlace.url }}" required>
+                            <div class="modal-actions">
+                                <button type="button" class="btn-ghost" onclick="closeModalById('editar-enlace-{{ enlace.id_enlace }}')">Cancelar</button>
+                                <button type="submit">Guardar cambios</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="borrar-enlace-{{ enlace.id_enlace }}" class="modal-overlay" onclick="closeModal(event, 'borrar-enlace-{{ enlace.id_enlace }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Eliminar enlace</h3>
+                        <p>Se eliminara el enlace <strong>{{ enlace.titulo }}</strong>. Esta accion no se puede deshacer.</p>
+                        <form action="{{ url_for('borrar_contenido_clase', id_grado=grado.id_grado, tipo='enlace', item_id=enlace.id_enlace) }}" method="POST">
+                            <div class="modal-actions">
+                                <button type="button" class="btn-ghost" onclick="closeModalById('borrar-enlace-{{ enlace.id_enlace }}')">Cancelar</button>
+                                <button type="submit" class="btn-danger">Eliminar</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
                 {% else %}
-                <p style="color:#64748b;">No hay enlaces registrados.</p>
+                <p class="empty-text">No hay enlaces registrados.</p>
                 {% endfor %}
             </div>
+
             <div class="panel">
                 <h3>Videos publicados</h3>
                 {% for video in videos %}
                 <div class="item">
-                    <span class="badge">Video</span>
-                    <h4>{{ video.titulo }} - {{ video.clase.nombre_clase }}</h4>
-                    <p>{{ video.url }}</p>
+                    <div class="item-main">
+                        <span class="badge">Video</span>
+                        <h4>{{ video.titulo }} - {{ video.clase.nombre_clase }}</h4>
+                        <p>{{ video.descripcion or video.url }}</p>
+                    </div>
+                    <div class="item-actions">
+                        <button type="button" class="action-btn" onclick="openModal('ver-video-{{ video.id_video }}')" title="Ver">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                        <button type="button" class="action-btn edit" onclick="openModal('editar-video-{{ video.id_video }}')" title="Editar">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                        <button type="button" class="action-btn delete" onclick="openModal('borrar-video-{{ video.id_video }}')" title="Borrar">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ver-video-{{ video.id_video }}" class="modal-overlay" onclick="closeModal(event, 'ver-video-{{ video.id_video }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Ver video</h3>
+                        <div class="preview-frame">
+                            <p><strong>{{ video.titulo }}</strong></p>
+                            <p>{{ video.descripcion or 'Sin descripcion.' }}</p>
+                            <a href="{{ video.url }}" target="_blank">{{ video.url }}</a>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-ghost" onclick="closeModalById('ver-video-{{ video.id_video }}')">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editar-video-{{ video.id_video }}" class="modal-overlay" onclick="closeModal(event, 'editar-video-{{ video.id_video }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Editar video</h3>
+                        <form action="{{ url_for('editar_contenido_clase', id_grado=grado.id_grado, tipo='video', item_id=video.id_video) }}" method="POST">
+                            <select name="id_clase" required>
+                                {% for clase in clases %}
+                                <option value="{{ clase.id_clase }}" {% if clase.id_clase == video.id_clase %}selected{% endif %}>{{ clase.nombre_clase }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" name="titulo" value="{{ video.titulo }}" required>
+                            <textarea name="descripcion" rows="4">{{ video.descripcion or '' }}</textarea>
+                            <input type="url" name="url" value="{{ video.url }}" required>
+                            <div class="modal-actions">
+                                <button type="button" class="btn-ghost" onclick="closeModalById('editar-video-{{ video.id_video }}')">Cancelar</button>
+                                <button type="submit">Guardar cambios</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="borrar-video-{{ video.id_video }}" class="modal-overlay" onclick="closeModal(event, 'borrar-video-{{ video.id_video }}')">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <h3>Eliminar video</h3>
+                        <p>Se eliminara el video <strong>{{ video.titulo }}</strong>. Esta accion no se puede deshacer.</p>
+                        <form action="{{ url_for('borrar_contenido_clase', id_grado=grado.id_grado, tipo='video', item_id=video.id_video) }}" method="POST">
+                            <div class="modal-actions">
+                                <button type="button" class="btn-ghost" onclick="closeModalById('borrar-video-{{ video.id_video }}')">Cancelar</button>
+                                <button type="submit" class="btn-danger">Eliminar</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
                 {% else %}
-                <p style="color:#64748b;">No hay videos registrados.</p>
+                <p class="empty-text">No hay videos registrados.</p>
                 {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tipoSelect = document.getElementById('tipo_contenido');
+    const helper = document.getElementById('tipo-helper');
+    const grupoDocumento = document.getElementById('grupo-documento');
+    const grupoEnlace = document.getElementById('grupo-enlace');
+    const grupoVideo = document.getElementById('grupo-video');
+    const archivoInput = document.getElementById('archivo_input');
+    const urlInput = document.getElementById('url_input');
+    const urlVideoProxy = document.getElementById('url_video_proxy');
+    const form = document.getElementById('form-contenido');
+
+    function resetCampos() {
+        grupoDocumento.classList.remove('active');
+        grupoEnlace.classList.remove('active');
+        grupoVideo.classList.remove('active');
+        if (archivoInput) archivoInput.required = false;
+        if (urlInput) urlInput.required = false;
+        if (urlVideoProxy) urlVideoProxy.required = false;
+    }
+
+    function sincronizarTipo() {
+        const tipo = tipoSelect.value;
+        resetCampos();
+
+        if (tipo === 'documento') {
+            grupoDocumento.classList.add('active');
+            archivoInput.required = true;
+            helper.textContent = 'Modo documento: solo se usara el archivo que subas. No se publicaran enlaces ni videos en este modo.';
+            if (urlInput) urlInput.value = '';
+            if (urlVideoProxy) urlVideoProxy.value = '';
+        } else if (tipo === 'enlace') {
+            grupoEnlace.classList.add('active');
+            urlInput.required = true;
+            helper.textContent = 'Modo enlace: publica una URL externa como recurso para la clase. No necesitas subir archivo.';
+            if (archivoInput) archivoInput.value = '';
+            if (urlVideoProxy) urlVideoProxy.value = '';
+        } else if (tipo === 'video') {
+            grupoVideo.classList.add('active');
+            urlVideoProxy.required = true;
+            helper.textContent = 'Modo video: pega el enlace del video para mostrarlo en la seccion de videos del aula.';
+            if (archivoInput) archivoInput.value = '';
+            if (urlInput) urlInput.value = '';
+        }
+    }
+
+    tipoSelect.addEventListener('change', sincronizarTipo);
+    form.addEventListener('submit', function () {
+        if (tipoSelect.value === 'video' && urlInput && urlVideoProxy) {
+            urlInput.value = urlVideoProxy.value;
+        }
+    });
+    sincronizarTipo();
+});
+
+function openModal(id) {
+    document.getElementById(id)?.classList.add('active');
+}
+
+function closeModal(event, id) {
+    if (event.target.id === id) {
+        closeModalById(id);
+    }
+}
+
+function closeModalById(id) {
+    document.getElementById(id)?.classList.remove('active');
+}
+</script>
 {% endblock %}

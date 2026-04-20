@@ -9,6 +9,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
+    <script>
+        window.EduPortalTheme = {
+            getTheme() {
+                return localStorage.getItem('edu-theme') === 'dark' ? 'dark' : 'light';
+            },
+            applyTheme(theme) {
+                document.documentElement.classList.toggle('dark-mode', theme === 'dark');
+            },
+            setTheme(theme) {
+                const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+                localStorage.setItem('edu-theme', normalizedTheme);
+                this.applyTheme(normalizedTheme);
+            }
+        };
+
+        window.EduPortalTheme.applyTheme(window.EduPortalTheme.getTheme());
+    </script>
     
     <style>
     :root {
@@ -44,16 +61,26 @@
     }
 
     /* 3. MODO OSCURO (OVERRIDE) */
-    .dark-mode {
-        --bg-body: #0b1437;
-        --bg-card: #111c44;
-        --bg-sidebar: #1b254b;
-        --bg-input: #0b1437;
-        --text-main: #ffffff;
-        --text-muted: #8f9bba;
-        --border-color: #1b254b;
-        --hover-neutral: #1b2559;
-        --shadow: rgba(0, 0, 0, 0.3);
+    html.dark-mode {
+        --bg-body: #0b1220;
+        --bg-card: #111827;
+        --bg-sidebar: #0f172a;
+        --bg-input: #0b1220;
+        --text-main: #e5eefb;
+        --text-muted: #94a3b8;
+        --border-color: #243041;
+        --hover-neutral: #182235;
+        --shadow: rgba(0, 0, 0, 0.35);
+        --bg: #0b1220;
+        --bg-main: #0b1220;
+        --bg-soft: #0f172a;
+        --white: #111827;
+        --dark: #e5eefb;
+        --text-dark: #e5eefb;
+        --dark-text: #e5eefb;
+        --secondary: #94a3b8;
+        --muted: #94a3b8;
+        --card-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
     }
 
     body {
@@ -62,6 +89,383 @@
         background-color: var(--bg-body);
         color: var(--text-main);
         transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    html.dark-mode body,
+    html.dark-mode .viewport-wrapper,
+    html.dark-mode .dashboard-container,
+    html.dark-mode .main-viewport,
+    html.dark-mode .teacher-dashboard,
+    html.dark-mode .teacher-layout,
+    html.dark-mode .settings-wrapper,
+    html.dark-mode .clases-wrapper {
+        background-color: var(--bg-body);
+        color: var(--text-main);
+    }
+
+    html.dark-mode .top-navbar,
+    html.dark-mode .menu-dropdown,
+    html.dark-mode .settings-card,
+    html.dark-mode .settings-main,
+    html.dark-mode .settings-nav,
+    html.dark-mode .m-card,
+    html.dark-mode .kpi-card,
+    html.dark-mode .date-chip,
+    html.dark-mode .action-btn,
+    html.dark-mode .teacher-hero,
+    html.dark-mode .teacher-panel,
+    html.dark-mode .teacher-grade-card,
+    html.dark-mode .announcement-card,
+    html.dark-mode .hero-stat-card,
+    html.dark-mode .sidebar-modern,
+    html.dark-mode .sidebar-header-widget,
+    html.dark-mode .quick-status-widget,
+    html.dark-mode .notifications-panel,
+    html.dark-mode .notification-item,
+    html.dark-mode .bento-item,
+    html.dark-mode .capsula-clase,
+    html.dark-mode .info-float-card,
+    html.dark-mode .empty-state-card,
+    html.dark-mode .form-card,
+    html.dark-mode .option-item,
+    html.dark-mode .schedule-card,
+    html.dark-mode .chip-glass,
+    html.dark-mode .folder-header,
+    html.dark-mode .empty-inline,
+    html.dark-mode .welcome-banner,
+    html.dark-mode .clases-hero,
+    html.dark-mode .tab-btn,
+    html.dark-mode .tab-content,
+    html.dark-mode .form-control,
+    html.dark-mode .m-input,
+    html.dark-mode .btn-back-circle,
+    html.dark-mode .btn-back-square,
+    html.dark-mode .btn-back-nav,
+    html.dark-mode .btn-return,
+    html.dark-mode .ciclo-label,
+    html.dark-mode .mobile-nav-toggle,
+    html.dark-mode .profile-trigger,
+    html.dark-mode .input-group-text,
+    html.dark-mode .btn-outline-secondary {
+        background: var(--bg-card) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.20);
+    }
+
+    html.dark-mode .sidebar-header-widget,
+    html.dark-mode .quick-status-widget,
+    html.dark-mode .welcome-banner,
+    html.dark-mode .clases-hero,
+    html.dark-mode .hero-stat-card,
+    html.dark-mode .notification-item,
+    html.dark-mode .empty-inline,
+    html.dark-mode .schedule-time,
+    html.dark-mode .estado-pill,
+    html.dark-mode .nav-link:hover,
+    html.dark-mode .nav-link.active {
+        background: var(--hover-neutral) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    html.dark-mode h1,
+    html.dark-mode h2,
+    html.dark-mode h3,
+    html.dark-mode h4,
+    html.dark-mode h5,
+    html.dark-mode h6,
+    html.dark-mode strong,
+    html.dark-mode th,
+    html.dark-mode td,
+    html.dark-mode label,
+    html.dark-mode .text-dark,
+    html.dark-mode .main-title,
+    html.dark-mode .card-title,
+    html.dark-mode .m-section-title,
+    html.dark-mode .welcome-section h1,
+    html.dark-mode .item-header h3,
+    html.dark-mode .schedule-details strong,
+    html.dark-mode .notification-item strong,
+    html.dark-mode .header-text h1,
+    html.dark-mode .user-name {
+        color: var(--text-main) !important;
+    }
+
+    html.dark-mode p,
+    html.dark-mode small,
+    html.dark-mode .text-muted,
+    html.dark-mode .subtitle,
+    html.dark-mode .pane-header p,
+    html.dark-mode .activity-text small,
+    html.dark-mode .kpi-label,
+    html.dark-mode .task-info span,
+    html.dark-mode .schedule-details span,
+    html.dark-mode .notification-item p,
+    html.dark-mode .notification-item small,
+    html.dark-mode .header-text p,
+    html.dark-mode .hero-stat-label,
+    html.dark-mode .hero-stat-caption,
+    html.dark-mode .user-role-badge,
+    html.dark-mode .semester-tag,
+    html.dark-mode .option-info span,
+    html.dark-mode .cycle-progress-meta span,
+    html.dark-mode .status-item .lab,
+    html.dark-mode .period-row span {
+        color: var(--text-muted) !important;
+    }
+
+    html.dark-mode input,
+    html.dark-mode select,
+    html.dark-mode textarea,
+    html.dark-mode .form-control,
+    html.dark-mode .m-input,
+    html.dark-mode #selectorNivel {
+        background: var(--bg-input) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    html.dark-mode input::placeholder,
+    html.dark-mode textarea::placeholder {
+        color: var(--text-muted) !important;
+    }
+
+    html.dark-mode hr {
+        border-color: var(--border-color) !important;
+    }
+
+    html.dark-mode .management-header,
+    html.dark-mode .student-card,
+    html.dark-mode .student-card-header,
+    html.dark-mode .section-tabs,
+    html.dark-mode .section-tab,
+    html.dark-mode .custom-table th,
+    html.dark-mode .custom-table td,
+    html.dark-mode .custom-table tr:hover td,
+    html.dark-mode .modal-card,
+    html.dark-mode .folder-wrapper,
+    html.dark-mode .folder-header,
+    html.dark-mode .folder-header.subfolder,
+    html.dark-mode .folder-content,
+    html.dark-mode .m-table th,
+    html.dark-mode .m-table td,
+    html.dark-mode .badge-count-button,
+    html.dark-mode .carga-item,
+    html.dark-mode .carga-empty,
+    html.dark-mode .chip-logout,
+    html.dark-mode .gestion-search-input,
+    html.dark-mode .tabs-container,
+    html.dark-mode .logo-container,
+    html.dark-mode .period-tab,
+    html.dark-mode .summary-box,
+    html.dark-mode .period-summary-card,
+    html.dark-mode .period-stat,
+    html.dark-mode .materia-report-card,
+    html.dark-mode .componente-pill,
+    html.dark-mode .tabla-notas-wrapper,
+    html.dark-mode .edu-table th,
+    html.dark-mode .edu-table td,
+    html.dark-mode .empty-table,
+    html.dark-mode .horario-container-principal .header-minimal,
+    html.dark-mode .tabla-glass-card,
+    html.dark-mode .time-pill,
+    html.dark-mode .materia-item,
+    html.dark-mode .empty-slot,
+    html.dark-mode .legend-bar,
+    html.dark-mode .agenda-wrapper .calendar-card,
+    html.dark-mode .agenda-wrapper .agenda-hero,
+    html.dark-mode .agenda-wrapper .stats-mini,
+    html.dark-mode .agenda-wrapper .modal-content,
+    html.dark-mode .agenda-wrapper .modal-category,
+    html.dark-mode .agenda-wrapper .close-modal,
+    html.dark-mode .aula-wrapper .aula-hero-card,
+    html.dark-mode .aula-wrapper .content-section,
+    html.dark-mode .aula-wrapper .launcher-card,
+    html.dark-mode .aula-wrapper .btn-nav-tab,
+    html.dark-mode .aula-wrapper .stats-mini-inner,
+    html.dark-mode .aula-wrapper .tarea-card,
+    html.dark-mode .aula-wrapper .badge-status.expired {
+        background: var(--bg-card) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+
+    html.dark-mode .management-header,
+    html.dark-mode .agenda-wrapper .agenda-hero,
+    html.dark-mode .aula-wrapper .aula-hero-card,
+    html.dark-mode .horario-container-principal .header-minimal,
+    html.dark-mode .notas-container-principal .header-minimal {
+        background: linear-gradient(135deg, #162033, #0f172a) !important;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24) !important;
+    }
+
+    html.dark-mode .management-header > div > div:last-child,
+    html.dark-mode .agenda-wrapper .stats-mini,
+    html.dark-mode .aula-wrapper .stats-mini-inner,
+    html.dark-mode .horario-container-principal .date-capsule,
+    html.dark-mode .horario-container-principal .week-chip,
+    html.dark-mode .notas-container-principal .badge-academico,
+    html.dark-mode .notas-container-principal .btn-download-report,
+    html.dark-mode .notas-container-principal .period-stat {
+        background: var(--hover-neutral) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+
+    html.dark-mode .tool-card,
+    html.dark-mode .launcher-card,
+    html.dark-mode .aula-wrapper .tarea-card,
+    html.dark-mode .carga-item,
+    html.dark-mode .summary-box,
+    html.dark-mode .period-tab,
+    html.dark-mode .componente-pill,
+    html.dark-mode .tabla-notas-wrapper,
+    html.dark-mode .empty-slot,
+    html.dark-mode .materia-item {
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18) !important;
+    }
+
+    html.dark-mode .section-tab.active,
+    html.dark-mode .period-tab.active,
+    html.dark-mode .aula-wrapper .btn-nav-tab.active,
+    html.dark-mode .tab-btn.active {
+        background: rgba(var(--brand-color-rgb), 0.18) !important;
+        color: #ffffff !important;
+        border-color: rgba(var(--brand-color-rgb), 0.45) !important;
+    }
+
+    html.dark-mode .custom-table th,
+    html.dark-mode .m-table th,
+    html.dark-mode .edu-table th,
+    html.dark-mode .horario-table th,
+    html.dark-mode .agenda-wrapper .fc-col-header-cell,
+    html.dark-mode .agenda-wrapper .fc-scrollgrid-section-header th {
+        background: #0f172a !important;
+        color: var(--text-muted) !important;
+    }
+
+    html.dark-mode .custom-table td,
+    html.dark-mode .m-table td,
+    html.dark-mode .edu-table td {
+        background: transparent !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    html.dark-mode .folder-wrapper {
+        background: transparent !important;
+    }
+
+    html.dark-mode .folder-header:hover,
+    html.dark-mode .folder-header.subfolder:hover,
+    html.dark-mode .tool-card:hover,
+    html.dark-mode .launcher-card:hover,
+    html.dark-mode .aula-wrapper .tarea-card:hover {
+        background: var(--hover-neutral) !important;
+    }
+
+    html.dark-mode .student-email,
+    html.dark-mode .email-text,
+    html.dark-mode .modal-desc,
+    html.dark-mode .modal-desc-left,
+    html.dark-mode .carga-item-content span,
+    html.dark-mode .horario-container-principal .day-date,
+    html.dark-mode .horario-container-principal .materia-meta,
+    html.dark-mode .horario-container-principal .empty-slot,
+    html.dark-mode .notas-container-principal .maestro-sub,
+    html.dark-mode .notas-container-principal .summary-box small,
+    html.dark-mode .notas-container-principal .period-summary-card p,
+    html.dark-mode .notas-container-principal .period-stat span,
+    html.dark-mode .agenda-wrapper .agenda-hero p,
+    html.dark-mode .agenda-wrapper .modal-description,
+    html.dark-mode .agenda-wrapper .info-item,
+    html.dark-mode .aula-wrapper .profesor-name,
+    html.dark-mode .aula-wrapper .launcher-card p,
+    html.dark-mode .aula-wrapper .tarea-meta,
+    html.dark-mode .aula-wrapper .announcement-text,
+    html.dark-mode .aula-wrapper .stat-label {
+        color: var(--text-muted) !important;
+    }
+
+    html.dark-mode .student-name,
+    html.dark-mode .name-text,
+    html.dark-mode .folder-name,
+    html.dark-mode .tool-text,
+    html.dark-mode .horario-container-principal .header-text h1,
+    html.dark-mode .horario-container-principal .sub-badge,
+    html.dark-mode .horario-container-principal .materia-name,
+    html.dark-mode .notas-container-principal .header-text h1,
+    html.dark-mode .notas-container-principal .summary-value,
+    html.dark-mode .notas-container-principal .period-tab span,
+    html.dark-mode .notas-container-principal .period-tab small,
+    html.dark-mode .notas-container-principal .detalle-head h4,
+    html.dark-mode .notas-container-principal .tarea-title,
+    html.dark-mode .agenda-wrapper .agenda-hero h1,
+    html.dark-mode .agenda-wrapper .fc-toolbar-title,
+    html.dark-mode .agenda-wrapper .stat-label,
+    html.dark-mode .agenda-wrapper .modal-body h2,
+    html.dark-mode .aula-wrapper .title-group h1,
+    html.dark-mode .aula-wrapper .section-title h2,
+    html.dark-mode .aula-wrapper .launcher-card h3,
+    html.dark-mode .aula-wrapper .tarea-info h3 {
+        color: var(--text-main) !important;
+    }
+
+    html.dark-mode .horario-container-principal .btn-back-square,
+    html.dark-mode .agenda-wrapper .btn-back-square,
+    html.dark-mode .aula-wrapper .btn-back-square,
+    html.dark-mode .notas-container-principal .btn-back-square,
+    html.dark-mode .btn-close-modal,
+    html.dark-mode .agenda-wrapper .close-modal {
+        background: var(--hover-neutral) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    html.dark-mode .horario-container-principal .estado-pill {
+        background: rgba(15, 23, 42, 0.86) !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark-mode .horario-container-principal .materia-item::after {
+        opacity: 0.22 !important;
+    }
+
+    html.dark-mode .notas-container-principal .nota-bubble {
+        filter: saturate(0.9) brightness(1.1);
+    }
+
+    html.dark-mode .agenda-wrapper .fc-theme-standard td,
+    html.dark-mode .agenda-wrapper .fc-theme-standard th,
+    html.dark-mode .agenda-wrapper .fc-theme-standard .fc-scrollgrid,
+    html.dark-mode .agenda-wrapper .fc-daygrid-day,
+    html.dark-mode .agenda-wrapper .fc-list {
+        border-color: var(--border-color) !important;
+    }
+
+    html.dark-mode .agenda-wrapper .fc-daygrid-day,
+    html.dark-mode .agenda-wrapper .fc-daygrid-day-frame,
+    html.dark-mode .agenda-wrapper .fc-list-day-cushion,
+    html.dark-mode .agenda-wrapper .fc-list-table tr {
+        background: var(--bg-card) !important;
+    }
+
+    html.dark-mode .agenda-wrapper .fc-daygrid-day-number,
+    html.dark-mode .agenda-wrapper .fc-col-header-cell-cushion,
+    html.dark-mode .agenda-wrapper .fc-button-primary,
+    html.dark-mode .agenda-wrapper #calendar {
+        color: var(--text-main) !important;
+    }
+
+    html.dark-mode .agenda-wrapper .fc .fc-button-primary {
+        background-color: var(--hover-neutral) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+
+    html.dark-mode .agenda-wrapper .fc .fc-button-active {
+        background-color: var(--brand-color) !important;
+        color: #ffffff !important;
     }
 
     /* NAVBAR CORREGIDA PARA MODO OSCURO */
@@ -254,15 +658,6 @@
     </style>
 </head>
 <body>
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('edu-theme');
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark-mode');
-            }
-        })();
-    </script>
-
     <nav class="top-navbar">
         <div class="navbar-left">
             <a href="{% if session.rol == 1 %}{{ url_for('admin_dashboard') }}
@@ -321,6 +716,14 @@
     </div>
 
     <script>
+    window.EduPortalTheme.applyTheme(window.EduPortalTheme.getTheme());
+
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'edu-theme') {
+            window.EduPortalTheme.applyTheme(event.newValue === 'dark' ? 'dark' : 'light');
+        }
+    });
+
     const profileBtn = document.getElementById('profileBtn');
     const profileMenu = document.getElementById('profileMenu');
     const mobileNavToggle = document.getElementById('mobileNavToggle');

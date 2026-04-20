@@ -47,8 +47,8 @@
                 </div>
             </div>
             <div class="folder-count">
-                <strong>{{ examenes|length }}</strong>
-                <span>evaluaciones activas</span>
+                <strong>{{ examenes_pendientes_count }}</strong>
+                <span>evaluaciones pendientes</span>
             </div>
         </div>
     </section>
@@ -71,10 +71,22 @@
                 <span class="chip"><i class="bi bi-journal-check"></i> Modalidad {{ examen.modalidad }}</span>
                 <p>{{ examen.descripcion or 'Evaluacion disponible en el aula.' }}</p>
                 <div class="folder-actions">
-                    <span class="status-chip {% if examen.id_examen in examenes_entregados_ids %}ok{% else %}wait{% endif %}">{% if examen.id_examen in examenes_entregados_ids %}Entregado{% else %}Pendiente{% endif %}</span>
+                    {% if examen.modalidad == 'instrucciones' %}
+                    <span class="status-chip ok">Solo instrucciones</span>
+                    <a class="btn-main" href="{{ url_for('alumno_examen_detalle', id_examen=examen.id_examen) }}">
+                        <i class="bi bi-eye"></i> Ver instrucciones
+                    </a>
+                    {% elif examen.id_examen in examenes_entregados_ids %}
+                    <span class="status-chip ok">Entregado</span>
+                    <span class="btn-main" style="background:#94a3b8; cursor:not-allowed; opacity:.9;">
+                        <i class="bi bi-lock-fill"></i> Ya resuelto
+                    </span>
+                    {% else %}
+                    <span class="status-chip wait">Pendiente</span>
                     <a class="btn-main" href="{{ url_for('alumno_examen_detalle', id_examen=examen.id_examen) }}">
                         <i class="bi bi-box-arrow-in-right"></i> Abrir examen
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </details>

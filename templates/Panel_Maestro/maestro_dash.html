@@ -109,6 +109,7 @@
                                 <strong>{{ anuncio.titulo }}</strong>
                                 <span>{{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') if anuncio.fecha_publicacion else 'Reciente' }}</span>
                             </div>
+                            <small class="announcement-author">Por: {{ anuncio.autor }}</small>
                             <p>{{ anuncio.contenido }}</p>
                         </div>
                     </article>
@@ -136,6 +137,7 @@
                                 <strong>{{ anuncio.titulo }}</strong>
                                 <span>{{ anuncio.fecha_publicacion.strftime('%d/%m/%Y') if anuncio.fecha_publicacion else 'Reciente' }}</span>
                             </div>
+                            <small class="announcement-author">Por: {{ anuncio.autor }}</small>
                             <p>{{ anuncio.contenido }}</p>
                         </div>
                     </article>
@@ -540,6 +542,14 @@
         font-size: 0.74rem;
         font-weight: 800;
         white-space: nowrap;
+    }
+
+    .announcement-author {
+        display: block;
+        margin-top: 6px;
+        color: #7c8ca5;
+        font-size: 0.76rem;
+        font-weight: 700;
     }
 
     .announcement-body p {

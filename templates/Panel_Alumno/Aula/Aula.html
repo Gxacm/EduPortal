@@ -60,7 +60,7 @@
                             <div class="launcher-icon"><i class="bi bi-patch-check-fill"></i></div>
                             <h3>Examenes</h3>
                             <p>Evaluaciones creadas por tu maestro para esta clase.</p>
-                            <span>{{ examenes|length }} registrados</span>
+                            <span>{{ examenes_pendientes_count }} pendientes</span>
                         </a>
 
                         <a href="{{ url_for('alumno_aula_categoria', id_clase=clase.id_clase, categoria='enlaces') }}" class="launcher-card">

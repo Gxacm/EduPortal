@@ -429,6 +429,38 @@
     .folder-content { display: none; padding: 5px 0 10px 15px; }
     .folder-content.open { display: block; animation: fadeIn 0.3s ease; }
     .ms-auto { margin-left: auto; }
+    html.dark-mode .search-box,
+    html.dark-mode .filter-box {
+        background: #111a2d !important;
+        border-color: #2b3a54 !important;
+    }
+    html.dark-mode .search-box input,
+    html.dark-mode .filter-box select {
+        color: #e5eefb !important;
+    }
+    html.dark-mode .search-box input::placeholder {
+        color: #8fa0b8 !important;
+        opacity: 1;
+    }
+    html.dark-mode .clear-filters-button,
+    html.dark-mode .info-button {
+        background: #183d55 !important;
+        color: #c8fff4 !important;
+        border-color: #2e6578 !important;
+    }
+    html.dark-mode .clear-filters-button:hover,
+    html.dark-mode .info-button:hover {
+        background: #1f526f !important;
+    }
+    html.dark-mode .info-popup {
+        background: #111827 !important;
+        border-color: #243041 !important;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28) !important;
+    }
+    html.dark-mode .info-popup h4,
+    html.dark-mode .info-popup-item {
+        color: #dce7f8 !important;
+    }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 768px) {
         .viewport-wrapper { padding: 24px 14px; }

@@ -303,12 +303,21 @@ def construir_resumen_aula(clase_obj, alumno=None):
             ).all()
         ]
 
+    ahora = datetime.utcnow()
+    examenes_pendientes = [
+        examen for examen in examenes
+        if examen.modalidad != 'instrucciones'
+        and examen.id_examen not in examenes_entregados_ids
+        and (not examen.fecha_limite or examen.fecha_limite >= ahora)
+    ]
+
     return {
         'documentos': documentos,
         'enlaces': enlaces,
         'videos': videos,
         'foros': foros,
         'examenes': examenes,
+        'examenes_pendientes': examenes_pendientes,
         'entregadas_ids': entregadas_ids,
         'examenes_entregados_ids': examenes_entregados_ids
     }
@@ -406,6 +415,53 @@ def existe_solapamiento(hora_inicio, hora_fin, otro_inicio, otro_fin):
     return hora_inicio < otro_fin and hora_fin > otro_inicio
 
 
+def construir_ocupacion_maestros(excluir_secciones_ids=None):
+    excluir_secciones_ids = set(excluir_secciones_ids or [])
+    consulta = db.session.query(Horarios).options(
+        joinedload(Horarios.clase)
+    ).join(Clases)
+
+    if excluir_secciones_ids:
+        consulta = consulta.filter(~Horarios.id_seccion.in_(excluir_secciones_ids))
+
+    ocupacion = defaultdict(list)
+    for bloque in consulta.all():
+        if bloque.clase and bloque.clase.id_maestro:
+            ocupacion[bloque.clase.id_maestro].append({
+                'id_seccion': bloque.id_seccion,
+                'dia_semana': bloque.dia_semana,
+                'hora_inicio': bloque.hora_inicio,
+                'hora_fin': bloque.hora_fin
+            })
+
+    return ocupacion
+
+
+def maestro_esta_disponible(ocupacion_maestros, id_maestro, dia_semana, hora_inicio, hora_fin):
+    if not id_maestro:
+        return True
+
+    for bloque in ocupacion_maestros.get(id_maestro, []):
+        if bloque['dia_semana'] == dia_semana and existe_solapamiento(
+            bloque['hora_inicio'], bloque['hora_fin'], hora_inicio, hora_fin
+        ):
+            return False
+
+    return True
+
+
+def registrar_bloque_maestro(ocupacion_maestros, id_maestro, id_seccion, dia_semana, hora_inicio, hora_fin):
+    if not id_maestro:
+        return
+
+    ocupacion_maestros[id_maestro].append({
+        'id_seccion': id_seccion,
+        'dia_semana': dia_semana,
+        'hora_inicio': hora_inicio,
+        'hora_fin': hora_fin
+    })
+
+
 def obtener_titulo_bloque_horario(bloque):
     if getattr(bloque, 'es_recreo', False):
         return (bloque.nombre_bloque or 'Recreo').strip() or 'Recreo'
@@ -452,7 +508,7 @@ def validar_bloque_horario(id_clase, id_seccion, dia_semana, hora_inicio, hora_f
     return None
 
 
-def generar_propuesta_horario_para_seccion(seccion_destino, horarios_origen, slots_candidatos):
+def generar_propuesta_horario_para_seccion(seccion_destino, horarios_origen, slots_candidatos, ocupacion_maestros):
     propuesta = []
     randomizador = random.Random(
         f"autogen-{seccion_destino.id_grado}-{seccion_destino.id_seccion}-{len(horarios_origen)}"
@@ -506,22 +562,101 @@ def generar_propuesta_horario_para_seccion(seccion_destino, horarios_origen, slo
             item['fin']
         )
     )
-    bloques_ordenados = sorted(
+    bloques_ordenados = list(sorted(
         bloques_clase,
         key=lambda item: (
             ordenar_dia_semana(item.dia_semana),
             item.hora_inicio,
             item.id_horario
         )
-    )
+    ))
+    randomizador.shuffle(bloques_ordenados)
 
-    clases_barajadas = randomizador.sample(bloques_ordenados, len(bloques_ordenados))
+    ocupacion_temporal = defaultdict(list)
 
-    if len(clases_barajadas) > 1:
-        clases_barajadas = clases_barajadas[1:] + clases_barajadas[:1]
+    def slot_disponible_para_bloque(bloque, slot):
+        clase = bloque.clase
+        if not clase or not clase.id_maestro:
+            return True
 
-    for indice, slot in enumerate(slots_ordenados):
-        bloque = clases_barajadas[indice]
+        if not maestro_esta_disponible(
+            ocupacion_maestros,
+            clase.id_maestro,
+            slot['dia'],
+            slot['inicio'],
+            slot['fin']
+        ):
+            return False
+
+        return maestro_esta_disponible(
+            ocupacion_temporal,
+            clase.id_maestro,
+            slot['dia'],
+            slot['inicio'],
+            slot['fin']
+        )
+
+    def ordenar_slots_para_bloque(bloque, slots_disponibles):
+        slots_libres = [slot for slot in slots_disponibles if slot_disponible_para_bloque(bloque, slot)]
+        if not slots_libres:
+            return []
+
+        slots_mismo_origen = [
+            slot for slot in slots_libres
+            if slot['dia'] == bloque.dia_semana and slot['inicio'] == bloque.hora_inicio and slot['fin'] == bloque.hora_fin
+        ]
+        slots_distintos = [
+            slot for slot in slots_libres
+            if slot not in slots_mismo_origen
+        ]
+        randomizador.shuffle(slots_distintos)
+        randomizador.shuffle(slots_mismo_origen)
+        return slots_distintos + slots_mismo_origen
+
+    def backtracking(asignaciones, slots_restantes, bloques_restantes):
+        if not bloques_restantes:
+            return asignaciones
+
+        opciones_por_bloque = []
+        for bloque in bloques_restantes:
+            opciones = ordenar_slots_para_bloque(bloque, slots_restantes)
+            if not opciones:
+                return None
+            opciones_por_bloque.append((bloque, opciones))
+
+        bloque_actual, opciones_actuales = min(opciones_por_bloque, key=lambda item: len(item[1]))
+        siguientes_bloques = [bloque for bloque in bloques_restantes if bloque.id_horario != bloque_actual.id_horario]
+
+        for slot in opciones_actuales:
+            clase = bloque_actual.clase
+            if clase and clase.id_maestro:
+                registrar_bloque_maestro(
+                    ocupacion_temporal,
+                    clase.id_maestro,
+                    seccion_destino.id_seccion,
+                    slot['dia'],
+                    slot['inicio'],
+                    slot['fin']
+                )
+
+            resultado = backtracking(
+                asignaciones + [(bloque_actual, slot)],
+                [item for item in slots_restantes if item != slot],
+                siguientes_bloques
+            )
+            if resultado is not None:
+                return resultado
+
+            if clase and clase.id_maestro:
+                ocupacion_temporal[clase.id_maestro].pop()
+
+        return None
+
+    asignaciones = backtracking([], slots_ordenados, bloques_ordenados)
+    if asignaciones is None:
+        return None
+
+    for bloque, slot in asignaciones:
         propuesta.append({
             'id_clase': bloque.id_clase,
             'es_recreo': False,
@@ -530,6 +665,20 @@ def generar_propuesta_horario_para_seccion(seccion_destino, horarios_origen, slo
             'hora_inicio': slot['inicio'],
             'hora_fin': slot['fin']
         })
+
+    for bloque in propuesta:
+        if bloque.get('es_recreo') or not bloque.get('id_clase'):
+            continue
+        clase = next((item.clase for item in bloques_clase if item.id_clase == bloque['id_clase']), None)
+        if clase and clase.id_maestro:
+            registrar_bloque_maestro(
+                ocupacion_maestros,
+                clase.id_maestro,
+                seccion_destino.id_seccion,
+                bloque['dia_semana'],
+                bloque['hora_inicio'],
+                bloque['hora_fin']
+            )
 
     return propuesta
 
@@ -556,9 +705,17 @@ def sincronizar_horarios_grado_desde_seccion(id_seccion_origen):
 
     sincronizadas = []
     omitidas = []
+    ocupacion_maestros = construir_ocupacion_maestros(
+        excluir_secciones_ids=[seccion.id_seccion for seccion in secciones_destino]
+    )
 
     for seccion_destino in secciones_destino:
-        propuesta = generar_propuesta_horario_para_seccion(seccion_destino, horarios_origen, slots_candidatos)
+        propuesta = generar_propuesta_horario_para_seccion(
+            seccion_destino,
+            horarios_origen,
+            slots_candidatos,
+            ocupacion_maestros
+        )
 
         if not propuesta:
             omitidas.append(seccion_destino.nombre_seccion)
@@ -898,13 +1055,51 @@ def maestro_dashboard():
         joinedload(Clases.grado)
     ).filter_by(id_maestro=perfil.id_maestro).order_by(Clases.id_grado.asc(), Clases.nombre_clase.asc()).all() if perfil else []
     ids_grados_maestro = list({clase.id_grado for clase in clases})
-    anuncios_recibidos = Anuncios.query.filter(
-        (Anuncios.dirigido_a.in_(['Todos', 'Maestros'])) |
-        (Anuncios.dirigido_a.in_([f'Grado_{id_grado}' for id_grado in ids_grados_maestro]))
+    filtro_recibidos = Anuncios.dirigido_a.in_(['Todos', 'Maestros'])
+    if ids_grados_maestro:
+        filtro_recibidos = filtro_recibidos | Anuncios.dirigido_a.in_([f'Grado_{id_grado}' for id_grado in ids_grados_maestro])
+
+    anuncios_recibidos_db = Anuncios.query.join(
+        Usuarios, Usuarios.id_usuario == Anuncios.id_usuario_autor
+    ).filter(
+        Usuarios.id_rol == 1,
+        filtro_recibidos
     ).order_by(Anuncios.fecha_publicacion.desc()).limit(5).all()
-    anuncios_enviados = Anuncios.query.filter_by(
+
+    anuncios_enviados_db = Anuncios.query.filter_by(
         id_usuario_autor=user_id
     ).order_by(Anuncios.fecha_publicacion.desc()).limit(5).all()
+
+    autores_ids = {
+        anuncio.id_usuario_autor
+        for anuncio in (anuncios_recibidos_db + anuncios_enviados_db)
+        if anuncio.id_usuario_autor
+    }
+    autores_map = {}
+    if autores_ids:
+        autores_map = {
+            autor.id_usuario: f"{autor.nombre} {autor.apellido}"
+            for autor in Usuarios.query.filter(Usuarios.id_usuario.in_(autores_ids)).all()
+        }
+
+    anuncios_recibidos = [
+        {
+            'titulo': anuncio.titulo,
+            'contenido': anuncio.contenido,
+            'fecha_publicacion': anuncio.fecha_publicacion,
+            'autor': autores_map.get(anuncio.id_usuario_autor, 'Administrador')
+        }
+        for anuncio in anuncios_recibidos_db
+    ]
+    anuncios_enviados = [
+        {
+            'titulo': anuncio.titulo,
+            'contenido': anuncio.contenido,
+            'fecha_publicacion': anuncio.fecha_publicacion,
+            'autor': autores_map.get(anuncio.id_usuario_autor, 'Maestro')
+        }
+        for anuncio in anuncios_enviados_db
+    ]
     
     semestre_activo = obtener_semestre_activo()
     clases_actuales = [
@@ -1227,19 +1422,29 @@ def maestro_contenidos_clase(id_grado):
                     id_usuario_autor=session.get('user_id')
                 )
             elif tipo == 'enlace':
+                url_enlace = normalizar_url_externa(request.form.get('url'))
+                if not url_enlace:
+                    flash('Debes ingresar un enlace valido para publicar este recurso.', 'warning')
+                    return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
+
                 item = EnlacesClase(
                     id_clase=clase.id_clase,
                     titulo=request.form.get('titulo'),
                     descripcion=request.form.get('descripcion'),
-                    url=normalizar_url_externa(request.form.get('url')),
+                    url=url_enlace,
                     id_usuario_autor=session.get('user_id')
                 )
             elif tipo == 'video':
+                url_video = normalizar_url_externa(request.form.get('url'))
+                if not url_video:
+                    flash('Debes ingresar un enlace valido para publicar este video.', 'warning')
+                    return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
+
                 item = VideosClase(
                     id_clase=clase.id_clase,
                     titulo=request.form.get('titulo'),
                     descripcion=request.form.get('descripcion'),
-                    url=normalizar_url_externa(request.form.get('url')),
+                    url=url_video,
                     id_usuario_autor=session.get('user_id')
                 )
             else:
@@ -1277,6 +1482,104 @@ def maestro_contenidos_clase(id_grado):
         enlaces=enlaces,
         videos=videos
     )
+
+@app.route('/maestro/grado/<int:id_grado>/contenidos/<string:tipo>/<int:item_id>/editar', methods=['POST'])
+def editar_contenido_clase(id_grado, tipo, item_id):
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    if not perfil:
+        return redirect(url_for('login'))
+
+    modelo = {
+        'documento': (DocumentosClase, 'id_documento'),
+        'enlace': (EnlacesClase, 'id_enlace'),
+        'video': (VideosClase, 'id_video')
+    }.get(tipo)
+
+    if not modelo:
+        flash('Tipo de contenido no valido.', 'warning')
+        return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
+
+    clase = maestro_posee_clase(perfil, request.form.get('id_clase'), id_grado)
+    if not clase:
+        flash('La clase seleccionada no pertenece a este maestro.', 'danger')
+        return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
+
+    model_class, pk_name = modelo
+    item = model_class.query.join(Clases, Clases.id_clase == model_class.id_clase).filter(
+        getattr(model_class, pk_name) == item_id,
+        Clases.id_maestro == perfil.id_maestro,
+        Clases.id_grado == id_grado
+    ).first_or_404()
+
+    try:
+        item.id_clase = clase.id_clase
+        item.titulo = request.form.get('titulo')
+        item.descripcion = request.form.get('descripcion')
+
+        if tipo == 'documento':
+            archivo = request.files.get('archivo')
+            if archivo and archivo.filename:
+                ruta_guardado, _ = guardar_archivo_subido(
+                    archivo,
+                    'documentos_clase',
+                    f'documento_clase_{clase.id_clase}'
+                )
+                item.archivo_ruta = ruta_guardado
+        else:
+            url_normalizada = normalizar_url_externa(request.form.get('url'))
+            if not url_normalizada:
+                flash('Debes ingresar un enlace valido para actualizar este contenido.', 'warning')
+                return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
+            item.url = url_normalizada
+
+        db.session.commit()
+        flash('Contenido actualizado correctamente.', 'success')
+    except Exception as exc:
+        db.session.rollback()
+        print(f'Error actualizando contenido de clase: {exc}')
+        flash('No se pudo actualizar el contenido.', 'danger')
+
+    return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
+
+@app.route('/maestro/grado/<int:id_grado>/contenidos/<string:tipo>/<int:item_id>/borrar', methods=['POST'])
+def borrar_contenido_clase(id_grado, tipo, item_id):
+    if session.get('rol') != 2:
+        return redirect(url_for('login'))
+
+    perfil = Maestros.query.filter_by(id_usuario=session.get('user_id')).first()
+    if not perfil:
+        return redirect(url_for('login'))
+
+    modelo = {
+        'documento': (DocumentosClase, 'id_documento'),
+        'enlace': (EnlacesClase, 'id_enlace'),
+        'video': (VideosClase, 'id_video')
+    }.get(tipo)
+
+    if not modelo:
+        flash('Tipo de contenido no valido.', 'warning')
+        return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
+
+    model_class, pk_name = modelo
+    item = model_class.query.join(Clases, Clases.id_clase == model_class.id_clase).filter(
+        getattr(model_class, pk_name) == item_id,
+        Clases.id_maestro == perfil.id_maestro,
+        Clases.id_grado == id_grado
+    ).first_or_404()
+
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        flash('Contenido eliminado correctamente.', 'success')
+    except Exception as exc:
+        db.session.rollback()
+        print(f'Error eliminando contenido de clase: {exc}')
+        flash('No se pudo eliminar el contenido.', 'danger')
+
+    return redirect(url_for('maestro_contenidos_clase', id_grado=id_grado))
 
 @app.route('/maestro/grado/<int:id_grado>/foros', methods=['GET', 'POST'])
 def maestro_foros_clase(id_grado):
@@ -2283,11 +2586,13 @@ def alumno_aula(id_clase):
         tarea for tarea in tareas_clase
         if tarea.id_tarea not in resumen_aula['entregadas_ids'] and (not tarea.fecha_entrega or tarea.fecha_entrega >= ahora)
     ])
+    examenes_pendientes_count = len(resumen_aula['examenes_pendientes'])
 
     return render_template('/Panel_Alumno/Aula/Aula.html', 
                            clase=clase_obj, 
                            tareas=tareas_clase, 
                            tareas_pendientes_count=tareas_pendientes_count,
+                           examenes_pendientes_count=examenes_pendientes_count,
                            now=ahora,
                            entregadas_ids=resumen_aula['entregadas_ids'],
                            alumno=alumno,
@@ -2338,6 +2643,7 @@ def alumno_aula_categoria(id_clase, categoria):
         videos=[{'item': video, 'embed_url': obtener_video_embed_url(video.url)} for video in resumen_aula['videos']],
         foros=resumen_aula['foros'],
         examenes=resumen_aula['examenes'],
+        examenes_pendientes_count=len(resumen_aula['examenes_pendientes']),
         examenes_entregados_ids=resumen_aula['examenes_entregados_ids']
     )
 
@@ -2423,17 +2729,29 @@ def alumno_examen_detalle(id_examen):
         return redirect(url_for('alumno_clases'))
 
     entrega = EntregasExamenes.query.filter_by(id_examen=id_examen, id_alumno=alumno.id_alumno).first()
+    examen_ya_entregado = entrega is not None
+    examen_bloqueado = examen.modalidad != 'instrucciones' and examen_ya_entregado
 
     if request.method == 'POST':
+        if examen.modalidad == 'instrucciones':
+            flash('Este examen solo contiene instrucciones y no requiere entrega.', 'info')
+            return redirect(url_for('alumno_examen_detalle', id_examen=id_examen))
+
+        if examen_bloqueado:
+            flash('Ya resolviste este examen y no puedes volver a abrirlo para responderlo.', 'warning')
+            return redirect(url_for('alumno_aula_categoria', id_clase=clase_obj.id_clase, categoria='examenes'))
+
         archivo = request.files.get('archivo_respuesta')
         respuesta_texto = (request.form.get('respuesta_texto') or '').strip()
         respuestas_json = None
-        archivo_ruta = entrega.archivo_ruta if entrega else None
+        archivo_ruta = None
 
         if examen.modalidad == 'formulario':
             respuestas_json = {}
             for pregunta in examen.preguntas:
-                respuestas_json[pregunta.texto_pregunta] = request.form.get(f'pregunta_{pregunta.id_pregunta}', '').strip()
+                valor_respuesta = (request.form.get(f'pregunta_{pregunta.id_pregunta}') or '').strip()
+                if valor_respuesta:
+                    respuestas_json[pregunta.texto_pregunta] = valor_respuesta
         elif respuesta_texto:
             respuestas_json = {'respuesta_texto': respuesta_texto}
 
@@ -2448,20 +2766,14 @@ def alumno_examen_detalle(id_examen):
             flash('Debes adjuntar una respuesta antes de entregar.', 'warning')
             return redirect(url_for('alumno_examen_detalle', id_examen=id_examen))
 
-        if entrega:
-            entrega.archivo_ruta = archivo_ruta
-            entrega.respuestas_json = respuestas_json
-            entrega.estado = 'Entregado'
-            entrega.fecha_entrega = datetime.utcnow()
-        else:
-            entrega = EntregasExamenes(
-                id_examen=id_examen,
-                id_alumno=alumno.id_alumno,
-                archivo_ruta=archivo_ruta,
-                respuestas_json=respuestas_json,
-                estado='Entregado'
-            )
-            db.session.add(entrega)
+        entrega = EntregasExamenes(
+            id_examen=id_examen,
+            id_alumno=alumno.id_alumno,
+            archivo_ruta=archivo_ruta,
+            respuestas_json=respuestas_json,
+            estado='Entregado'
+        )
+        db.session.add(entrega)
 
         db.session.commit()
         flash('Examen entregado correctamente.', 'success')
@@ -2472,6 +2784,7 @@ def alumno_examen_detalle(id_examen):
         'Panel_Alumno/Aula/examen_detalle.html',
         examen=examen,
         entrega=entrega,
+        examen_bloqueado=examen_bloqueado,
         clase=clase_obj,
         alumno=alumno,
         materia_color=materia_color

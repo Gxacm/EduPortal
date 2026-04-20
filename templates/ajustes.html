@@ -547,20 +547,15 @@
     }
 
     const darkToggle = document.getElementById('globalDarkModeToggle');
-    
-    if (localStorage.getItem('edu-theme') === 'dark') {
-        if (darkToggle) darkToggle.checked = true;
+    const themeApi = window.EduPortalTheme;
+
+    if (darkToggle && themeApi) {
+        darkToggle.checked = themeApi.getTheme() === 'dark';
     }
 
-    if (darkToggle) {
+    if (darkToggle && themeApi) {
         darkToggle.addEventListener('change', () => {
-            if (darkToggle.checked) {
-                document.documentElement.classList.add('dark-mode');
-                localStorage.setItem('edu-theme', 'dark');
-            } else {
-                document.documentElement.classList.remove('dark-mode');
-                localStorage.setItem('edu-theme', 'light');
-            }
+            themeApi.setTheme(darkToggle.checked ? 'dark' : 'light');
         });
     }
 </script>

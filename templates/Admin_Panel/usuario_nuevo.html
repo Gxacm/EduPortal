@@ -236,6 +236,18 @@
     .m-btn { flex: 1; border: none; cursor: pointer; border-radius: 12px; font-weight: 700; text-decoration: none; text-align: center; transition: 0.2s; color: white; }
     .m-btn-primary { background: var(--dark); }
     .m-btn-primary:hover { opacity: 0.9; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); transform: translateY(-3px); }
+    html.dark-mode .m-btn-primary {
+        background: linear-gradient(135deg, #31528f, #274579) !important;
+        color: #ffffff !important;
+        box-shadow: 0 16px 26px rgba(26, 45, 82, 0.35);
+    }
+    html.dark-mode #tab-maestro .m-btn-primary {
+        background: linear-gradient(135deg, #d18a0d, #b56c06) !important;
+    }
+    html.dark-mode .m-btn-primary:hover {
+        opacity: 1;
+        filter: brightness(1.05);
+    }
 
     .footer-simple { margin-top: 3rem; color: var(--muted); font-size: 0.8rem; font-weight: 600; text-align: center; }
 
@@ -247,6 +259,11 @@
     }
     .m-input::placeholder { color: var(--muted); font-weight: 500; }
     .m-input:focus { outline: none; border-color: var(--primary); background-color: white; box-shadow: 0 10px 20px rgba(67, 24, 255, 0.05); }
+    html.dark-mode input[readonly].m-input {
+        background-color: #111a2d !important;
+        color: #b7cbff !important;
+        border-color: #334155 !important;
+    }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
