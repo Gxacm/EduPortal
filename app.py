@@ -3112,6 +3112,18 @@ def editar_usuario(id_usuario):
     usuario = Usuarios.query.get_or_404(id_usuario)
     
     if request.method == 'POST':
+        nueva_contrasena = (request.form.get('nueva_contrasena') or '').strip()
+        confirmar_contrasena = (request.form.get('confirmar_contrasena') or '').strip()
+
+        if nueva_contrasena or confirmar_contrasena:
+            if nueva_contrasena != confirmar_contrasena:
+                flash('Las contrasenas no coinciden.', 'error')
+                return redirect(url_for('editar_usuario', id_usuario=id_usuario))
+            if len(nueva_contrasena) < 8:
+                flash('La nueva contrasena debe tener al menos 8 caracteres.', 'error')
+                return redirect(url_for('editar_usuario', id_usuario=id_usuario))
+            usuario.contrasena = generate_password_hash(nueva_contrasena)
+
         usuario.nombre = request.form.get('nombre')
         usuario.apellido = request.form.get('apellido')
         usuario.correo = request.form.get('correo')

@@ -60,6 +60,34 @@
 
                 <hr class="form-divider">
 
+                <div class="form-section-title">Acceso y Seguridad</div>
+
+                <div class="password-panel">
+                    <p class="password-helper">
+                        Si necesitas restablecer el acceso del usuario, escribe una nueva contrasena. Si dejas estos campos vacios, la contrasena actual se mantiene.
+                    </p>
+
+                    <div class="grid-inputs">
+                        <div class="input-group">
+                            <label class="m-label">Nueva Contrasena</label>
+                            <div class="input-with-icon">
+                                <i class="bi bi-key"></i>
+                                <input type="password" name="nueva_contrasena" class="m-input" minlength="8" placeholder="Minimo 8 caracteres">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="m-label">Confirmar Contrasena</label>
+                            <div class="input-with-icon">
+                                <i class="bi bi-shield-lock"></i>
+                                <input type="password" name="confirmar_contrasena" class="m-input" minlength="8" placeholder="Repite la nueva contrasena">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="form-divider">
+
                 <div class="form-section-title">Datos Específicos del Rol</div>
 
                 {% if usuario.id_rol == 2 %} 
@@ -148,6 +176,8 @@
     .m-card { background: white; padding: 3rem; border-radius: 35px; box-shadow: 0 20px 50px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.8); }
     .form-section-title { font-weight: 800; color: var(--dark); font-size: 1.1rem; margin-bottom: 1.5rem; display: flex; align-items: center; }
     .form-divider { border: none; border-top: 1px solid #edf2f7; margin: 2.5rem 0; }
+    .password-panel { padding: 1.25rem; border-radius: 22px; background: linear-gradient(135deg, #f8faff 0%, #eef4ff 100%); border: 1px solid #dbe7ff; }
+    .password-helper { margin: 0 0 1.25rem; color: var(--dark); font-size: 0.85rem; line-height: 1.6; }
 
     /* Inputs */
     .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }

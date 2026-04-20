@@ -342,24 +342,24 @@
         </div>
 
         <div id="tab-ciclos" class="tab-content">
-            <div class="grid-config">
+            <div class="grid-config ciclos-layout">
                 
-                <div class="m-card">
+                <div class="m-card ciclo-card ciclo-card-form">
                     <h3 class="m-section-title">Nuevo Ciclo Lectivo</h3>
                     <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" data-academic-form>
                         <input type="hidden" name="guardar_ciclo" value="true">
                         
                         <label class="m-label">Año del Ciclo</label>
                         
-                        <div style="display: flex; align-items: stretch; border-radius: 14px; overflow: hidden; border: 2px solid transparent; background-color: var(--bg); transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+                        <div class="ciclo-input-group">
                             
-                            <span style="background: #e2e8f0; color: #475569; padding: 14px 25px; font-weight: 700; font-size: 0.9rem; white-space: nowrap; display: flex; align-items: center; border-right: 1px solid #cbd5e1;">
+                            <span class="ciclo-input-prefix">
                                 Ciclo Lectivo
                             </span>
                             
                             <input type="number" 
                                    name="anio_ciclo" 
-                                   style="flex: 1; padding: 14px 18px; border: none; background: transparent; color: var(--dark); font-weight: 600; font-size: 0.95rem; font-family: inherit; outline: none;" 
+                                   class="ciclo-input-field" 
                                    placeholder="Ej. 2026" 
                                    min="2026" 
                                    max="2099" 
@@ -368,23 +368,23 @@
                                    data-label="Año del Ciclo">
                         </div>
                         
-                        <button type="submit" class="m-btn-config" style="margin-top: 20px;">
+                        <button type="submit" class="m-btn-config">
                             Registrar Ciclo
                         </button>
                     </form>
                 </div>
 
-                <div class="m-card" style="margin-top: 20px;">
+                <div class="m-card ciclo-card ciclo-card-semestre">
                     <h3 class="m-section-title">Semestre Activo</h3>
                     {% if ciclo_activo %}
-                    <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 15px;">
+                    <p class="text-muted ciclo-help">
                         Define qué semestre deben ver los alumnos de Décimo y Undécimo en sus materias, horario y notas.
                     </p>
                     <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" data-academic-form>
                         <input type="hidden" name="actualizar_semestre_activo" value="true">
                         <label class="m-label">Ciclo en Curso</label>
                         <input type="text" class="m-input" value="{{ ciclo_activo.nombre_ciclo }}" disabled>
-                        <label class="m-label" style="margin-top: 15px;">Semestre Visible para Alumnos</label>
+                        <label class="m-label ciclo-label-spaced">Semestre Visible para Alumnos</label>
                         <select name="semestre_actual" class="m-input" required data-label="Semestre Activo">
                             {% for valor, etiqueta in semestres_disponibles if valor != 'ANUAL' %}
                                 <option value="{{ valor }}" {% if semestre_activo == valor %}selected{% endif %}>{{ etiqueta }}</option>
@@ -399,10 +399,10 @@
                     {% endif %}
                 </div>
 
-                <div class="m-card">
+                <div class="m-card ciclo-card ciclo-card-table">
                     <h3 class="m-section-title">Ciclos Registrados</h3>
-                    <div class="table-responsive">
-                        <table class="m-table">
+                    <div class="table-responsive ciclos-table-wrap">
+                        <table class="m-table ciclos-table">
                             <thead>
                                 <tr>
                                     <th>Ciclo</th>
@@ -416,27 +416,27 @@
                                     <td><strong>{{ ciclo.nombre_ciclo }}</strong></td>
                                     <td>
                                         {% if ciclo.estado == 'ACTIVO' %}
-                                            <span class="chip-glass" style="color: var(--accent-green); background: #dcfce7;">Activo</span>
+                                            <span class="chip-glass chip-estado-activo">Activo</span>
                                         {% elif ciclo.estado == 'FINALIZADO' %}
-                                            <span class="chip-glass" style="color: #64748b; background: #f1f5f9;">Finalizado</span>
+                                            <span class="chip-glass chip-estado-finalizado">Finalizado</span>
                                         {% else %}
-                                            <span class="chip-glass" style="color: #b45309; background: #fef3c7;">Inactivo</span>
+                                            <span class="chip-glass chip-estado-inactivo">Inactivo</span>
                                         {% endif %}
                                     </td>
-                                    <td style="text-align: right;">
+                                    <td class="ciclos-actions-cell">
                                         {% if ciclo.estado == 'INACTIVO' %}
-                                            <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" style="display:inline;">
+                                            <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" class="ciclo-inline-form">
                                                 <input type="hidden" name="activar_ciclo" value="true">
                                                 <input type="hidden" name="id_ciclo_a_activar" value="{{ ciclo.id_cycle }}">
-                                                <button type="submit" class="chip-glass" style="border: none; cursor: pointer; background: var(--accent-green); color: white;">
+                                                <button type="submit" class="chip-glass ciclo-action-btn ciclo-action-btn-start">
                                                     <i class="bi bi-play-fill"></i> Iniciar Ciclo
                                                 </button>
                                             </form>
                                         {% elif ciclo.estado == 'ACTIVO' %}
-                                            <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" style="display:inline;">
+                                            <form action="{{ url_for('configuracion_academica') }}?tab=tab-ciclos" method="POST" class="ciclo-inline-form">
                                                 <input type="hidden" name="finalizar_ciclo" value="true">
                                                 <input type="hidden" name="id_ciclo_a_finalizar" value="{{ ciclo.id_cycle }}">
-                                                <button type="submit" class="chip-glass" style="border: none; cursor: pointer; background: var(--danger); color: white;">
+                                                <button type="submit" class="chip-glass ciclo-action-btn ciclo-action-btn-stop">
                                                     <i class="bi bi-stop-fill"></i> Finalizar Ciclo
                                                 </button>
                                             </form>
@@ -642,11 +642,98 @@
     .grid-config { display: grid; grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.55fr); gap: 20px; align-items: start; }
     .m-card { background: white; padding: 2.5rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03); }
     .grid-config-materias { grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.7fr); align-items: start; }
+    .ciclos-layout {
+        grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.6fr);
+        gap: 20px;
+    }
+    .ciclo-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .ciclo-card-table {
+        grid-column: 1 / -1;
+    }
+    .ciclo-help {
+        font-size: 0.88rem;
+        margin-bottom: 15px;
+        max-width: 62ch;
+        line-height: 1.55;
+    }
+    .ciclo-label-spaced {
+        margin-top: 15px;
+    }
+    .ciclo-input-group {
+        display: flex;
+        align-items: stretch;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 2px solid transparent;
+        background-color: var(--bg);
+        transition: 0.3s;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    }
+    .ciclo-input-prefix {
+        background: #e2e8f0;
+        color: #475569;
+        padding: 14px 25px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        border-right: 1px solid #cbd5e1;
+    }
+    .ciclo-input-field {
+        flex: 1;
+        padding: 14px 18px;
+        border: none;
+        background: transparent;
+        color: var(--dark);
+        font-weight: 600;
+        font-size: 0.95rem;
+        font-family: inherit;
+        outline: none;
+        min-width: 0;
+    }
+    .ciclos-table-wrap {
+        overflow-x: auto;
+    }
+    .ciclos-table {
+        min-width: 720px;
+    }
+    .ciclos-actions-cell {
+        text-align: right;
+        white-space: nowrap;
+    }
+    .ciclo-inline-form {
+        display: inline-flex;
+    }
+    .chip-estado-activo { color: var(--accent-green); background: #dcfce7; }
+    .chip-estado-finalizado { color: #64748b; background: #f1f5f9; }
+    .chip-estado-inactivo { color: #b45309; background: #fef3c7; }
+    .ciclo-action-btn {
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .ciclo-action-btn-start {
+        background: var(--accent-green);
+        color: white;
+    }
+    .ciclo-action-btn-stop {
+        background: var(--danger);
+        color: white;
+    }
     .m-card-materia-form { padding: 2rem; }
     .m-card-materia-list { padding: 2.75rem; }
     @media (max-width: 1100px) {
         .grid-config,
-        .grid-config-materias {
+        .grid-config-materias,
+        .ciclos-layout {
             grid-template-columns: 1fr;
         }
     }
@@ -1429,6 +1516,17 @@
         -webkit-overflow-scrolling: touch;
     }
     @media (max-width: 720px) {
+        .ciclo-input-group {
+            flex-direction: column;
+        }
+        .ciclo-input-prefix {
+            border-right: none;
+            border-bottom: 1px solid #cbd5e1;
+            justify-content: center;
+        }
+        .ciclos-table {
+            min-width: 640px;
+        }
         .materias-header,
         .materia-item,
         .materia-item-top,
