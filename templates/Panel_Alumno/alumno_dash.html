@@ -421,6 +421,73 @@
         .notifications-panel { left: 50% !important; right: auto !important; transform: translate(-50%, -50%) !important; width: min(460px, calc(100vw - 64px)) !important; max-height: min(72dvh, 620px) !important; }
         .notifications-list { max-height: calc(min(72dvh, 620px) - 74px); }
     }
+
+    html.dark-mode .welcome-banner {
+        background: linear-gradient(180deg, #1b263a, #182235) !important;
+        border-color: #2a3a51 !important;
+        color: #eff6ff !important;
+        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+    }
+    html.dark-mode .eyebrow,
+    html.dark-mode .notification-trigger,
+    html.dark-mode .quick-status-widget,
+    html.dark-mode .exam-count-chip {
+        background: #132033 !important;
+        border-color: #2c4057 !important;
+        color: #eff6ff !important;
+        box-shadow: none !important;
+    }
+    html.dark-mode .welcome-text p,
+    html.dark-mode .status-item .lab,
+    html.dark-mode .status-item .lab.dark,
+    html.dark-mode .task-info span,
+    html.dark-mode .gpa-top p,
+    html.dark-mode .period-row,
+    html.dark-mode .exam-item-main span,
+    html.dark-mode .exam-empty,
+    html.dark-mode .empty-inline,
+    html.dark-mode .schedule-summary p {
+        color: #b8c6db !important;
+    }
+    html.dark-mode .status-item .val,
+    html.dark-mode .status-item .val.dark,
+    html.dark-mode .schedule-summary strong,
+    html.dark-mode .schedule-details strong,
+    html.dark-mode .task-info strong,
+    html.dark-mode .exam-item-main strong,
+    html.dark-mode .mini-stat-chip {
+        color: #eff6ff !important;
+    }
+    html.dark-mode .quick-status-widget .divider,
+    html.dark-mode .period-row {
+        border-color: #243244 !important;
+        background: transparent !important;
+    }
+    html.dark-mode .schedule-summary {
+        background: linear-gradient(180deg, #162235, #132033) !important;
+        border-color: #2c4057 !important;
+    }
+    html.dark-mode .schedule-summary.finished {
+        background: linear-gradient(180deg, #123126, #10291f) !important;
+        border-color: #2f855a !important;
+    }
+    html.dark-mode .schedule-time {
+        background: #101b2c !important;
+        color: #dbe7f7 !important;
+    }
+    html.dark-mode .empty-inline,
+    html.dark-mode .exam-empty {
+        background: #101b2c !important;
+        border: 1px solid #27384d !important;
+    }
+    html.dark-mode .btn-action {
+        background: #dbe7f7 !important;
+        color: #132033 !important;
+    }
+    html.dark-mode .btn-action:hover {
+        background: #eff6ff !important;
+        color: #101b2c !important;
+    }
 </style>
 
 <script>

@@ -32,6 +32,60 @@
 .btn-main { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--materia-color); color: white; padding: 12px 16px; border-radius: 14px; font-weight: 800; }
 .empty { padding: 56px 20px; text-align: center; color: #64748b; font-weight: 700; }
 @media (max-width: 900px) { .header-row { flex-direction: column; align-items: flex-start; } .folder-count { width: 100%; } .folder summary { align-items: flex-start; } }
+
+html.dark-mode .header-card,
+html.dark-mode .folder,
+html.dark-mode .empty {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)) !important;
+    border-color: #243244 !important;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+}
+html.dark-mode .header-card,
+html.dark-mode .folder summary,
+html.dark-mode .folder[open] summary {
+    background: #162235 !important;
+}
+html.dark-mode .btn-back-square {
+    background: #101b2c !important;
+    color: #eff6ff !important;
+}
+html.dark-mode .folder-count {
+    background: #101b2c !important;
+    border-color: #27384d !important;
+}
+html.dark-mode .folder-count span,
+html.dark-mode .folder-meta,
+html.dark-mode .folder-body p,
+html.dark-mode .empty,
+html.dark-mode .header-card p {
+    color: #b8c6db !important;
+}
+html.dark-mode .folder-count strong,
+html.dark-mode .folder-title,
+html.dark-mode .folder-actions .folder-meta {
+    color: #eff6ff !important;
+}
+html.dark-mode .folder-icon,
+html.dark-mode .chip {
+    background: #17314d !important;
+    color: #d4e8ff !important;
+}
+html.dark-mode .folder-body {
+    border-top-color: #243244 !important;
+    background: #111d30 !important;
+}
+html.dark-mode .status-chip.ok {
+    background: #123126 !important;
+    color: #86efac !important;
+}
+html.dark-mode .status-chip.wait {
+    background: #2a1720 !important;
+    color: #ffb4bc !important;
+}
+html.dark-mode .btn-main {
+    background: #35c96e !important;
+    color: #f8fff9 !important;
+}
 </style>
 
 <div class="page-wrap" style="--materia-color: {{ materia_color }};">

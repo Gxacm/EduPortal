@@ -34,6 +34,66 @@
 .side-card input, .side-card textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 16px; padding: 12px 14px; font: inherit; background: #f8fafc; }
 .empty { padding: 56px 20px; text-align: center; color: #64748b; font-weight: 700; }
 @media (max-width: 980px) { .header-row { flex-direction: column; align-items: flex-start; } .folder-count { width: 100%; } .layout { grid-template-columns: 1fr; } .side-card { position: static; } }
+
+html.dark-mode .header-card,
+html.dark-mode .folder,
+html.dark-mode .side-card,
+html.dark-mode .empty {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)) !important;
+    border-color: #243244 !important;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+}
+html.dark-mode .header-card,
+html.dark-mode .folder summary,
+html.dark-mode .folder[open] summary {
+    background: #162235 !important;
+}
+html.dark-mode .btn-back-square {
+    background: #101b2c !important;
+    color: #eff6ff !important;
+}
+html.dark-mode .folder-count {
+    background: #101b2c !important;
+    border-color: #27384d !important;
+}
+html.dark-mode .folder-count span,
+html.dark-mode .folder-meta,
+html.dark-mode .folder-body p,
+html.dark-mode .side-card p,
+html.dark-mode .empty,
+html.dark-mode .header-card p {
+    color: #b8c6db !important;
+}
+html.dark-mode .folder-count strong,
+html.dark-mode .folder-title,
+html.dark-mode .side-card h3,
+html.dark-mode .folder-actions .folder-meta {
+    color: #eff6ff !important;
+}
+html.dark-mode .folder-icon,
+html.dark-mode .chip {
+    background: #17314d !important;
+    color: #d4e8ff !important;
+}
+html.dark-mode .folder-body {
+    border-top-color: #243244 !important;
+    background: #111d30 !important;
+}
+html.dark-mode .side-card input,
+html.dark-mode .side-card textarea {
+    background: #0f172a !important;
+    border-color: #2c4057 !important;
+    color: #eff6ff !important;
+}
+html.dark-mode .side-card input::placeholder,
+html.dark-mode .side-card textarea::placeholder {
+    color: #93a7c2 !important;
+}
+html.dark-mode .btn-main,
+html.dark-mode .side-card button {
+    background: #35c96e !important;
+    color: #f8fff9 !important;
+}
 </style>
 
 <div class="page-wrap" style="--materia-color: {{ materia_color }};">

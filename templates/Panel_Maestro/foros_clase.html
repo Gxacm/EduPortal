@@ -15,6 +15,31 @@ form { display: grid; gap: 12px; }
 input, textarea, select { width: 100%; border: 1px solid #cbd5e1; border-radius: 14px; padding: 12px 14px; font: inherit; }
 button { border: none; background: #0891b2; color: white; border-radius: 14px; padding: 12px 16px; font-weight: 800; cursor: pointer; }
 @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+
+html.dark-mode .header,
+html.dark-mode .panel,
+html.dark-mode .foro-card {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)) !important;
+    border-color: #243244 !important;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+}
+html.dark-mode .back-link { color: #dbe7f7 !important; }
+html.dark-mode .back-link:hover { color: #ffffff !important; }
+html.dark-mode .header p,
+html.dark-mode .foro-card p {
+    color: #aebed3 !important;
+}
+html.dark-mode input,
+html.dark-mode textarea,
+html.dark-mode select {
+    background: #0f172a !important;
+    border-color: #2c4057 !important;
+    color: #eff6ff !important;
+}
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
+    color: #93a7c2 !important;
+}
 </style>
 <div class="page-wrap">
     <div class="header">

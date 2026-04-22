@@ -40,6 +40,56 @@ button { border: none; background: #2563eb; color: white; border-radius: 14px; p
 .preview-frame { padding: 16px; border-radius: 18px; background: #f8fafc; border: 1px solid #e2e8f0; }
 .preview-frame a { color: #2563eb; font-weight: 700; text-decoration: none; word-break: break-all; }
 @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .item { flex-direction: column; } .item-actions { width: 100%; justify-content: flex-end; } }
+
+html.dark-mode .header,
+html.dark-mode .panel,
+html.dark-mode .item,
+html.dark-mode .modal-card {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)) !important;
+    border-color: #243244 !important;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+}
+html.dark-mode .back-link { color: #dbe7f7 !important; }
+html.dark-mode .back-link:hover { color: #ffffff !important; }
+html.dark-mode .header p,
+html.dark-mode .item p,
+html.dark-mode .form-note,
+html.dark-mode .empty-text,
+html.dark-mode .modal-card p {
+    color: #aebed3 !important;
+}
+html.dark-mode input,
+html.dark-mode textarea,
+html.dark-mode select {
+    background: #0f172a !important;
+    border-color: #2c4057 !important;
+    color: #eff6ff !important;
+}
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
+    color: #93a7c2 !important;
+}
+html.dark-mode .field-label { color: #e5eefb !important; }
+html.dark-mode .field-helper,
+html.dark-mode .preview-frame {
+    background: #101b2c !important;
+    border-color: #27384d !important;
+    color: #c4d3e7 !important;
+}
+html.dark-mode .badge {
+    background: #17314d !important;
+    color: #d4e8ff !important;
+}
+html.dark-mode .action-btn {
+    background: #132033 !important;
+    border-color: #2c4057 !important;
+    color: #9ec5ff !important;
+}
+html.dark-mode .btn-ghost {
+    background: #132033 !important;
+    color: #dbe7f7 !important;
+    border-color: #2c4057 !important;
+}
 </style>
 
 <div class="page-wrap">

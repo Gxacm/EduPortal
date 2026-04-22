@@ -27,6 +27,42 @@ body { background-color:var(--bg-soft); font-family:'Plus Jakarta Sans',sans-ser
 .form-control, .form-select { width:100%; padding:10px 15px; border:1px solid var(--border-color); border-radius:10px; font-family:inherit; font-size:.9rem; box-sizing:border-box; }
 .btn-save { background:var(--primary-main); color:white; border:none; padding:12px; border-radius:10px; font-weight:700; width:100%; cursor:pointer; margin-top:20px; }
 .btn-save-purple { background:var(--purple-main); }
+
+html.dark-mode .btn-back-circle {
+    background:#132033 !important;
+    border-color:#2c4057 !important;
+    color:#dbe7f7 !important;
+}
+html.dark-mode .section-card,
+html.dark-mode .modal-card {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)) !important;
+    border-color:#243244 !important;
+    box-shadow:0 18px 38px rgba(0,0,0,.34);
+}
+html.dark-mode .item-row {
+    border-bottom-color:#243244 !important;
+}
+html.dark-mode .item-info p,
+html.dark-mode .top-bar p {
+    color:#aebed3 !important;
+}
+html.dark-mode .btn-edit {
+    background:#132033 !important;
+    color:#8ecdfd !important;
+    border:1px solid #2c4057;
+}
+html.dark-mode .btn-delete {
+    background:#2a1720 !important;
+    color:#ffb4bc !important;
+    border:1px solid #5b2833;
+}
+html.dark-mode .form-label { color:#e5eefb !important; }
+html.dark-mode .form-control,
+html.dark-mode .form-select {
+    background:#0f172a !important;
+    border-color:#2c4057 !important;
+    color:#eff6ff !important;
+}
 </style>
 
 <div class="viewport-container"><div class="top-bar"><a href="javascript:history.back()" class="btn-back-circle"><i class="bi bi-arrow-left"></i></a><div><h1 style="font-weight:800; margin:0;">Gestionar Asignaciones</h1><p style="margin:0; color:var(--muted-text);">{{ grado.nombre_grado }}</p></div></div>

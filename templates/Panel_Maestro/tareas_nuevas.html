@@ -25,6 +25,47 @@ textarea.custom-control { min-height:120px; resize:vertical; }
 .m-btn { flex:1; padding:15px 24px; border-radius:16px; border:none; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; cursor:pointer; }
 .m-btn-primary { background:var(--primary-blue); color:white; }
 .m-btn-outline { background:white; color:var(--muted-text); border:2px solid var(--border-color); }
+
+html.dark-mode .btn-back-top { color:#dbe7f7 !important; }
+html.dark-mode .btn-back-top:hover { color:#ffffff !important; }
+html.dark-mode .form-card {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)) !important;
+    border-color:#243244 !important;
+    box-shadow:0 18px 38px rgba(0,0,0,.34);
+}
+html.dark-mode .form-label { color:#e5eefb !important; }
+html.dark-mode .form-header p,
+html.dark-mode .upload-copy span { color:#b8c6db !important; }
+html.dark-mode .custom-control {
+    background:#0f172a !important;
+    border-color:#2c4057 !important;
+    color:#eff6ff !important;
+}
+html.dark-mode .custom-control::placeholder { color:#93a7c2 !important; }
+html.dark-mode .custom-control:focus {
+    background:#132033 !important;
+    border-color:#4f7ec9 !important;
+    box-shadow:0 0 0 4px rgba(59,130,246,.18);
+}
+html.dark-mode .upload-box {
+    background:linear-gradient(180deg,#172436,#111c2d) !important;
+    border-color:#31445b !important;
+}
+html.dark-mode .upload-box:hover {
+    background:#1a2a40 !important;
+    border-color:#4f7ec9 !important;
+}
+html.dark-mode .upload-icon {
+    background:#101b2c !important;
+    color:#8eb8ff !important;
+    box-shadow:0 10px 18px rgba(0,0,0,.22);
+}
+html.dark-mode .upload-copy strong { color:#eff6ff !important; }
+html.dark-mode .m-btn-outline {
+    background:#132033 !important;
+    color:#d4e4f8 !important;
+    border-color:#2c4057 !important;
+}
 </style>
 <div class="viewport-container">
     <div class="top-action-bar"><a href="{{ url_for('gestionar_grado', id_grado=id_grado) }}" class="btn-back-top"><i class="bi bi-arrow-left"></i> Volver a Gestion</a></div>
