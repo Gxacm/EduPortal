@@ -132,6 +132,42 @@
     .btn-return { background: white; padding: 8px 18px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: #475569; text-decoration: none; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: flex; align-items: center; }
     .btn-return:hover{ background: #fee2e2;  color: #ef4444;  transform: translateY(-2px); }
 
+    html.dark-mode .profile-card {
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)) !important;
+        border-color: #243244 !important;
+        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+    }
+
+    html.dark-mode .page-title,
+    html.dark-mode .user-info-text h3,
+    html.dark-mode .info-group p {
+        color: #eff6ff !important;
+    }
+
+    html.dark-mode .badge-role {
+        color: #8eb8ff !important;
+    }
+
+    html.dark-mode .separator {
+        border-top-color: #243244 !important;
+    }
+
+    html.dark-mode .info-group label {
+        color: #9fb2cc !important;
+    }
+
+    html.dark-mode .btn-return {
+        background: #132033 !important;
+        color: #dbe7f7 !important;
+        border: 1px solid #2c4057;
+        box-shadow: none;
+    }
+
+    html.dark-mode .btn-return:hover {
+        background: #1a2c45 !important;
+        color: #ffffff !important;
+    }
+
     @media (max-width: 768px) {
         .info-grid { grid-template-columns: 1fr; }
         .profile-header { flex-direction: column; text-align: center; }
